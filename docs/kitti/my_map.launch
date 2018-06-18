@@ -1,0 +1,9 @@
+<launch>
+
+  <!-- TF -->
+  <include file="$(env HOME)/Autoware/docs/kitti/tf.launch"/>
+
+  <!-- Point Cloud -->
+  <node pkg="map_file" type="points_map_loader" name="points_map_loader" args="noupdate $(env HOME)/dataset/2011_09_26_drive_0093.pcd"/>
+
+</launch>
