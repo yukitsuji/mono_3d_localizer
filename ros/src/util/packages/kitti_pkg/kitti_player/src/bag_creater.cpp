@@ -117,17 +117,18 @@ int publish_velodyne(ros::Publisher &pub, string infile, std_msgs::Header *heade
 }
 
 
-int write_velodyne(ros::Publisher &pub, string infile, std_msgs::Header *header)
+int write_velodyne(string infile, std_msgs::Header *header, rosbag::Bag &bag)
 {
     fstream input(infile.c_str(), ios::in | ios::binary);
     if(!input.good())
     {
-        ROS_ERROR_STREAM ( "Could not read file: " << infile );
+        std::cout << "Could not read file: " << infile;
         return 0;
     }
     else
     {
-        ROS_DEBUG_STREAM ("reading " << infile);
+        std::cout << header->stamp << '\n';
+        std::cout << "reading " << infile << '\n';
         input.seekg(0, ios::beg);
 
         pcl::PointCloud<pcl::PointXYZI>::Ptr points (new pcl::PointCloud<pcl::PointXYZI>);
@@ -142,11 +143,10 @@ int write_velodyne(ros::Publisher &pub, string infile, std_msgs::Header *header)
         input.close();
 
         sensor_msgs::PointCloud2 pc2;
-        pc2.header.frame_id= "velodyne"; //ros::this_node::getName();
+        pc2.header.frame_id= "velodyne";
         pc2.header.stamp = header->stamp;
         pc2.header.seq = header->seq;
         points->header = pcl_conversions::toPCL(pc2.header);
-        // pub.publish(points);
         bag.write("points_raw", header->stamp, points);
         return 1;
     }
@@ -208,20 +208,6 @@ int getCalibration(string dir_root, string camera_name, double* K,std::vector<do
             }
         }
 
-        // EXPERIMENTAL: use with unrectified images
-
-        //        token_iterator=tok.begin();
-        //        if (strcmp((*token_iterator).c_str(),((string)(string("D_")+camera_name+string(":"))).c_str())==0) //Distortion Coefficients
-        //        {
-        //            index=0; //should be 5 at the end
-        //            ROS_DEBUG_STREAM("D_" << camera_name);
-        //            for (token_iterator++; token_iterator != tok.end(); token_iterator++)
-        //            {
-        ////                std::cout << *token_iterator << '\n';
-        //                D[index++]=boost::lexical_cast<double>(*token_iterator);
-        //            }
-        //        }
-
         token_iterator=tok.begin();
         if (strcmp((*token_iterator).c_str(),((string)(string("R_")+camera_name+string(":"))).c_str())==0) //Rectification Matrix
         {
@@ -247,7 +233,7 @@ int getCalibration(string dir_root, string camera_name, double* K,std::vector<do
         }
 
     }
-    ROS_INFO_STREAM("... ok");
+    std::cout << "... ok\n";
     return true;
 }
 
@@ -373,7 +359,7 @@ std_msgs::Header parseTime(string timestamp)
     time_t timeSinceEpoch = mktime(&t);
 
     header.stamp.sec  = timeSinceEpoch;
-    header.stamp.nsec = boost::lexical_cast<int>(timestamp.substr(20,8));
+    header.stamp.nsec = boost::lexical_cast<int>(timestamp.substr(20,8)) * 10;
 
     return header;
 }
@@ -418,7 +404,7 @@ int main(int argc, char **argv)
         ("frame     ,F",  po::value<unsigned int> (&options.startFrame)     ->default_value(0) ->implicit_value(0)   ,  "start playing at frame...")
     ;
 
-    try // parse options
+    try
     {
         po::parsed_options parsed = po::command_line_parser(argc-2, argv).options(desc).allow_unregistered().run();
         po::store(parsed, vm);
@@ -452,19 +438,9 @@ int main(int argc, char **argv)
         cout << "    │     └ timestamps.txt    " << endl;
         cout << "    └── calib_cam_to_cam.txt  " << endl << endl;
 
-        ROS_WARN_STREAM("Parse error, shutting down node\n");
+        ROS_WARN_STREAM("Parse error, shutting down this process\n");
         return -1;
     }
-
-    ros::init(argc, argv, "kitti_player");
-    ros::NodeHandle node("kitti_player");
-    ros::Rate loop_rate(options.frequency);
-
-    /// This sets the logger level; use this to disable all ROS prints
-    if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug) )
-        ros::console::notifyLoggerLevelsChanged();
-    else
-        std::cout << "Error while setting the logger level!" << std::endl;
 
     DIR *dir;
     struct dirent *ent;
@@ -481,9 +457,9 @@ int main(int argc, char **argv)
     cv::Mat cv_image03;
     std_msgs::Header header_support;
 
-    image_transport::ImageTransport it(node);
-    image_transport::CameraPublisher pub02 = it.advertiseCamera("image_raw", 1);
-    image_transport::CameraPublisher pub03 = it.advertiseCamera("image_raw_right", 1);
+    // image_transport::ImageTransport it(node);
+    // image_transport::CameraPublisher pub02 = it.advertiseCamera("image_raw", 1);
+    // image_transport::CameraPublisher pub03 = it.advertiseCamera("image_raw_right", 1);
 
     sensor_msgs::Image ros_msg02;
     sensor_msgs::Image ros_msg03;
@@ -492,11 +468,6 @@ int main(int argc, char **argv)
     sensor_msgs::CameraInfo ros_cameraInfoMsg_camera03;
 
     cv_bridge::CvImage cv_bridge_img;
-
-    ros::Publisher map_pub           = node.advertise<pcl::PointCloud<pcl::PointXYZ> >  ("hdl64e", 1, true);
-    ros::Publisher gps_pub           = node.advertise<sensor_msgs::NavSatFix>           ("oxts/gps", 1, true);
-    ros::Publisher gps_pub_initial   = node.advertise<sensor_msgs::NavSatFix>           ("oxts/gps_initial", 1, true);
-    ros::Publisher imu_pub           = node.advertise<sensor_msgs::Imu>                 ("oxts/imu", 1, true);
 
     sensor_msgs::NavSatFix  ros_msgGpsFix;
     sensor_msgs::NavSatFix  ros_msgGpsFixInitial;   // This message contains the first reading of the file
@@ -534,9 +505,11 @@ int main(int argc, char **argv)
     if (!(options.all_data || options.color || options.gps || options.imu || options.velodyne))
     {
         ROS_WARN_STREAM("Job finished without playing the dataset. No 'publishing' parameters provided");
-        node.shutdown();
+        // node.shutdown();
         return 1;
     }
+
+    std::cout << options.all_data << "\t" << options.color << "\t" << options.velodyne;
 
     dir_root             = options.path;
     dir_image02          = options.path;
@@ -555,10 +528,6 @@ int main(int argc, char **argv)
     (*(options.path.end()-1) != '/' ? dir_timestamp_velodyne   = options.path+"/velodyne_points/"     : dir_timestamp_velodyne  = options.path+"velodyne_points/");
 
     (*(options.path.end()-1) != '/' ? dir_timestamp_velodyne   = options.path+"/velodyne_points/"     : dir_timestamp_velodyne  = options.path+"velodyne_points/");
-
-    /// EXTRA
-    /// 01. Lane detections
-    (*(options.path.end()-1) != '/' ? dir_laneProjected        = options.path+"/all/"          : dir_laneProjected          = options.path+"all/");
 
     // Check all the directories
     if (
@@ -584,7 +553,7 @@ int main(int argc, char **argv)
         )
     {
         ROS_ERROR("Incorrect tree directory , use --help for details");
-        node.shutdown();
+        // node.shutdown();
         return -1;
     }
     else
@@ -675,28 +644,28 @@ int main(int argc, char **argv)
     // Check options.startFrame and total_entries
     if (options.startFrame > total_entries)
     {
-        ROS_ERROR("Error, start number > total entries in the dataset");
-        node.shutdown();
+        std::cout << "Error, start number > total entries in the dataset";
+        // node.shutdown();
         return -1;
     }
     else
     {
         entries_played = options.startFrame;
-        ROS_INFO_STREAM("The entry point (frame number) is: " << entries_played);
+        std::cout << "The entry point (frame number) is: " << entries_played;
     }
 
     // CAMERA INFO SECTION: read one for all
-    ros_cameraInfoMsg_camera02.header.stamp = ros::Time::now();
-    ros_cameraInfoMsg_camera02.header.frame_id = ros::this_node::getName();
-    ros_cameraInfoMsg_camera02.height = 0;
-    ros_cameraInfoMsg_camera02.width  = 0;
+    // ros_cameraInfoMsg_camera02.header.stamp = ros::Time::now();
+    // ros_cameraInfoMsg_camera02.header.frame_id = "camera";
+    // ros_cameraInfoMsg_camera02.height = 0;
+    // ros_cameraInfoMsg_camera02.width  = 0;
     //ros_cameraInfoMsg_camera02.D.resize(5);
     //ros_cameraInfoMsg_camera02.distortion_model=sensor_msgs::distortion_models::PLUMB_BOB;
 
-    ros_cameraInfoMsg_camera03.header.stamp = ros::Time::now();
-    ros_cameraInfoMsg_camera03.header.frame_id = ros::this_node::getName();
-    ros_cameraInfoMsg_camera03.height = 0;
-    ros_cameraInfoMsg_camera03.width  = 0;
+    // ros_cameraInfoMsg_camera03.header.stamp = ros::Time::now();
+    // ros_cameraInfoMsg_camera03.header.frame_id = "camera";
+    // ros_cameraInfoMsg_camera03.height = 0;
+    // ros_cameraInfoMsg_camera03.width  = 0;
     //ros_cameraInfoMsg_camera03.D.resize(5);
     //ros_cameraInfoMsg_camera03.distortion_model=sensor_msgs::distortion_models::PLUMB_BOB;
 
@@ -719,7 +688,6 @@ int main(int argc, char **argv)
         ros_cameraInfoMsg_camera03.width  = ros_cameraInfoMsg_camera02.width  = cv_image02.cols;// -1;
     }
 
-    boost::progress_display progress(total_entries) ;
     double cv_min, cv_max=0.0f;
 
     rosbag::Bag bag;
@@ -729,35 +697,32 @@ int main(int argc, char **argv)
     do
     {
         // single timestamp for all published stuff
-        Time current_timestamp = ros::Time::now();
         if(options.color || options.all_data)
         {
             full_filename_image02 = dir_image02 + boost::str(boost::format("%010d") % entries_played ) + ".png";
             full_filename_image03 = dir_image03 + boost::str(boost::format("%010d") % entries_played ) + ".png";
-            ROS_DEBUG_STREAM ( full_filename_image02 << endl << full_filename_image03 << endl << endl);
+            std::cout << full_filename_image02 << endl << full_filename_image03 << endl << endl;
 
             cv_image02 = cv::imread(full_filename_image02, CV_LOAD_IMAGE_UNCHANGED);
             cv_image03 = cv::imread(full_filename_image03, CV_LOAD_IMAGE_UNCHANGED);
 
             if ( (cv_image02.data == NULL) || (cv_image03.data == NULL) ){
-                ROS_ERROR_STREAM("Error reading color images (02 & 03)");
-                ROS_ERROR_STREAM(full_filename_image02 << endl << full_filename_image03);
-                node.shutdown();
+                std::cout << "Error reading color images (02 & 03)";
+                std::cout << full_filename_image02 << endl << full_filename_image03;
+                // node.shutdown();
                 return -1;
             }
 
             cv_bridge_img.encoding = sensor_msgs::image_encodings::BGR8;
             cv_bridge_img.header.frame_id = "camera"; //ros::this_node::getName();
-            cv_bridge_img.header.stamp = current_timestamp ;
-            ros_msg02.header.stamp = ros_cameraInfoMsg_camera02.header.stamp = cv_bridge_img.header.stamp;
+            // ros_msg02.header.stamp = ros_cameraInfoMsg_camera02.header.stamp = cv_bridge_img.header.stamp;
             str_support = dir_timestamp_image02 + "timestamps.txt";
             ifstream timestamps(str_support.c_str());
             if (!timestamps.is_open())
             {
                 string timestamps_string;
                 timestamps >> timestamps_string;
-                ROS_ERROR_STREAM("Fail to open " << timestamps_string);
-                node.shutdown();
+                std::cout << "Fail to open " << timestamps_string;
                 return -1;
             }
 
@@ -771,16 +736,16 @@ int main(int argc, char **argv)
             ros_msg02.height = ros_cameraInfoMsg_camera02.height;
             ros_msg02.width  = ros_cameraInfoMsg_camera02.width;
 
-            cv_bridge_img.header.stamp = current_timestamp;
             ros_msg03.header.stamp = ros_cameraInfoMsg_camera03.header.stamp = cv_bridge_img.header.stamp;
             str_support = dir_timestamp_image03 + "timestamps.txt";
-            ifstream timestamps(str_support.c_str());
+            // ifstream timestamps(str_support.c_str());
+            timestamps = ifstream(str_support.c_str());
             if (!timestamps.is_open())
             {
                 string timestamps_string;
                 timestamps >> timestamps_string;
-                ROS_ERROR_STREAM("Fail to open " << timestamps_string);
-                node.shutdown();
+                std::cout << "Fail to open " << timestamps_string;
+                // node.shutdown();
                 return -1;
             }
             timestamps.seekg(30*entries_played);
@@ -811,29 +776,28 @@ int main(int argc, char **argv)
             {
                 string timestamps_string;
                 timestamps >> timestamps_string;
-                ROS_ERROR_STREAM("Fail to open " << timestamps_string);
-                node.shutdown();
+                std::cout << "Fail to open " << timestamps_string;
                 return -1;
             }
+
             timestamps.seekg(30*entries_played);
             getline(timestamps,str_support);
             header_support.stamp = parseTime(str_support).stamp;
-            header_support.seq = progress.count();
-            write_velodyne(map_pub, full_filename_velodyne, &header_support);
-            // publish_velodyne(map_pub, full_filename_velodyne, &header_support);
+            header_support.seq = entries_played; //progress.count();
+            write_velodyne(full_filename_velodyne, &header_support, bag);
         }
 
         if(options.gps || options.all_data)
         {
-            header_support.stamp = current_timestamp; //ros::Time::now();
+            // header_support.stamp = current_timestamp; //ros::Time::now();
             str_support = dir_timestamp_oxts + "timestamps.txt";
             ifstream timestamps(str_support.c_str());
             if (!timestamps.is_open())
             {
                 string timestamps_string;
                 timestamps >> timestamps_string;
-                ROS_ERROR_STREAM("Fail to open " << timestamps_string);
-                node.shutdown();
+                std::cout << "Fail to open " << timestamps_string;
+                // node.shutdown();
                 return -1;
             }
             timestamps.seekg(30*entries_played);
@@ -843,14 +807,14 @@ int main(int argc, char **argv)
             full_filename_oxts = dir_oxts + boost::str(boost::format("%010d") % entries_played ) + ".txt";
             if (!getGPS(full_filename_oxts,&ros_msgGpsFix,&header_support))
             {
-                ROS_ERROR_STREAM("Fail to open " << full_filename_oxts);
-                node.shutdown();
+                std::cout << "Fail to open " << full_filename_oxts;
+                // node.shutdown();
                 return -1;
             }
 
             if (firstGpsData)
             {
-                ROS_DEBUG_STREAM("Setting initial GPS fix at " << endl << ros_msgGpsFix);
+                std::cout << "Setting initial GPS fix at " << endl << ros_msgGpsFix;
                 firstGpsData = false;
                 ros_msgGpsFixInitial = ros_msgGpsFix;
                 ros_msgGpsFixInitial.header.frame_id = "/local_map";
@@ -864,15 +828,15 @@ int main(int argc, char **argv)
 
         if(options.imu || options.all_data)
         {
-            header_support.stamp = current_timestamp; //ros::Time::now();
+            // header_support.stamp = current_timestamp; //ros::Time::now();
             str_support = dir_timestamp_oxts + "timestamps.txt";
             ifstream timestamps(str_support.c_str());
             if (!timestamps.is_open())
             {
                 string timestamps_string;
                 timestamps >> timestamps_string;
-                 ROS_ERROR_STREAM("Fail to open " << timestamps_string);
-                node.shutdown();
+                 std::cout << "Fail to open " << timestamps_string;
+                // node.shutdown();
                 return -1;
             }
             timestamps.seekg(30*entries_played);
@@ -882,24 +846,21 @@ int main(int argc, char **argv)
             full_filename_oxts = dir_oxts + boost::str(boost::format("%010d") % entries_played ) + ".txt";
             if (!getIMU(full_filename_oxts,&ros_msgImu,&header_support))
             {
-                ROS_ERROR_STREAM("Fail to open " << full_filename_oxts);
-                node.shutdown();
+                std::cout << "Fail to open " << full_filename_oxts;
+                // node.shutdown();
                 return -1;
             }
             // imu_pub.publish(ros_msgImu);
             bag.write("oxts/imu", header_support.stamp, ros_msgImu);
         }
-
-        ++progress;
         entries_played++;
-        loop_rate.sleep();
     }
-    while(entries_played<=total_entries-1 && ros::ok());
+    while(entries_played<=total_entries-1);
 
     bag.close();
 
-    ROS_INFO_STREAM("Done!");
-    node.shutdown();
+    std::cout << "Done!";
+    // node.shutdown();
 
     return 0;
 }

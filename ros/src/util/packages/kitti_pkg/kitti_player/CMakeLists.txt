@@ -40,3 +40,12 @@ target_link_libraries(kitti_player
         ${OpenCV_LIBS})
 
 add_dependencies(kitti_player ${catkin_EXPORTED_TARGETS})
+
+add_executable(bag_creater src/bag_creater.cpp)
+
+target_link_libraries(bag_creater
+        ${catkin_LIBRARIES}
+        ${PCL_LIBRARIES}
+        ${OpenCV_LIBS})
+
+add_dependencies(bag_creater ${catkin_EXPORTED_TARGETS})
