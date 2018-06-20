@@ -91,6 +91,20 @@ void ImageGrabber::GrabImage(const sensor_msgs::ImageConstPtr& msg)
         ROS_ERROR("cv_bridge exception: %s", e.what());
         return;
     }
+    
+#ifdef COMPILEDWITHC11
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+#else
+    std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
+#endif
 
     mpSLAM->TrackMonocular(cv_ptr->image,cv_ptr->header.stamp.toSec());
+
+#ifdef COMPILEDWITHC11
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+#else
+    std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
+#endif
+    double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+    std::cout << "time" << ttrack << "\n";
 }

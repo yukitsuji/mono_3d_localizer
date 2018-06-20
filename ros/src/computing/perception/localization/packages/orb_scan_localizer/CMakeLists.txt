@@ -100,7 +100,7 @@ include_directories(
 
 
 add_library(
-        orb_slam2 STATIC
+        orig_orb_slam2 STATIC
         src/System.cc
         src/Tracking.cc
         src/LocalMapping.cc
@@ -135,131 +135,131 @@ list(APPEND LINK_LIBRARIES
         ${GLUT_LIBRARIES}
         )
 
-list(APPEND ORB_BIN_LINKS
-        orb_slam2
+list(APPEND ORIG_ORB_BIN_LINKS
+        orig_orb_slam2
         DBoW2
         g2o
         pangolin
         )
 
 add_executable(
-        mono_orb_slam2
+        orig_mono_orb_slam2
         nodes/mono_orb_slam2/mono_orb_slam2.cpp
 )
 
-# add_dependencies(mono_orb_slam2 ${catkin_EXPORTED_TARGETS})
+# add_dependencies(orig_mono_orb_slam2 ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(
-        mono_orb_slam2
-        ${ORB_BIN_LINKS}
+        orig_mono_orb_slam2
+        ${ORIG_ORB_BIN_LINKS}
         ${LINK_LIBRARIES}
 )
 
 add_executable(
-        mono_orb_slam2_cl
+        orig_mono_orb_slam2_cl
         nodes/mono_orb_slam2_cl/mono_orb_slam2_cl.cpp
 )
 
-# add_dependencies(mono_orb_slam2_cl ${catkin_EXPORTED_TARGETS})
+# add_dependencies(orig_mono_orb_slam2_cl ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(
-        mono_orb_slam2_cl
-        ${ORB_BIN_LINKS}
+        orig_mono_orb_slam2_cl
+        ${ORIG_ORB_BIN_LINKS}
         ${LINK_LIBRARIES}
 )
 
 
 # Main Executables
-add_executable(
-        orb_mapping
-        nodes/orb_mapping/orb_mapping.cpp
-        nodes/common.cpp
-)
+#add_executable(
+#        orb_mapping
+#        nodes/orb_mapping/orb_mapping.cpp
+#        nodes/common.cpp
+#)
 
-target_link_libraries(
-        orb_mapping
-        ${ORB_BIN_LINKS}
-        ${LINK_LIBRARIES}
-)
+#target_link_libraries(
+#        orb_mapping
+#        ${ORIG_ORB_BIN_LINKS}
+#        ${LINK_LIBRARIES}
+#)
 
-add_executable(
-        orb_matching
-        nodes/orb_matching/orb_matching.cpp
-        nodes/orb_matching/Matcher.cpp
-        nodes/common.cpp
-)
+#add_executable(
+#        orb_matching
+#        nodes/orb_matching/orb_matching.cpp
+#        nodes/orb_matching/Matcher.cpp
+#        nodes/common.cpp
+#)
 
-add_dependencies(orb_matching ${catkin_EXPORTED_TARGETS})
+#add_dependencies(orb_matching ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(
-        orb_matching
-        ${ORB_BIN_LINKS}
-        ${LINK_LIBRARIES}
-)
-
-
-add_executable(
-        orb_matching_pf
-        nodes/orb_matching/orb_matching_pf.cpp
-        nodes/orb_matching/Matcher.cpp
-        nodes/orb_matching/FusionOdometry.cpp
-        nodes/common.cpp
-)
-
-add_dependencies(orb_matching_pf ${catkin_EXPORTED_TARGETS})
-
-target_link_libraries(
-        orb_matching_pf
-        ${ORB_BIN_LINKS}
-        ${LINK_LIBRARIES}
-)
+#target_link_libraries(
+#        orb_matching
+#        ${ORIG_ORB_BIN_LINKS}
+#        ${LINK_LIBRARIES}
+#)
 
 
-add_executable(dumpmap
-        nodes/dumpmap/dumpmap.cc
-        )
+#add_executable(
+#        orb_matching_pf
+#        nodes/orb_matching/orb_matching_pf.cpp
+#        nodes/orb_matching/Matcher.cpp
+#        nodes/orb_matching/FusionOdometry.cpp
+#        nodes/common.cpp
+#)
 
-target_link_libraries(dumpmap
-        ${ORB_BIN_LINKS}
-        ${LINK_LIBRARIES}
-        )
+#add_dependencies(orb_matching_pf ${catkin_EXPORTED_TARGETS})
 
-
-add_executable(
-        orb_mapping_offline
-        nodes/orb_mapping/orb_mapping_offline.cpp
-        nodes/common.cpp
-)
-
-target_link_libraries(
-        orb_mapping_offline
-        ${ORB_BIN_LINKS}
-        ${LINK_LIBRARIES}
-        boost_program_options
-)
+#target_link_libraries(
+#        orb_matching_pf
+#        ${ORIG_ORB_BIN_LINKS}
+#        ${LINK_LIBRARIES}
+#)
 
 
-add_executable(
-        map_publisher
-        nodes/visualization/map_publisher.cc
-        nodes/common.cpp
-)
+#add_executable(dumpmap
+#        nodes/dumpmap/dumpmap.cc
+#        )
 
-target_link_libraries(
-        map_publisher
-        ${catkin_LIBRARIES}
-        ${ORB_BIN_LINKS}
-        ${LINK_LIBRARIES}
-)
+#target_link_libraries(dumpmap
+#        ${ORIG_ORB_BIN_LINKS}
+#        ${LINK_LIBRARIES}
+#        )
 
 
-add_executable(
-        imgprocx
-        nodes/imgprocx/imgprocx.cpp
-        nodes/imgprocx/ImagePreprocessor.cpp
-)
+#add_executable(
+#        orb_mapping_offline
+#        nodes/orb_mapping/orb_mapping_offline.cpp
+#        nodes/common.cpp
+#)
 
-target_link_libraries(
-        imgprocx
-        ${catkin_LIBRARIES}
-)
+#target_link_libraries(
+#        orb_mapping_offline
+#        ${ORIG_ORB_BIN_LINKS}
+#        ${LINK_LIBRARIES}
+#        boost_program_options
+#)
+
+
+#add_executable(
+#        map_publisher
+#        nodes/visualization/map_publisher.cc
+#        nodes/common.cpp
+#)
+
+#target_link_libraries(
+#        map_publisher
+#        ${catkin_LIBRARIES}
+#        ${ORIG_ORB_BIN_LINKS}
+#        ${LINK_LIBRARIES}
+#)
+
+
+#add_executable(
+#        imgprocx
+#        nodes/imgprocx/imgprocx.cpp
+#        nodes/imgprocx/ImagePreprocessor.cpp
+#)
+
+#target_link_libraries(
+#        imgprocx
+#        ${catkin_LIBRARIES}
+#)
