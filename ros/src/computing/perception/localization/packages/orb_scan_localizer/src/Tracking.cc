@@ -110,8 +110,8 @@ Tracking::Tracking (
 
     // Load ORB parameters
     int nFeatures = fSettings["ORBextractor.nFeatures"];
-    if (pSys->opMode==System::MAPPING) // Heavy for online computing. default setting is nFeatures *= 1;
-    	nFeatures *= 2;
+    //if (pSys->opMode==System::MAPPING) // Heavy for online computing. default setting is nFeatures *= 1;
+    //	nFeatures *= 2;
 
     float fScaleFactor = fSettings["ORBextractor.scaleFactor"];
     int nLevels = fSettings["ORBextractor.nLevels"];
