@@ -1,5 +1,5 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Changelog for package orb_localizer
+Changelog for package orb_scan_localizer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 1.6.3 (2018-03-06)
@@ -56,7 +56,7 @@ Changelog for package orb_localizer
 * fix circular-dependency
 * ROS Kinectic Upgrade tested on Ubuntu 16.04 and OpenCV 3.2.0
   Modules not included:
-  -orb_localizer
+  -orb_scan_localizer
   -dpm_ocv node and lib
   Everything else working
   Added some libraries for Gazebo on src/extras
@@ -78,7 +78,7 @@ Changelog for package orb_localizer
 1.0.0 (2016-12-22)
 ------------------
 * Fix .gitignore in each packages
-* Fix cmake error in orb_localizer
+* Fix cmake error in orb_scan_localizer
 * Clarify location of header files
 * Launch file; change orb_matching to suit multiple nodes
 * Add dependencies in README
@@ -102,7 +102,7 @@ Changelog for package orb_localizer
 * Add License file for Pangolin
 * Cleanup `#1 <https://github.com/cpfl/autoware/issues/1>`_
 * Initial integration of ORB-SLAM2
-* Add orb_localizer.
+* Add orb_scan_localizer.
 * ORB SLAM Fix with History
 * ORB-SLAM Localizer with External Reference
 * No need to flip axis after computing scale

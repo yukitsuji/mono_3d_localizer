@@ -28,7 +28,7 @@
 #include "System.h"
 #include "Converter.h"
 #include "../common.h"
-#include <orb_localizer/debug.h>
+#include <orb_scan_localizer/debug.h>
 
 using namespace std;
 using namespace ORB_SLAM2;

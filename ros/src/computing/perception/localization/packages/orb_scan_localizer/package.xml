@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-    <name>orb_localizer</name>
+    <name>orb_scan_localizer</name>
     <version>1.6.3</version>
     <description>Vision-based Localization Derived from ORB-SLAM2</description>
 

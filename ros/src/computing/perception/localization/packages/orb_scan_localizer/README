@@ -21,7 +21,7 @@ Mapping HOWTO
    - Camera parameters
    - Localization output
 3) Run the script orb_mapping.launch:
-   $ roslaunch orb_localizer orb_mapping.launch \
+   $ roslaunch orb_scan_localizer orb_mapping.launch \
    config_file:=<path_to_orb-slam-config> \
    external_pose_topic:=<topic_of_map_ground_truth_pose> \
 

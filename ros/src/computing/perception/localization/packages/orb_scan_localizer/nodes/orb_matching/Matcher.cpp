@@ -147,7 +147,7 @@ Matcher::Matcher (ros::NodeHandle &nh, bool _doPublish) :
 	// start of debug preparation
 	cout << std::fixed << setprecision(7);
 	visualDebugView = imageBuf->advertise("framebuffer", 1);
-	debugMsgPublisher = rosnode.advertise<orb_localizer::debug> ("debug", 1);
+	debugMsgPublisher = rosnode.advertise<orb_scan_localizer::debug> ("debug", 1);
 	// keyframeDebugger = rosnode.advertise<visualization_msgs::MarkerArray> ("keyframeDebug", 1);
 }
 
@@ -288,7 +288,7 @@ void Matcher::imageCallback(const sensor_msgs::ImageConstPtr &msg)
 	bagImage.encoding = "bgr8";
 	visualDebugView.publish(bagImage.toImageMsg());
 
-	orb_localizer::debug debugMsg;
+	orb_scan_localizer::debug debugMsg;
 	debugMsg.header.stamp = ros::Time(lastImageTimestamp);
 	debugMsg.keyframe_id = lastKeyframeId;
 	debugMsg.cputime = cpuTimeDebug;
