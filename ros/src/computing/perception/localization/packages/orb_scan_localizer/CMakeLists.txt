@@ -61,22 +61,22 @@ catkin_package(
 
 # Vocabulary file
 set(orb_slam_vocabulary_file ${CATKIN_DEVEL_PREFIX}/share/${PROJECT_NAME}/ORBvoc.txt)
-add_custom_target(orb_vocabulary ALL
-        [ ! -e ${orb_slam_vocabulary_file} ] && tar -zxf ${PROJECT_SOURCE_DIR}/Vocabulary/ORBvoc.txt.tar.gz --directory ${CATKIN_DEVEL_PREFIX}/share/${PROJECT_NAME} || return 0
-        DEPENDS Vocabulary/ORBvoc.txt.tar.gz
-        )
+#add_custom_target(orb_vocabulary ALL
+#        [ ! -e ${orb_slam_vocabulary_file} ] && tar -zxf ${PROJECT_SOURCE_DIR}/Vocabulary/ORBvoc.txt.tar.gz --directory ${CATKIN_DEVEL_PREFIX}/share/${PROJECT_NAME} || return 0
+#        DEPENDS Vocabulary/ORBvoc.txt.tar.gz
+#        )
 add_definitions(
         -DORB_SLAM_VOCABULARY="${orb_slam_vocabulary_file}"
 )
 
 # For building Pangolin
-add_subdirectory(Thirdparty/Pangolin)
+#add_subdirectory(Thirdparty/Pangolin)
 
 # For building DBoW2
-add_subdirectory(Thirdparty/DBoW2)
+#add_subdirectory(Thirdparty/DBoW2)
 
 # For building g2o
-add_subdirectory(Thirdparty/g2o)
+#add_subdirectory(Thirdparty/g2o)
 
 
 include_directories(
@@ -157,7 +157,7 @@ target_link_libraries(
 
 add_executable(
         orig_mono_orb_slam2_cl
-        nodes/mono_orb_slam2_cl/mono_orb_slam2_cl.cpp
+        nodes/mono_orb_slam2/mono_orb_slam2_cl.cpp
 )
 
 # add_dependencies(orig_mono_orb_slam2_cl ${catkin_EXPORTED_TARGETS})
