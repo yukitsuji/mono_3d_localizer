@@ -75,8 +75,7 @@ public:
 		const eSensor sensor,
 		const bool bUseViewer = true,
 		const string &mapFileName=string(),
-		const operationMode mode=System::MAPPING,
-		bool doOfflineMapping=false
+		const operationMode mode=System::MAPPING
     );
 
     // Proccess the given stereo frame. Images must be synchronized and rectified.
@@ -141,7 +140,6 @@ public:
 
     const operationMode opMode;
 
-    const bool offlineMapping;
     float fps;
 
 private:
@@ -191,6 +189,12 @@ private:
     std::mutex mMutexMode;
     bool mbActivateLocalizationMode;
     bool mbDeactivateLocalizationMode;
+
+    // Tracking state
+    int mTrackingState;
+    std::vector<MapPoint*> mTrackedMapPoints;
+    std::vector<cv::KeyPoint> mTrackedKeyPointsUn;
+    std::mutex mMutexState;
 };
 
 }// namespace ORB_SLAM

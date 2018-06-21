@@ -54,7 +54,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
       cout << "Monocular" << endl;
     } else {
       cout << "Only Monocular mode is provided\n";
-      return -1;
+      exit(-1);
     }
 
     //Check settings file

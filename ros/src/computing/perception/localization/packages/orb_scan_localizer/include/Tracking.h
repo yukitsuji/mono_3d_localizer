@@ -173,7 +173,7 @@ protected:
 		SEARCH_MAPPING = 2,
 		SEARCH_LOCAL_MAP = 3
     };
-    bool Relocalization (RelocalizationMode=SEARCH_DB);
+    bool Relocalization ();
 
     void UpdateLocalMap();
     void UpdateLocalPoints();
