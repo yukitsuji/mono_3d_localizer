@@ -19,3 +19,5 @@ catkin_generated/
 /depends/build/
 /depends/devel/
 /depends/src/CMakeLists.txt
+
+core

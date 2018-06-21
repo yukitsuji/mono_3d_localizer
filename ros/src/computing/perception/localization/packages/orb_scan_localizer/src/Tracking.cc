@@ -804,10 +804,8 @@ bool Tracking::NeedNewKeyFrame()
     const int nKFs = mpMap->KeyFramesInMap();
 
     // Do not insert keyframes if not enough frames have passed from last relocalisation
-    if (mpSystem->offlineMapping==false) {
-		if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && nKFs>mMaxFrames)
-			return false;
-    }
+    if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && nKFs>mMaxFrames)
+        return false;
 
     // Tracked MapPoints in the reference keyframe
     int nMinObs = 3;
@@ -816,12 +814,7 @@ bool Tracking::NeedNewKeyFrame()
     int nRefMatches = mpReferenceKF->TrackedMapPoints(nMinObs);
 
     // Local Mapping accept keyframes?
-    bool bLocalMappingIdle;
-    if (mpSystem->offlineMapping==false) {
-    	bLocalMappingIdle = mpLocalMapper->AcceptKeyFrames();
-    }
-    else
-    	bLocalMappingIdle = true;
+    bool bLocalMappingIdle = mpLocalMapper->AcceptKeyFrames();
 
 #ifdef DEBUG_TRACKING
 //	cout << "Checking if we need new keyframe" << endl;
@@ -908,7 +901,7 @@ bool Tracking::NeedNewKeyFrame()
 
 void Tracking::CreateNewKeyFrame()
 {
-    if(mpSystem->offlineMapping==false and !mpLocalMapper->SetNotStop(true))
+    if(!mpLocalMapper->SetNotStop(true))
         return;
 
     KeyFrame* pKF = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
@@ -917,8 +910,7 @@ void Tracking::CreateNewKeyFrame()
     mCurrentFrame.mpReferenceKF = pKF;
     mpLocalMapper->InsertKeyFrame(pKF);
 
-    if (mpSystem->offlineMapping==false)
-    	mpLocalMapper->SetNotStop(false);
+    mpLocalMapper->SetNotStop(false);
 
     mnLastKeyFrameId = mCurrentFrame.mnId;
     mpLastKeyFrame = pKF;

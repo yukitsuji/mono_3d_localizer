@@ -38,7 +38,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
 				mbReset(false),
 				mbActivateLocalizationMode(false),
 				mbDeactivateLocalizationMode(false),
-				opMode (mode),
+				opMode (mode)
 {
     // Output welcome message
     cout << endl <<
@@ -101,39 +101,37 @@ System::System(const string &strVocFile, const string &strSettingsFile,
     mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
                              mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
 
+    std::cout << "Launched tracker\n";
     //Initialize the Local Mapping thread and launch
     mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR);
-		mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run,mpLocalMapper);
-
+    mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run,mpLocalMapper);
+    std::cout << "Launched local map\n";
     //Initialize the Loop Closing thread and launch
     mpLoopCloser = new LoopClosing(mpMap, mpKeyFrameDatabase, mpVocabulary, mSensor!=MONOCULAR);
-		mptLoopClosing = new thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
+    mptLoopClosing = new thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
+    std::cout << "Launched loop closer\n";
 
     mpLocalMapper->SetTracker(mpTracker);
     mpLocalMapper->SetLoopCloser(mpLoopCloser);
+    std::cout << "Set up mapper\n";
 
     mpLoopCloser->SetTracker(mpTracker);
     mpLoopCloser->SetLocalMapper(mpLocalMapper);
-
+    std::cout << "Set up tracker\n";
     // mpTracker->InformOnlyTracking(false);
+
+    //Initialize the Viewer thread and launch
+    mpViewer = new Viewer(this, mpFrameDrawer, mpMapDrawer, mpTracker,
+                          fsSettings, opMode);
+    if(bUseViewer)
+        mptViewer = new thread(&Viewer::Run, mpViewer);
+    mpTracker->SetViewer(mpViewer);
 
     //Set pointers between threads
     mpTracker->SetLocalMapper(mpLocalMapper);
     mpTracker->SetLoopClosing(mpLoopCloser);
-
-    //     else {
-    // //    	ActivateLocalizationMode();
-    //     	mpTracker->InformOnlyTracking(true);
-    //     	mptLocalMapping = NULL;
-    //     	mptLoopClosing = NULL;
-    //     }
-
-    //Initialize the Viewer thread and launch
-    if(bUseViewer)
-        mpViewer = new Viewer(this, mpFrameDrawer, mpMapDrawer, mpTracker,
-                              fsSettings, opMode);
-        mptViewer = new thread(&Viewer::Run, mpViewer);
-        mpTracker->SetViewer(mpViewer);
+    std::cout << "Set up tracker\n";
+    std::cout << "Constructor finished\n";
 }
 
 cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)

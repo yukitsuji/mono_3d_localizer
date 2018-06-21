@@ -58,10 +58,8 @@ int main(int argc, char **argv)
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     // No visualizer
     ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::MONOCULAR, false,
-                           "", ORB_SLAM2::System::MAPPING, false);
-
+                           "", ORB_SLAM2::System::MAPPING);
     ImageGrabber igb(&SLAM);
-
     ros::NodeHandle nodeHandler;
     ros::Subscriber sub = nodeHandler.subscribe("/image_raw", 100, &ImageGrabber::GrabImage, &igb);
 

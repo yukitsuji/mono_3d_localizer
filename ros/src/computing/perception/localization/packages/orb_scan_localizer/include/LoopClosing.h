@@ -51,7 +51,7 @@ public:
 
 public:
 
-    LoopClosing(Map* pMap, KeyFrameDatabase* pDB, ORBVocabulary* pVoc,const bool bFixScale, const bool offlineMode=false);
+    LoopClosing(Map* pMap, KeyFrameDatabase* pDB, ORBVocabulary* pVoc,const bool bFixScale);
 
     void SetTracker(Tracking* pTracker);
 
@@ -84,8 +84,6 @@ public:
     bool isFinished();
 
     std::mutex loopCloserRunMutex;
-
-    const bool offlineMapping;
 
 protected:
 
