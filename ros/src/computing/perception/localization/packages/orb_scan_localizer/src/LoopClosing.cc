@@ -35,11 +35,10 @@
 namespace ORB_SLAM2
 {
 
-LoopClosing::LoopClosing(Map *pMap, KeyFrameDatabase *pDB, ORBVocabulary *pVoc, const bool bFixScale, const bool offlineMode):
+LoopClosing::LoopClosing(Map *pMap, KeyFrameDatabase *pDB, ORBVocabulary *pVoc, const bool bFixScale):
     mbResetRequested(false), mbFinishRequested(false), mbFinished(true), mpMap(pMap),
     mpKeyFrameDB(pDB), mpORBVocabulary(pVoc), mLastLoopKFid(0), mbRunningGBA(false), mbFinishedGBA(true),
-    mbStopGBA(false), mbFixScale(bFixScale),
-	offlineMapping (offlineMode)
+    mbStopGBA(false), mbFixScale(bFixScale)
 {
     mnCovisibilityConsistencyTh = 3;
     mpMatchedKF = NULL;
@@ -102,7 +101,7 @@ void LoopClosing::Run()
                    CorrectLoop();
                }
             }
-        }       
+        }
 
         ResetIfRequested();
 
@@ -435,8 +434,7 @@ void LoopClosing::CorrectLoop()
 
     // Send a stop signal to Local Mapping
     // Avoid new keyframes are inserted while correcting the loop
-    if (offlineMapping==false)
-    	mpLocalMapper->RequestStop();
+    mpLocalMapper->RequestStop();
 
     // If a Global Bundle Adjustment is running, abort it
     if(isRunningGBA())
@@ -451,12 +449,10 @@ void LoopClosing::CorrectLoop()
     }
 
     // Wait until Local Mapping has effectively stopped
-    if (offlineMapping==false) {
 		while(!mpLocalMapper->isStopped())
 		{
 			usleep(1000);
 		}
-    }
 
     // Ensure current keyframe is updated
     mpCurrentKF->UpdateConnections();
@@ -607,11 +603,11 @@ void LoopClosing::CorrectLoop()
     mpThreadGBA = new thread(&LoopClosing::RunGlobalBundleAdjustment,this,mpCurrentKF->mnId);
 
     // Loop closed. Release Local Mapping.
-    mpLocalMapper->Release();    
+    mpLocalMapper->Release();
 
     cout << "Loop Closed!" << endl;
 
-    mLastLoopKFid = mpCurrentKF->mnId;   
+    mLastLoopKFid = mpCurrentKF->mnId;
 }
 
 void LoopClosing::SearchAndFuse(const KeyFrameAndPose &CorrectedPosesMap)
@@ -695,14 +691,12 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
             cout << "Global Bundle Adjustment finished" << endl;
             cout << "Updating map ..." << endl;
 
-            if (offlineMapping==false) {
-            	mpLocalMapper->RequestStop();
+          	mpLocalMapper->RequestStop();
             // Wait until Local Mapping has effectively stopped
-				while(!mpLocalMapper->isStopped() && !mpLocalMapper->isFinished())
-				{
-					usleep(1000);
-				}
-            }
+    				while(!mpLocalMapper->isStopped() && !mpLocalMapper->isFinished())
+    				{
+    					usleep(1000);
+    				}
 
             // Get Map Mutex
             unique_lock<mutex> lock(mpMap->mMutexMapUpdate);

@@ -32,15 +32,13 @@ namespace ORB_SLAM2
 
 System::System(const string &strVocFile, const string &strSettingsFile,
                const eSensor sensor, const bool bUseViewer,
-               const string &mpMapFileName, const operationMode mode,
-			         bool doOfflineMapping):
+               const string &mpMapFileName, const operationMode mode):
 				mSensor(sensor),
 				mapFileName(mpMapFileName),
 				mbReset(false),
 				mbActivateLocalizationMode(false),
 				mbDeactivateLocalizationMode(false),
 				opMode (mode),
-				offlineMapping(doOfflineMapping)
 {
     // Output welcome message
     cout << endl <<
@@ -52,11 +50,12 @@ System::System(const string &strVocFile, const string &strSettingsFile,
     cout << "Input sensor was set to: ";
 
     if(mSensor==MONOCULAR)
-        cout << "Monocular" << endl;
-    else if(mSensor==STEREO)
-        cout << "Stereo" << endl;
-    else if(mSensor==RGBD)
-        cout << "RGB-D" << endl;
+    {
+      cout << "Monocular" << endl;
+    } else {
+      cout << "Only Monocular mode is provided\n";
+      return -1;
+    }
 
     //Check settings file
     fsSettings = cv::FileStorage(strSettingsFile.c_str(), cv::FileStorage::READ);
@@ -67,11 +66,9 @@ System::System(const string &strVocFile, const string &strSettingsFile,
     }
 
     //Load ORB Vocabulary
-
     mpVocabulary = new ORBVocabulary();
-    if (opMode==MAPPING and strVocFile.empty() == false) {
-    	cout << endl << "Loading Generic ORB Vocabulary..." << endl;
-		bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+    bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+  	cout << endl << "Loading ORB Vocabulary..." << endl;
 		if(!bVocLoad)
 		{
 			cerr << "Wrong path to vocabulary. " << endl;
@@ -79,133 +76,65 @@ System::System(const string &strVocFile, const string &strSettingsFile,
 			exit(-1);
 		}
 		cout << "Vocabulary loaded!" << endl << endl;
-    }
-    else {
-    	cout << endl << "Loading Custom ORB Vocabulary... " ;
-    	string mapVoc = mapFileName + ".voc";
-    	bool vocload = mpVocabulary->loadFromTextFile (mapVoc);
-		if(!vocload)
-		{
-			cerr << "Failed. Falling back to generic... " << endl;
-			vocload = mpVocabulary->loadFromTextFile (strVocFile);
-			if (vocload==false) {
-				cerr << "Failed to open at: " << strVocFile << endl;
-				exit(-1);
-			}
-		}
-		cout << "Vocabulary loaded!" << endl << endl;
-    }
-    fps = (float)fsSettings["Camera.fps"];
 
     //Create KeyFrame Database
     mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
 
     //Create the Map
     mpMap = new Map();
-    try {
-    	cout << "Loading map..." << endl;
-    	mpMap->loadFromDisk (mapFileName, mpKeyFrameDatabase);
-    } catch (exception &e) {
-    	cout << "Unable to load map " << mapFileName << endl;
-    }
+    // try {
+    // 	cout << "Loading map..." << endl;
+    // 	mpMap->loadFromDisk (mapFileName, mpKeyFrameDatabase);
+    // } catch (exception &e) {
+    // 	cout << "Unable to load map " << mapFileName << endl;
+    // }
 
     //Create Drawers. These are used by the Viewer
     mpFrameDrawer = new FrameDrawer(mpMap);
     mpMapDrawer = new MapDrawer(mpMap, strSettingsFile);
 
+    // if (mpMap->mbMapUpdated)
+    	// mpTracker->setMapLoaded();
+
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
     mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
                              mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
-    if (mpMap->mbMapUpdated)
-    	mpTracker->setMapLoaded();
 
-    mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR, offlineMapping);
-    mpLoopCloser = new LoopClosing(mpMap, mpKeyFrameDatabase, mpVocabulary, mSensor!=MONOCULAR, offlineMapping);
+    //Initialize the Local Mapping thread and launch
+    mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR);
+		mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run,mpLocalMapper);
 
-    if (opMode==System::MAPPING) {
+    //Initialize the Loop Closing thread and launch
+    mpLoopCloser = new LoopClosing(mpMap, mpKeyFrameDatabase, mpVocabulary, mSensor!=MONOCULAR);
+		mptLoopClosing = new thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
 
-    	if (offlineMapping==false) {
-			//Initialize the Local Mapping thread and launch
-			mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run,mpLocalMapper);
+    mpLocalMapper->SetTracker(mpTracker);
+    mpLocalMapper->SetLoopCloser(mpLoopCloser);
 
-			//Initialize the Loop Closing thread and launch
-			mptLoopClosing = new thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
-    	}
+    mpLoopCloser->SetTracker(mpTracker);
+    mpLoopCloser->SetLocalMapper(mpLocalMapper);
 
-	    mpLocalMapper->SetTracker(mpTracker);
-	    mpLocalMapper->SetLoopCloser(mpLoopCloser);
-
-	    mpLoopCloser->SetTracker(mpTracker);
-	    mpLoopCloser->SetLocalMapper(mpLocalMapper);
-
-	    mpTracker->InformOnlyTracking(false);
-    }
-
-    else {
-//    	ActivateLocalizationMode();
-    	mpTracker->InformOnlyTracking(true);
-    	mptLocalMapping = NULL;
-    	mptLoopClosing = NULL;
-    }
-
-    //Initialize the Viewer thread and launch
-    mpViewer = new Viewer(this, mpFrameDrawer,mpMapDrawer,mpTracker,fsSettings,
-    	opMode);
-    if(bUseViewer)
-        mptViewer = new thread(&Viewer::Run, mpViewer);
-
-    mpTracker->SetViewer(mpViewer);
+    // mpTracker->InformOnlyTracking(false);
 
     //Set pointers between threads
     mpTracker->SetLocalMapper(mpLocalMapper);
     mpTracker->SetLoopClosing(mpLoopCloser);
 
+    //     else {
+    // //    	ActivateLocalizationMode();
+    //     	mpTracker->InformOnlyTracking(true);
+    //     	mptLocalMapping = NULL;
+    //     	mptLoopClosing = NULL;
+    //     }
+
+    //Initialize the Viewer thread and launch
+    if(bUseViewer)
+        mpViewer = new Viewer(this, mpFrameDrawer, mpMapDrawer, mpTracker,
+                              fsSettings, opMode);
+        mptViewer = new thread(&Viewer::Run, mpViewer);
+        mpTracker->SetViewer(mpViewer);
 }
-
-cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp)
-{
-    if(mSensor!=STEREO)
-    {
-        cerr << "ERROR: you called TrackStereo but input sensor was not set to STEREO." << endl;
-        exit(-1);
-    }
-
-    // Check reset
-    {
-    unique_lock<mutex> lock(mMutexReset);
-    if(mbReset)
-    {
-        mpTracker->Reset();
-        mbReset = false;
-    }
-    }
-
-    return mpTracker->GrabImageStereo(imLeft,imRight,timestamp);
-}
-
-
-cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const double &timestamp)
-{
-    if(mSensor!=RGBD)
-    {
-        cerr << "ERROR: you called TrackRGBD but input sensor was not set to RGBD." << endl;
-        exit(-1);
-    }
-
-    // Check reset
-    {
-    unique_lock<mutex> lock(mMutexReset);
-    if(mbReset)
-    {
-        mpTracker->Reset();
-        mbReset = false;
-    }
-    }
-
-    return mpTracker->GrabImageRGBD(im,depthmap,timestamp);
-}
-
 
 cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
 {
@@ -216,23 +145,19 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
     }
 
     // Check reset
-    {
     unique_lock<mutex> lock(mMutexReset);
     if(mbReset)
     {
         mpTracker->Reset();
         mbReset = false;
     }
-    }
 
-    cv::Mat camPosOrb = mpTracker->GrabImageMonocular(im,timestamp);
+    cv::Mat camPosOrb = mpTracker->GrabImageMonocular(im, timestamp);
 
-    if (offlineMapping==true) {
-    	int ifps = (int)fps;
-    	mpLocalMapper->RunOnce();
-    	if (mpTracker->mCurrentFrame.mnId % ifps == 0)
-    		mpLoopCloser->RunOnce();
-    }
+    unique_lock<mutex> lock2(mMutexState);
+    mTrackingState = mpTracker->mState;
+    mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
+    mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
 
     return camPosOrb;
 }
