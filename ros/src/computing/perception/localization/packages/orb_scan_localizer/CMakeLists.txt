@@ -70,14 +70,15 @@ add_definitions(
 )
 
 # For building Pangolin
-#add_subdirectory(Thirdparty/Pangolin)
+if (NOT TARGET pangolin)
+    add_subdirectory(Thirdparty/Pangolin)
 
-# For building DBoW2
-#add_subdirectory(Thirdparty/DBoW2)
+    # For building DBoW2
+    add_subdirectory(Thirdparty/DBoW2)
 
-# For building g2o
-#add_subdirectory(Thirdparty/g2o)
-
+    # For building g2o
+    add_subdirectory(Thirdparty/g2o)
+endif()
 
 include_directories(
         # my own
