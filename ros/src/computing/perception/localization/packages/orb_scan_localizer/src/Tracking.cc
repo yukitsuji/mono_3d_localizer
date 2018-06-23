@@ -110,7 +110,7 @@ Tracking::Tracking (System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer
     mpORBextractorLeft = new ORBextractor(nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
     mpIniORBextractor = new ORBextractor(2*nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST); // For initializer
 
-		cout << endl << "Camera Parameters: " << endl;
+    cout << endl << "Camera Parameters: " << endl;
     cout << "- fx: " << fx << endl;
     cout << "- fy: " << fy << endl;
     cout << "- cx: " << cx << endl;
@@ -134,8 +134,8 @@ Tracking::Tracking (System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer
 
 void Tracking::setMapLoaded()
 {
-	mState = MAP_OPEN;
-	mvpLocalMapPoints = mpMap->GetReferenceMapPoints();
+    mState = MAP_OPEN;
+    mvpLocalMapPoints = mpMap->GetReferenceMapPoints();
 }
 
 void Tracking::SetLocalMapper(LocalMapping *pLocalMapper)
@@ -184,6 +184,8 @@ void Tracking::Track()
         mState = NOT_INITIALIZED;
     }
 
+    std::cout << "Number of local map KF: " << mvpLocalKeyFrames.size() << '\n';
+
     mLastProcessedState = mState;
 
     // Get Map Mutex -> Map cannot be changed
@@ -227,7 +229,9 @@ void Tracking::Track()
             }
             else
             {
-								bOK = Relocalization();
+                // TODO: Need to implement when tracking is lost.
+                //       Triangulation and scan matching is useful.
+		bOK = Relocalization();
             }
         }
         else
@@ -235,7 +239,7 @@ void Tracking::Track()
             // Only Tracking: Local Mapping is deactivated
             if(mState == LOST || mState == MAP_OPEN)
             {
-							bOK = Relocalization();
+	        bOK = Relocalization();
             }
             else
             {
@@ -270,8 +274,8 @@ void Tracking::Track()
                         TcwMM = mCurrentFrame.mTcw.clone();
                     }
                     // XXX: Need to confirm if we need local map reloc.
-										// bOKReloc = Relocalization (SEARCH_LOCAL_MAP);
-										bOKReloc = Relocalization();
+                    // bOKReloc = Relocalization (SEARCH_LOCAL_MAP);
+                    bOKReloc = Relocalization();
                     if (!bOKReloc)
                     	cerr << "XXX: Local map reloc failed in here\n";
 
@@ -313,10 +317,12 @@ void Tracking::Track()
                 bOK = TrackLocalMap();
         }
 
-        if(bOK)
+        if(bOK){
             mState = OK;
-        else
+        }else{
             mState = LOST;
+            std::cout << "Lost tracking\n";
+        }
 
         // Update drawer
         if (mpFrameDrawer != NULL)
@@ -387,19 +393,20 @@ void Tracking::Track()
     // Store frame pose information to retrieve the complete camera trajectory afterwards.
     if(!mCurrentFrame.mTcw.empty())
     {
-	    // XXX: We found some occurences of empty pose from mpReferenceKF
-			if (mCurrentFrame.mpReferenceKF->GetPose().empty()==true)
-				cout << "XXX: KF pose is empty" << endl;
-			cv::Mat Tcr = mCurrentFrame.mTcw * mCurrentFrame.mpReferenceKF->GetPoseInverse();
-			//  cout << mCurrentFrame.mpReferenceKF << endl;
-			mlRelativeFramePoses.push_back(Tcr);
-			mlpReferences.push_back(mpReferenceKF);
-			mlFrameTimes.push_back(mCurrentFrame.mTimeStamp);
-			mlbLost.push_back(mState==LOST);
+        // XXX: We found some occurences of empty pose from mpReferenceKF
+        if (mCurrentFrame.mpReferenceKF->GetPose().empty()==true)
+            cout << "XXX: KF pose is empty" << endl;
+            cv::Mat Tcr = mCurrentFrame.mTcw * mCurrentFrame.mpReferenceKF->GetPoseInverse();
+            //  cout << mCurrentFrame.mpReferenceKF << endl;
+            mlRelativeFramePoses.push_back(Tcr);
+            mlpReferences.push_back(mpReferenceKF);
+            mlFrameTimes.push_back(mCurrentFrame.mTimeStamp);
+            mlbLost.push_back(mState==LOST);
     }
     else
     {
         // This can happen if tracking is lost
+        std::cout << "Empty estimated current pose due to lost\n";
     	if (!mlRelativeFramePoses.empty())
     		mlRelativeFramePoses.push_back(mlRelativeFramePoses.back());
     	if (!mlpReferences.empty())
@@ -775,12 +782,12 @@ bool Tracking::TrackLocalMap()
     // Decide if the tracking was successful
     // More restrictive if there was a relocalization recently
     if(mCurrentFrame.mnId < mnLastRelocFrameId+mMaxFrames && mnMatchesInliers<50) {
-				//    	cerr << "TrackLocalMap Failure: A" << endl;
+	//    	cerr << "TrackLocalMap Failure: A" << endl;
         return false;
     }
 
     if(mnMatchesInliers<30) {
-				//    	cerr << "TrackLocalMap Failure: B" << endl;
+	//    	cerr << "TrackLocalMap Failure: B" << endl;
         return false;
     }
     else
@@ -1111,14 +1118,17 @@ void Tracking::UpdateLocalKeyFrames()
 
 bool Tracking::Relocalization()
 {
+    std::cout << "Relocalization\n";
+
     // Compute Bag of Words Vector
     mCurrentFrame.ComputeBoW();
 
     // Relocalization is performed when tracking is lost
     vector<KeyFrame*> vpCandidateKFs;
-  	vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates (&mCurrentFrame);
-  	cerr << "Searching previously matches: " << vpCandidateKFs.size() << endl;
-
+    //vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates (&mCurrentFrame);
+    //cerr << "Searching previously matches: " << vpCandidateKFs.size() << endl;
+    vpCandidateKFs = mvpLocalKeyFrames;
+    cerr << "Searching Locality: Number of KF " << vpCandidateKFs.size() << endl;
     if(vpCandidateKFs.empty())
         return false;
 
@@ -1147,8 +1157,8 @@ bool Tracking::Relocalization()
         else
         {
             int nmatches = matcher.SearchByBoW(pKF,mCurrentFrame,vvpMapPointMatches[i]);
-						//            cerr << "# BoW matches: " << nmatches << endl;
-						//            if(nmatches<7)
+	    //            cerr << "# BoW matches: " << nmatches << endl;
+	    //            if(nmatches<7)
             if(nmatches<15)
             {
             	cerr << "KF discarded: #" << pKF->mnId << endl;
@@ -1184,7 +1194,7 @@ bool Tracking::Relocalization()
 
             PnPsolver* pSolver = vpPnPsolvers[i];
             cv::Mat Tcw = pSolver->iterate(5,bNoMore,vbInliers,nInliers);
-						//            cerr << "#Inliers: " << nInliers << endl;
+	    //  cerr << "#Inliers: " << nInliers << endl;
 
             // If Ransac reachs max. iterations discard keyframe
             if(bNoMore)
@@ -1259,8 +1269,8 @@ bool Tracking::Relocalization()
                 if(nGood>=50)
                 {
                     bMatch = true;
-			//                    cout << "Relocalization successful" << endl;
-			//                    mpReferenceKF = vpCandidateKFs[i];
+		    //  cout << "Relocalization successful" << endl;
+	            //  mpReferenceKF = vpCandidateKFs[i];
                     break;
                 }
             }

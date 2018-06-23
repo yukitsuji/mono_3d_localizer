@@ -566,7 +566,6 @@ void KeyFrame::SetBadFlag()
         mbBad = true;
     }
 
-
     mpMap->EraseKeyFrame(this);
     mpKeyFrameDB->erase(this);
 }
