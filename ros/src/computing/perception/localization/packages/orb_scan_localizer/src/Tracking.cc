@@ -1293,16 +1293,15 @@ void Tracking::Reset()
     while(!mpViewer->isStopped())
         usleep(3000);
 
-	// Reset Local Mapping
-	cout << "Reseting Local Mapper...";
-	mpLocalMapper->RequestReset();
-	cout << " done" << endl;
+		// Reset Local Mapping
+		cout << "Reseting Local Mapper...";
+		mpLocalMapper->RequestReset();
+		cout << " done" << endl;
 
-	// Reset Loop Closing
-	cout << "Reseting Loop Closing...";
-	mpLoopClosing->RequestReset();
-	cout << " done" << endl;
-
+		// Reset Loop Closing
+		cout << "Reseting Loop Closing...";
+		mpLoopClosing->RequestReset();
+		cout << " done" << endl;
 
     // Clear BoW Database
     cout << "Reseting Database...";
