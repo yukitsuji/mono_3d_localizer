@@ -41,9 +41,9 @@ KeyFrameDatabase::KeyFrameDatabase (ORBVocabulary &voc):
 void KeyFrameDatabase::add(KeyFrame *pKF)
 {
     unique_lock<mutex> lock(mMutex);
-
-    for(DBoW2::BowVector::const_iterator vit= pKF->mBowVec.begin(), vend=pKF->mBowVec.end(); vit!=vend; vit++)
-        mvInvertedFile[vit->first].push_back(pKF);
+    for (auto &vit: pKF->mBowVec) {
+        mvInvertedFile[vit.first].push_back(pKF);
+    }
 }
 
 void KeyFrameDatabase::erase(KeyFrame* pKF)
@@ -51,15 +51,11 @@ void KeyFrameDatabase::erase(KeyFrame* pKF)
     unique_lock<mutex> lock(mMutex);
 
     // Erase elements in the Inverse File for the entry
-    for(DBoW2::BowVector::const_iterator vit=pKF->mBowVec.begin(), vend=pKF->mBowVec.end(); vit!=vend; vit++)
-    {
+    for (const auto& vit: pKF->mBowVec) {
         // List of keyframes that share the word
-        list<KeyFrame*> &lKFs =   mvInvertedFile[vit->first];
-
-        for(list<KeyFrame*>::iterator lit=lKFs.begin(), lend= lKFs.end(); lit!=lend; lit++)
-        {
-            if(pKF==*lit)
-            {
+        list<KeyFrame*> &lKFs = mvInvertedFile[vit.first];
+        for(list<KeyFrame*>::iterator lit=lKFs.begin(), lend= lKFs.end(); lit!=lend; lit++) {
+            if (pKF == *lit) {
                 lKFs.erase(lit);
                 break;
             }
@@ -104,6 +100,12 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidatesSimple (Frame 
 	return ret;
 }
 
+vector<KeyFrame*> KeyFrameDatabase::KNearestKF(Frame *F, int N)
+{
+    vector<KeyFrame*> kNearestKF;
+    
+}
+
 
 vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
 {
@@ -113,23 +115,19 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
     {
         unique_lock<mutex> lock(mMutex);
 
-        for(DBoW2::BowVector::const_iterator vit=F->mBowVec.begin(), vend=F->mBowVec.end(); vit != vend; vit++)
-        {
-            list<KeyFrame*> &lKFs =   mvInvertedFile[vit->first];
-
-            for(list<KeyFrame*>::iterator lit=lKFs.begin(), lend= lKFs.end(); lit!=lend; lit++)
-            {
-                KeyFrame* pKFi=*lit;
-                if(pKFi->mnRelocQuery!=F->mnId)
-                {
-                    pKFi->mnRelocWords=0;
-                    pKFi->mnRelocQuery=F->mnId;
+        for (const auto &vit: F->mBowVec) {
+            list<KeyFrame*> &lKFs = mvInvertedFile[vit.first];
+            for (auto&& pKFi: lKFs) {
+                if(pKFi->mnRelocQuery != F->mnId) {
+                    pKFi->mnRelocWords = 0;
+                    pKFi->mnRelocQuery = F->mnId;
                     lKFsSharingWords.push_back(pKFi);
                 }
                 pKFi->mnRelocWords++;
             }
         }
     }
+
     if(lKFsSharingWords.empty())
         return vector<KeyFrame*>();
 
