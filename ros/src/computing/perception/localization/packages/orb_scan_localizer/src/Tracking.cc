@@ -52,7 +52,7 @@ Tracking::Tracking (System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer
     mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false), mpORBVocabulary(pVoc),
     mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer*>(NULL)), mpSystem(pSys),
     mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpMap(pMap), mnLastRelocFrameId(0),
-		mLocalMapper(NULL), mLoopCloser(NULL), mpReferenceKF(NULL)
+		mLocalMapper(NULL), mpReferenceKF(NULL)
 
 {
     // Load camera parameters from settings file
@@ -141,11 +141,6 @@ void Tracking::setMapLoaded()
 void Tracking::SetLocalMapper(LocalMapping *pLocalMapper)
 {
     mpLocalMapper=pLocalMapper;
-}
-
-void Tracking::SetLoopClosing(LoopClosing *pLoopClosing)
-{
-    mpLoopClosing=pLoopClosing;
 }
 
 void Tracking::SetViewer(Viewer *pViewer)
@@ -798,8 +793,8 @@ bool Tracking::NeedNewKeyFrame()
         return false;
 
     // If Local Mapping is freezed by a Loop Closure do not insert keyframes
-    if(mpLocalMapper->isStopped() || mpLocalMapper->stopRequested())
-        return false;
+    // if(mpLocalMapper->isStopped() || mpLocalMapper->stopRequested())
+    //     return false;
 
     const int nKFs = mpMap->KeyFramesInMap();
 
@@ -1296,11 +1291,6 @@ void Tracking::Reset()
 		// Reset Local Mapping
 		cout << "Reseting Local Mapper...";
 		mpLocalMapper->RequestReset();
-		cout << " done" << endl;
-
-		// Reset Loop Closing
-		cout << "Reseting Loop Closing...";
-		mpLoopClosing->RequestReset();
 		cout << " done" << endl;
 
     // Clear BoW Database

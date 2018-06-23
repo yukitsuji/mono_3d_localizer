@@ -19,7 +19,6 @@
 */
 
 #include "LocalMapping.h"
-#include "LoopClosing.h"
 #include "ORBmatcher.h"
 #include "Optimizer.h"
 
@@ -34,11 +33,6 @@ LocalMapping::LocalMapping(Map *pMap, const float bMonocular):
     mbMonocular(bMonocular), mbResetRequested(false), mbFinishRequested(false), mbFinished(true), mpMap(pMap),
     mbAbortBA(false), mbStopped(false), mbStopRequested(false), mbNotStop(false), mbAcceptKeyFrames(true)
 {
-}
-
-void LocalMapping::SetLoopCloser(LoopClosing* pLoopCloser)
-{
-    mpLoopCloser = pLoopCloser;
 }
 
 void LocalMapping::SetTracker(Tracking *pTracker)
@@ -88,9 +82,6 @@ void LocalMapping::Run()
                 // Check redundant local Keyframes
                 KeyFrameCulling();
             }
-
-            mpLoopCloser->InsertKeyFrame(mpCurrentKeyFrame);
-
         }
         else if(Stop())
         {
@@ -154,8 +145,6 @@ void LocalMapping::RunOnce()
 			// Check redundant local Keyframes
 			KeyFrameCulling();
 		}
-
-		mpLoopCloser->InsertKeyFrame(mpCurrentKeyFrame);
 	}
 }
 

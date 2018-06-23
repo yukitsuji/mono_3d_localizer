@@ -32,7 +32,6 @@
 #include "MapDrawer.h"
 #include "Map.h"
 #include "LocalMapping.h"
-#include "LoopClosing.h"
 #include "KeyFrameDatabase.h"
 #include "ORBVocabulary.h"
 #include "Viewer.h"
@@ -49,7 +48,6 @@ class FrameDrawer;
 class Map;
 class Tracking;
 class LocalMapping;
-class LoopClosing;
 
 class System
 {
@@ -134,7 +132,6 @@ public:
     // 'get' resources
     Tracking* getTracker() { return mpTracker; }
     Map* getMap() { return mpMap; }
-    LoopClosing* getLoopCloser() { return mpLoopCloser; }
     LocalMapping* getLocalMapper() { return mpLocalMapper; }
     FrameDrawer* getFrameDrawer() { return mpFrameDrawer; }
 
@@ -165,10 +162,6 @@ private:
     // Local Mapper. It manages the local map and performs local bundle adjustment.
     LocalMapping* mpLocalMapper;
 
-    // Loop Closer. It searches loops with every new keyframe. If there is a loop it performs
-    // a pose graph optimization and full bundle adjustment (in a new thread) afterwards.
-    LoopClosing* mpLoopCloser;
-
     // The viewer draws the map and the current camera pose. It uses Pangolin.
     Viewer* mpViewer;
 
@@ -178,7 +171,6 @@ private:
     // System threads: Local Mapping, Loop Closing, Viewer.
     // The Tracking thread "lives" in the main execution thread that creates the System object.
     std::thread* mptLocalMapping;
-    std::thread* mptLoopClosing;
     std::thread* mptViewer;
 
     // Reset flag

@@ -105,7 +105,6 @@ add_library(
         src/System.cc
         src/Tracking.cc
         src/LocalMapping.cc
-        src/LoopClosing.cc
         src/ORBextractor.cc
         src/ORBmatcher.cc
         src/FrameDrawer.cc
@@ -168,4 +167,3 @@ target_link_libraries(
         ${ORIG_ORB_BIN_LINKS}
         ${LINK_LIBRARIES}
 )
-

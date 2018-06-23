@@ -106,18 +106,9 @@ System::System(const string &strVocFile, const string &strSettingsFile,
     mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR);
     mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run,mpLocalMapper);
     std::cout << "Launched local map\n";
-    //Initialize the Loop Closing thread and launch
-    mpLoopCloser = new LoopClosing(mpMap, mpKeyFrameDatabase, mpVocabulary, mSensor!=MONOCULAR);
-    mptLoopClosing = new thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
-    std::cout << "Launched loop closer\n";
 
     mpLocalMapper->SetTracker(mpTracker);
-    mpLocalMapper->SetLoopCloser(mpLoopCloser);
-    std::cout << "Set up mapper\n";
-
-    mpLoopCloser->SetTracker(mpTracker);
-    mpLoopCloser->SetLocalMapper(mpLocalMapper);
-    std::cout << "Set up tracker\n";
+    std::cout << "Set up local map\n";
 
     //Initialize the Viewer thread and launch
     mpViewer = new Viewer(this, mpFrameDrawer, mpMapDrawer, mpTracker,
@@ -128,7 +119,6 @@ System::System(const string &strVocFile, const string &strSettingsFile,
 
     //Set pointers between threads
     mpTracker->SetLocalMapper(mpLocalMapper);
-    mpTracker->SetLoopClosing(mpLoopCloser);
     std::cout << "Set up tracker\n";
     std::cout << "Constructor finished\n";
 }
@@ -176,10 +166,8 @@ void System::Shutdown()
 		mpViewer->RequestFinish();
 
 		mpLocalMapper->RequestFinish();
-		mpLoopCloser->RequestFinish();
 
-		while(!mpLocalMapper->isFinished() || !mpLoopCloser->isFinished()  ||
-			  !mpViewer->isFinished()      || mpLoopCloser->isRunningGBA())
+		while(!mpLocalMapper->isFinished() || !mpViewer->isFinished())
 		{
 			usleep(5000);
 		}

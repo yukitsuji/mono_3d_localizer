@@ -31,7 +31,6 @@
 #include"FrameDrawer.h"
 #include"Map.h"
 #include"LocalMapping.h"
-#include"LoopClosing.h"
 #include"Frame.h"
 #include "ORBVocabulary.h"
 #include"KeyFrameDatabase.h"
@@ -53,11 +52,10 @@ class Viewer;
 class FrameDrawer;
 class Map;
 class LocalMapping;
-class LoopClosing;
 class System;
 
 class Tracking
-{  
+{
 
 public:
     Tracking(System* pSys, ORBVocabulary* pVoc, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Map* pMap,
@@ -71,7 +69,6 @@ public:
     Transform3 LocalizeImage (const cv::Mat &image, const double &timestamp);
 
     void SetLocalMapper(LocalMapping* pLocalMapper);
-    void SetLoopClosing(LoopClosing* pLoopClosing);
     void SetViewer(Viewer* pViewer);
 
     // Load new settings
@@ -142,7 +139,6 @@ public:
 
     // used when offline
     LocalMapping *mLocalMapper;
-    LoopClosing *mLoopCloser;
 
     trackingMode lastTrackingMode;
 
@@ -193,7 +189,6 @@ protected:
 
     //Other Thread Pointers
     LocalMapping* mpLocalMapper;
-    LoopClosing* mpLoopClosing;
 
     //ORB
     ORBextractor* mpORBextractorLeft, *mpORBextractorRight;
@@ -210,10 +205,10 @@ protected:
     KeyFrame* mpReferenceKF;
     std::vector<KeyFrame*> mvpLocalKeyFrames;
     std::vector<MapPoint*> mvpLocalMapPoints;
-    
+
     // System
     System* mpSystem;
-    
+
     //Drawers
     Viewer* mpViewer;
     FrameDrawer* mpFrameDrawer;
