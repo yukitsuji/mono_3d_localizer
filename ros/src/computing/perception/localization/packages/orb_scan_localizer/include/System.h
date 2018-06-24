@@ -145,6 +145,7 @@ public:
     const operationMode opMode;
 
     float fps;
+    bool isUseMapPublisher;
 
 private:
 

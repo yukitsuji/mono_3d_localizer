@@ -40,7 +40,8 @@ System::System(const string &strVocFile, const string &strSettingsFile,
 				mbActivateLocalizationMode(false),
 				mbDeactivateLocalizationMode(false),
 				opMode(mode),
-        isUseViewer(bUseViewer)
+                                isUseViewer(bUseViewer),
+                                isUseMapPublisher(bUseMapPublisher)
 {
     // Output welcome message
     cout << endl <<
@@ -132,6 +133,11 @@ System::System(const string &strVocFile, const string &strSettingsFile,
         mpMapTracker->SetViewer(mpViewer);
 
         //Set pointers between threads
+        mpMapTracker->SetLocalMapper(mpLocalMapper);
+    }
+
+    if (!bUseMapPublisher && !bUseViewer) {
+        mpMapTracker->SetMapPublisher(mpMapPublisher);
         mpMapTracker->SetLocalMapper(mpLocalMapper);
     }
     std::cout << "Set up tracker\n";

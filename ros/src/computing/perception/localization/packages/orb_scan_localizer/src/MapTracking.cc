@@ -428,7 +428,13 @@ void MapTracking::Track()
             mlFrameTimes.push_back(mCurrentFrame.mTimeStamp);
             mlbLost.push_back(mState==LOST);
             // TODO: NDT Matching caller
-            ScanWithNDT(); 
+            if (!mpSystem->isUseMapPublisher){
+                std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+                ScanWithNDT();
+                std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+                double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+                std::cout << "NDT Matching " << ttrack << "\n";    
+            }
     }
     else
     {
@@ -447,6 +453,7 @@ void MapTracking::Track()
 
 void MapTracking::ScanWithNDT()
 {
+    std::cout << "ScanWithNDT\n";
     const vector<MapPoint*> &vpMPs = mpMap->GetAllMapPoints();
     const vector<MapPoint*> &vpRefMPs = mpMap->GetReferenceMapPoints();
 
