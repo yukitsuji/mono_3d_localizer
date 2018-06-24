@@ -205,3 +205,14 @@ target_link_libraries(
         ${ORIG_ORB_BIN_LINKS}
         ${LINK_LIBRARIES}
 )
+
+add_executable(
+        scan_mono_orb_slam2_no
+        nodes/mono_orb_slam2/scan_mono_orb_slam2_no.cpp
+)
+
+target_link_libraries(
+        scan_mono_orb_slam2_no
+        ${ORIG_ORB_BIN_LINKS}
+        ${LINK_LIBRARIES}
+)

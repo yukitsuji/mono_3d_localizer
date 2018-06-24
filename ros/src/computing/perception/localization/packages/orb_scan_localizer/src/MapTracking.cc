@@ -252,9 +252,9 @@ void MapTracking::Track()
             }
             else
             {
-							  // TODO: Need to implement when tracking is lost.
-								//       Triangulation and scan matching is useful.
-								bOK = Relocalization();
+                // TODO: Need to implement when tracking is lost.
+                // Triangulation and scan matching is useful.
+                bOK = Relocalization();
             }
         }
         else
@@ -262,7 +262,7 @@ void MapTracking::Track()
             // Only Tracking: Local Mapping is deactivated
             if(mState == LOST || mState == MAP_OPEN)
             {
-							  bOK = Relocalization();
+                bOK = Relocalization();
             }
             else
             {
@@ -416,15 +416,19 @@ void MapTracking::Track()
     // Store frame pose information to retrieve the complete camera trajectory afterwards.
     if(!mCurrentFrame.mTcw.empty())
     {
+        std::cout << "Current Position\n" << mCurrentFrame.mTcw << "\n";
         // XXX: We found some occurences of empty pose from mpReferenceKF
         if (mCurrentFrame.mpReferenceKF->GetPose().empty()==true)
             cout << "XXX: KF pose is empty" << endl;
             cv::Mat Tcr = mCurrentFrame.mTcw * mCurrentFrame.mpReferenceKF->GetPoseInverse();
             //  cout << mCurrentFrame.mpReferenceKF << endl;
             mlRelativeFramePoses.push_back(Tcr);
+            mlAbsoluteFramePoses.push_back(mCurrentFrame.mTcw);
             mlpReferences.push_back(mpReferenceKF);
             mlFrameTimes.push_back(mCurrentFrame.mTimeStamp);
             mlbLost.push_back(mState==LOST);
+            // TODO: NDT Matching caller
+            ScanWithNDT(); 
     }
     else
     {
@@ -441,9 +445,57 @@ void MapTracking::Track()
     }
 }
 
+void MapTracking::ScanWithNDT()
+{
+    const vector<MapPoint*> &vpMPs = mpMap->GetAllMapPoints();
+    const vector<MapPoint*> &vpRefMPs = mpMap->GetReferenceMapPoints();
+
+    set<MapPoint*> spRefMPs(vpRefMPs.begin(), vpRefMPs.end());
+
+    if(vpMPs.empty())
+        return;
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr g_points (new pcl::PointCloud<pcl::PointXYZ>);
+
+    for (auto&& p: vpMPs) {
+      if (p == NULL || p->isBad() || spRefMPs.count(p))
+        continue;
+      cv::Mat pos = p->GetWorldPos();
+      pcl::PointXYZ point;
+      point.x = pos.at<float>(0);
+      point.y = pos.at<float>(1);
+      point.z = pos.at<float>(2);
+      g_points->push_back(point);
+    }
+    sensor_msgs::PointCloud2 pc2_g;
+
+    pc2_g.header.frame_id= "velodyne";
+    // pc2_g.header.stamp=header->stamp;
+    // pc2_g.header.seq=header->seq;
+    g_points->header = pcl_conversions::toPCL(pc2_g.header);
+    //global_pub.publish(g_points);
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr l_points (new pcl::PointCloud<pcl::PointXYZ>);
+
+    for (auto&& p: spRefMPs) {
+      if (p == NULL || p->isBad())
+        continue;
+      cv::Mat pos = p->GetWorldPos();
+      pcl::PointXYZ point;
+      point.x = pos.at<float>(0);
+      point.y = pos.at<float>(1);
+      point.z = pos.at<float>(2);
+      l_points->push_back(point);
+    }
+    sensor_msgs::PointCloud2 pc2_l;
+    pc2_l.header.frame_id= "velodyne";
+    l_points->header = pcl_conversions::toPCL(pc2_l.header);
+    //local_pub.publish(l_points);
+}
+
 void MapTracking::MapOpenMonocularInitialization ()
 {
-	mnLastKeyFrameId = mCurrentFrame.mnId;
+    mnLastKeyFrameId = mCurrentFrame.mnId;
 }
 
 void MapTracking::MonocularInitialization()
@@ -1277,7 +1329,7 @@ bool MapTracking::Relocalization()
 
     if(!bMatch)
     {
-			//    	fprintf(stderr, "#KF: %d\n", nKFs);
+        //fprintf(stderr, "#KF: %d\n", nKFs);
         return false;
     }
     else
