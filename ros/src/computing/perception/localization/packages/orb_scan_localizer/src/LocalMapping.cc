@@ -37,7 +37,7 @@ LocalMapping::LocalMapping(Map *pMap, const float bMonocular):
 
 void LocalMapping::SetTracker(Tracking *pTracker)
 {
-    mpTracker=pTracker;
+    mpTracker = pTracker;
 }
 
 void LocalMapping::Run()
@@ -73,7 +73,7 @@ void LocalMapping::Run()
             if(!CheckNewKeyFrames() && !stopRequested())
             {
                 // Local BA
-                if(mpMap->KeyFramesInMap()>2)
+                if(mpMap->KeyFramesInMap() > 2)
                     Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, &mbAbortBA, mpMap);
 
                 // Check redundant local Keyframes

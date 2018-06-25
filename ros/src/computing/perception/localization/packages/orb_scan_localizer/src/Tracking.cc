@@ -799,14 +799,10 @@ bool Tracking::NeedNewKeyFrame()
     if(mbOnlyTracking)
         return false;
 
-    // If Local Mapping is freezed by a Loop Closure do not insert keyframes
-    // if(mpLocalMapper->isStopped() || mpLocalMapper->stopRequested())
-    //     return false;
-
     const int nKFs = mpMap->KeyFramesInMap();
 
     // Do not insert keyframes if not enough frames have passed from last relocalisation
-    if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && nKFs>mMaxFrames)
+    if(mCurrentFrame.mnId < mnLastRelocFrameId+mMaxFrames && nKFs> mMaxFrames)
         return false;
 
     // Tracked MapPoints in the reference keyframe
@@ -818,36 +814,15 @@ bool Tracking::NeedNewKeyFrame()
     // Local Mapping accept keyframes?
     bool bLocalMappingIdle = mpLocalMapper->AcceptKeyFrames();
 
-#ifdef DEBUG_TRACKING
-//	cout << "Checking if we need new keyframe" << endl;
-#endif
-
-
     // Stereo & RGB-D: Ratio of close "matches to map"/"total matches"
     // "total matches = matches to map + visual odometry matches"
     // Visual odometry matches will become MapPoints if we insert a keyframe.
     // This ratio measures how many MapPoints we could create if we insert a keyframe.
     int nMap = 0;
     int nTotal= 0;
-    if(mSensor!=System::MONOCULAR)
-    {
-        for(int i =0; i<mCurrentFrame.N; i++)
-        {
-            if(mCurrentFrame.mvDepth[i]>0 && mCurrentFrame.mvDepth[i]<mThDepth)
-            {
-                nTotal++;
-                if(mCurrentFrame.mvpMapPoints[i])
-                    if(mCurrentFrame.mvpMapPoints[i]->Observations()>0)
-                        nMap++;
-            }
-        }
-    }
-    else
-    {
-        // There are no visual odometry matches in the monocular case
-        nMap=1;
-        nTotal=1;
-    }
+    // There are no visual odometry matches in the monocular case
+    nMap=1;
+    nTotal=1;
 
     const float ratioMap = (float)nMap/fmax(1.0f,nTotal);
 
@@ -886,15 +861,15 @@ bool Tracking::NeedNewKeyFrame()
         else
         {
             mpLocalMapper->InterruptBA();
-            if(mSensor!=System::MONOCULAR)
-            {
-                if(mpLocalMapper->KeyframesInQueue()<3)
-                    return true;
-                else
-                    return false;
-            }
-            else
-                return false;
+            // if(mSensor!=System::MONOCULAR)
+            // {
+            //     if(mpLocalMapper->KeyframesInQueue()<3)
+            //         return true;
+            //     else
+            //         return false;
+            // }
+            // else
+            return false;
         }
     }
     else
