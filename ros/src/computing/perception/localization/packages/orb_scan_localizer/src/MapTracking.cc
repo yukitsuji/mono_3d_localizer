@@ -37,7 +37,7 @@
 
 #include <mutex>
 #include <chrono>
-
+#include "Converter.h"
 
 #define DEBUG_TRACKING
 
@@ -435,8 +435,8 @@ void MapTracking::Track()
             if (!mpSystem->isUseMapPublisher){
                 std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
                 ScanWithNDT(mCurrentFrame.mTcw);
-								// ScanWithNDT(mCurrentFrame.mpReferenceKF->GetPoseInverse());
-								// mCurrentFrame.mpReferenceKF->GetPoseInverse().t();
+                // ScanWithNDT(mCurrentFrame.mpReferenceKF->GetPoseInverse());
+                // mCurrentFrame.mpReferenceKF->GetPoseInverse().t();
                 std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
                 double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
                 std::cout << "NDT Matching " << ttrack << "\n";
@@ -531,7 +531,25 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
 		static tf::TransformBroadcaster br;
 		tf::Quaternion current_q;
 		tf::Transform transform;
-		current_q.setRPY(0, 0, 0);
+                float sy = sqrt(Rwc.at<double>(0,0) * Rwc.at<double>(0,0) +  Rwc.at<double>(1,0) * Rwc.at<double>(1,0) );
+
+                bool singular = sy < 1e-6; // If
+
+                float x, y, z;
+                if (!singular)
+                {
+                    x = atan2(Rwc.at<double>(2,1) , Rwc.at<double>(2,2));
+                    y = atan2(-Rwc.at<double>(2,0), sy);
+                    z = atan2(Rwc.at<double>(1,0), Rwc.at<double>(0,0));
+                }
+                else
+                {
+                    x = atan2(-Rwc.at<double>(1,2), Rwc.at<double>(1,1));
+                    y = atan2(-Rwc.at<double>(2,0), sy);
+                    z = 0;
+                }
+
+		current_q.setRPY(x, y, z);
 		transform.setOrigin(tf::Vector3(Twc.at<float>(0, 3),
 		                                Twc.at<float>(1, 3),
 																		Twc.at<float>(2, 3)));
