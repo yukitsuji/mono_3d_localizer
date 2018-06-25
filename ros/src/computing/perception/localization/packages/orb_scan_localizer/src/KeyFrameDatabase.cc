@@ -100,12 +100,13 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidatesSimple (Frame 
 	return ret;
 }
 
+/*
 vector<KeyFrame*> KeyFrameDatabase::KNearestKF(Frame *F, int N)
 {
     vector<KeyFrame*> kNearestKF;
     
 }
-
+*/
 
 vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
 {

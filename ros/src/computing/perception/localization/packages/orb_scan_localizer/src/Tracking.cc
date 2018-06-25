@@ -21,21 +21,22 @@
 
 #include "Tracking.h"
 
-#include<opencv2/core/core.hpp>
-#include<opencv2/features2d/features2d.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/features2d/features2d.hpp>
 
-#include"ORBmatcher.h"
-#include"FrameDrawer.h"
-#include"Converter.h"
-#include"Map.h"
-#include"Initializer.h"
+#include "ORBmatcher.h"
+#include "FrameDrawer.h"
+#include "Converter.h"
+#include "Map.h"
+#include "Initializer.h"
 
-#include"Optimizer.h"
-#include"PnPsolver.h"
+#include "Optimizer.h"
+#include "PnPsolver.h"
 
-#include<iostream>
+#include <iostream>
 
-#include<mutex>
+#include <mutex>
+#include <chrono>
 
 
 #define DEBUG_TRACKING
@@ -150,14 +151,15 @@ void Tracking::SetViewer(Viewer *pViewer)
 
 cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 {
+	  std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     mImGray = im;
 
     if(mImGray.channels()==3)
     {
         if(mbRGB)
-            cvtColor(mImGray,mImGray,CV_RGB2GRAY);
+            cvtColor(mImGray, mImGray, CV_RGB2GRAY);
         else
-            cvtColor(mImGray,mImGray,CV_BGR2GRAY);
+            cvtColor(mImGray, mImGray, CV_BGR2GRAY);
     }
     else if(mImGray.channels()==4)
     {
@@ -167,12 +169,28 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
             cvtColor(mImGray,mImGray,CV_BGRA2GRAY);
     }
 
-    if(mState==NOT_INITIALIZED or mState==NO_IMAGES_YET or mState==LOST) // diff
-        mCurrentFrame = Frame(mImGray,timestamp,mpIniORBextractor,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
-    else
-        mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
+		std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+		double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+		std::cout << "Convert gray Image " << ttrack << "\n";
 
+		t1 = std::chrono::steady_clock::now();
+
+    if(mState==NOT_INITIALIZED or mState==NO_IMAGES_YET or mState==LOST) // diff
+        mCurrentFrame = Frame(mImGray, timestamp, mpIniORBextractor, mpORBVocabulary,
+					                    mK, mDistCoef, mbf, mThDepth);
+    else
+        mCurrentFrame = Frame(mImGray, timestamp, mpORBextractorLeft, mpORBVocabulary,
+					                    mK, mDistCoef, mbf, mThDepth);
+
+		t2 = std::chrono::steady_clock::now();
+		ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+		std::cout << "Orb Image " << ttrack << "\n";
+
+		t1 = std::chrono::steady_clock::now();
     Track();
+		t2 = std::chrono::steady_clock::now();
+		ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+		std::cout << "Tracking Image " << ttrack << "\n";
 
     return mCurrentFrame.mTcw.clone();
 }
@@ -229,9 +247,9 @@ void Tracking::Track()
             }
             else
             {
-                // TODO: Need to implement when tracking is lost.
-                //       Triangulation and scan matching is useful.
-		bOK = Relocalization();
+							  // TODO: Need to implement when tracking is lost.
+								//       Triangulation and scan matching is useful.
+								bOK = Relocalization();
             }
         }
         else
@@ -239,7 +257,7 @@ void Tracking::Track()
             // Only Tracking: Local Mapping is deactivated
             if(mState == LOST || mState == MAP_OPEN)
             {
-	        bOK = Relocalization();
+							  bOK = Relocalization();
             }
             else
             {
