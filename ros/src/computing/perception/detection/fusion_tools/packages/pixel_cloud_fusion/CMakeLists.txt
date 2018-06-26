@@ -52,6 +52,7 @@ if (OPENMP_FOUND)
             )
 endif ()
 
+
 target_include_directories(pixel_cloud_fusion_lib PRIVATE
         ${OpenCV_INCLUDE_DIR}
         ${catkin_INCLUDE_DIRS}

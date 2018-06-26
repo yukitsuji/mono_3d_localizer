@@ -63,6 +63,10 @@
 #include "ORBextractor.h"
 
 #include <chrono>
+#include <iostream>
+#include <fstream>
+#include <boost/shared_ptr.hpp>
+
 
 using namespace cv;
 using namespace std;
@@ -769,6 +773,9 @@ void ORBextractor::ComputeKeyPointsOctTree(vector<vector<KeyPoint> >& allKeypoin
 
     const float W = 30;
 
+    // #ifdef _OPENMP
+    // #pragma omp parallel for num_threads(nlevels)
+    // #endif
     for (int level = 0; level < nlevels; ++level)
     {
         const int minBorderX = EDGE_THRESHOLD-3;
@@ -787,6 +794,9 @@ void ORBextractor::ComputeKeyPointsOctTree(vector<vector<KeyPoint> >& allKeypoin
         const int wCell = ceil(width/nCols);
         const int hCell = ceil(height/nRows);
 
+        #ifdef _OPENMP
+        #pragma omp parallel for num_threads(3)
+        #endif
         for(int i=0; i<nRows; i++)
         {
             const float iniY =minBorderY+i*hCell;
@@ -853,12 +863,12 @@ void ORBextractor::ComputeKeyPointsOctTree(vector<vector<KeyPoint> >& allKeypoin
         computeOrientation(mvImagePyramid[level], allKeypoints[level], umax);
 }
 
+
 void ORBextractor::ComputeKeyPointsOld(std::vector<std::vector<KeyPoint> > &allKeypoints)
 {
     allKeypoints.resize(nlevels);
 
     float imageRatio = (float)mvImagePyramid[0].cols/mvImagePyramid[0].rows;
-
     for (int level = 0; level < nlevels; ++level)
     {
         const int nDesiredFeatures = mnFeaturesPerLevel[level];
@@ -888,7 +898,6 @@ void ORBextractor::ComputeKeyPointsOld(std::vector<std::vector<KeyPoint> > &allK
         vector<int> iniYRow(levelRows);
         int nNoMore = 0;
         int nToDistribute = 0;
-
 
         float hY = cellH + 6;
 
@@ -962,9 +971,7 @@ void ORBextractor::ComputeKeyPointsOld(std::vector<std::vector<KeyPoint> > &allK
             }
         }
 
-
         // Retain by score
-
         while(nToDistribute>0 && nNoMore<nCells)
         {
             int nNewFeaturesCell = nfeaturesCell + ceil((float)nToDistribute/(nCells-nNoMore));
@@ -1027,16 +1034,203 @@ void ORBextractor::ComputeKeyPointsOld(std::vector<std::vector<KeyPoint> > &allK
         }
     }
 
-    // and compute orientations
     for (int level = 0; level < nlevels; ++level)
         computeOrientation(mvImagePyramid[level], allKeypoints[level], umax);
+}
+
+
+void ORBextractor::ComputeKeyPointsOldParallel(std::vector<std::vector<KeyPoint> > &allKeypoints)
+{
+    allKeypoints.resize(nlevels);
+
+    float imageRatio = (float)mvImagePyramid[0].cols/mvImagePyramid[0].rows;
+    #pragma omp parallel num_threads(3)
+    {
+      #pragma omp for
+      for (int level = 0; level < nlevels; ++level)
+      {
+          const int nDesiredFeatures = mnFeaturesPerLevel[level];
+
+          const int levelCols = sqrt((float)nDesiredFeatures/(5*imageRatio));
+          const int levelRows = imageRatio*levelCols;
+
+          const int minBorderX = EDGE_THRESHOLD;
+          const int minBorderY = minBorderX;
+          const int maxBorderX = mvImagePyramid[level].cols-EDGE_THRESHOLD;
+          const int maxBorderY = mvImagePyramid[level].rows-EDGE_THRESHOLD;
+
+          const int W = maxBorderX - minBorderX;
+          const int H = maxBorderY - minBorderY;
+          const int cellW = ceil((float)W/levelCols);
+          const int cellH = ceil((float)H/levelRows);
+
+          const int nCells = levelRows*levelCols;
+          const int nfeaturesCell = ceil((float)nDesiredFeatures/nCells);
+
+          vector<vector<vector<KeyPoint> > > cellKeyPoints(levelRows, vector<vector<KeyPoint> >(levelCols));
+
+          vector<vector<int> > nToRetain(levelRows,vector<int>(levelCols,0));
+          vector<vector<int> > nTotal(levelRows,vector<int>(levelCols,0));
+          vector<vector<bool> > bNoMore(levelRows,vector<bool>(levelCols,false));
+          vector<int> iniXCol(levelCols);
+          vector<int> iniYRow(levelRows);
+          int nNoMore = 0;
+          int nToDistribute = 0;
+
+          float hY = cellH + 6;
+
+          for(int i=0; i<levelRows; i++)
+          {
+              const float iniY = minBorderY + i*cellH - 3;
+              iniYRow[i] = iniY;
+
+              if(i == levelRows-1)
+              {
+                  hY = maxBorderY+3-iniY;
+                  if(hY<=0)
+                      continue;
+              }
+
+              float hX = cellW + 6;
+
+              for(int j=0; j<levelCols; j++)
+              {
+                  float iniX;
+
+                  if(i==0)
+                  {
+                      iniX = minBorderX + j*cellW - 3;
+                      iniXCol[j] = iniX;
+                  }
+                  else
+                  {
+                      iniX = iniXCol[j];
+                  }
+
+
+                  if(j == levelCols-1)
+                  {
+                      hX = maxBorderX+3-iniX;
+                      if(hX<=0)
+                          continue;
+                  }
+
+
+                  Mat cellImage = mvImagePyramid[level].rowRange(iniY,iniY+hY).colRange(iniX,iniX+hX);
+
+                  cellKeyPoints[i][j].reserve(nfeaturesCell*5);
+
+                  FAST(cellImage,cellKeyPoints[i][j],iniThFAST,true);
+
+                  if(cellKeyPoints[i][j].size()<=3)
+                  {
+                      cellKeyPoints[i][j].clear();
+
+                      FAST(cellImage,cellKeyPoints[i][j],minThFAST,true);
+                  }
+
+
+                  const int nKeys = cellKeyPoints[i][j].size();
+                  nTotal[i][j] = nKeys;
+
+                  if(nKeys>nfeaturesCell)
+                  {
+                      nToRetain[i][j] = nfeaturesCell;
+                      bNoMore[i][j] = false;
+                  }
+                  else
+                  {
+                      nToRetain[i][j] = nKeys;
+                      nToDistribute += nfeaturesCell-nKeys;
+                      bNoMore[i][j] = true;
+                      nNoMore++;
+                  }
+
+              }
+          }
+
+          // Retain by score
+          while(nToDistribute>0 && nNoMore<nCells)
+          {
+              int nNewFeaturesCell = nfeaturesCell + ceil((float)nToDistribute/(nCells-nNoMore));
+              nToDistribute = 0;
+
+              for(int i=0; i<levelRows; i++)
+              {
+                  for(int j=0; j<levelCols; j++)
+                  {
+                      if(!bNoMore[i][j])
+                      {
+                          if(nTotal[i][j]>nNewFeaturesCell)
+                          {
+                              nToRetain[i][j] = nNewFeaturesCell;
+                              bNoMore[i][j] = false;
+                          }
+                          else
+                          {
+                              nToRetain[i][j] = nTotal[i][j];
+                              nToDistribute += nNewFeaturesCell-nTotal[i][j];
+                              bNoMore[i][j] = true;
+                              nNoMore++;
+                          }
+                      }
+                  }
+              }
+          }
+
+          vector<KeyPoint> & keypoints = allKeypoints[level];
+          keypoints.reserve(nDesiredFeatures*2);
+
+          const int scaledPatchSize = PATCH_SIZE*mvScaleFactor[level];
+
+          // Retain by score and transform coordinates
+          for(int i=0; i<levelRows; i++)
+          {
+              for(int j=0; j<levelCols; j++)
+              {
+                  vector<KeyPoint> &keysCell = cellKeyPoints[i][j];
+                  KeyPointsFilter::retainBest(keysCell,nToRetain[i][j]);
+                  if((int)keysCell.size()>nToRetain[i][j])
+                      keysCell.resize(nToRetain[i][j]);
+
+
+                  for(size_t k=0, kend=keysCell.size(); k<kend; k++)
+                  {
+                      keysCell[k].pt.x+=iniXCol[j];
+                      keysCell[k].pt.y+=iniYRow[i];
+                      keysCell[k].octave=level;
+                      keysCell[k].size = scaledPatchSize;
+                      keypoints.push_back(keysCell[k]);
+                  }
+              }
+          }
+
+          if((int)keypoints.size()>nDesiredFeatures)
+          {
+              KeyPointsFilter::retainBest(keypoints,nDesiredFeatures);
+              keypoints.resize(nDesiredFeatures);
+          }
+      }
+
+      #pragma omp for
+      for (int level = 0; level < nlevels; ++level)
+          computeOrientation(mvImagePyramid[level], allKeypoints[level], umax);
+    }
+}
+
+static void computeDescriptorsParallel(const Mat& image, vector<KeyPoint>& keypoints, Mat& descriptors,
+                                       const vector<Point>& pattern)
+{
+    descriptors = Mat::zeros((int)keypoints.size(), 32, CV_8UC1);
+    #pragma omp parallel for num_threads(3)
+    for (size_t i = 0; i < keypoints.size(); i++)
+        computeOrbDescriptor(keypoints[i], image, &pattern[0], descriptors.ptr((int)i));
 }
 
 static void computeDescriptors(const Mat& image, vector<KeyPoint>& keypoints, Mat& descriptors,
                                const vector<Point>& pattern)
 {
     descriptors = Mat::zeros((int)keypoints.size(), 32, CV_8UC1);
-
     for (size_t i = 0; i < keypoints.size(); i++)
         computeOrbDescriptor(keypoints[i], image, &pattern[0], descriptors.ptr((int)i));
 }
@@ -1050,11 +1244,31 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
     Mat image = _image.getMat();
     assert(image.type() == CV_8UC1 );
 
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+
     // Pre-compute the scale pyramid
     ComputePyramid(image);
 
-    vector < vector<KeyPoint> > allKeypoints;
-    ComputeKeyPointsOctTree(allKeypoints);
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+		double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+		std::cout << "Compute Pyramid " << ttrack << "\n";
+
+    t1 = std::chrono::steady_clock::now();
+
+    vector<vector<KeyPoint>> allKeypoints;
+    // ComputeKeyPointsOctTree(allKeypoints);
+    ComputeKeyPointsOldParallel(allKeypoints);
+    t2 = std::chrono::steady_clock::now();
+		ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+		std::cout << "Paralell Compute OctTree " << ttrack << "\n";
+
+    // allKeypoints.clear();
+    // t1 = std::chrono::steady_clock::now();
+    // // ComputeKeyPointsOctTree(allKeypoints);
+    // ComputeKeyPointsOld(allKeypoints);
+    // t2 = std::chrono::steady_clock::now();
+		// ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+		// std::cout << "Compute OctTree " << ttrack << "\n";
 
     Mat descriptors;
 
@@ -1073,35 +1287,91 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
     _keypoints.reserve(nkeypoints);
 
     int offset = 0;
-    for (int level = 0; level < nlevels; ++level)
-    {
-        vector<KeyPoint>& keypoints = allKeypoints[level];
-        int nkeypointsLevel = (int)keypoints.size();
-
-        if(nkeypointsLevel==0)
-            continue;
-
-        // preprocess the resized image
-        Mat workingMat = mvImagePyramid[level].clone();
-        GaussianBlur(workingMat, workingMat, Size(7, 7), 2, 2, BORDER_REFLECT_101);
-
-        // Compute the descriptors
-        Mat desc = descriptors.rowRange(offset, offset + nkeypointsLevel);
-        computeDescriptors(workingMat, keypoints, desc, pattern);
-
-        offset += nkeypointsLevel;
-
-        // Scale keypoint coordinates
-        if (level != 0)
-        {
-            float scale = mvScaleFactor[level]; //getScale(level, firstLevel, scaleFactor);
-            for (vector<KeyPoint>::iterator keypoint = keypoints.begin(),
-                 keypointEnd = keypoints.end(); keypoint != keypointEnd; ++keypoint)
-                keypoint->pt *= scale;
-        }
-        // And add the keypoints to the output
-        _keypoints.insert(_keypoints.end(), keypoints.begin(), keypoints.end());
+    t1 = std::chrono::steady_clock::now();
+    int nkeypointsLevelList[nlevels + 1];
+    nkeypointsLevelList[0] = 0;
+    for (int level=0; level<nlevels; ++level) {
+      nkeypointsLevelList[level + 1] = nkeypointsLevelList[level] + (int)allKeypoints[level].size();
     }
+
+    {
+        #pragma omp parallel for ordered num_threads(3)
+        for (int level = 0; level < nlevels; ++level)
+        {
+            vector<KeyPoint>& keypoints = allKeypoints[level];
+
+            if((nkeypointsLevelList[level+1] - nkeypointsLevelList[level])==0) {
+                continue;
+            }
+
+            // preprocess the resized image
+            Mat workingMat = mvImagePyramid[level].clone();
+            GaussianBlur(workingMat, workingMat, Size(7, 7), 2, 2, BORDER_REFLECT_101);
+
+            // Compute the descriptors
+            Mat desc = descriptors.rowRange(nkeypointsLevelList[level], nkeypointsLevelList[level+1]);
+            computeDescriptors(workingMat, keypoints, desc, pattern);
+            // computeDescriptorsParallel(workingMat, keypoints, desc, pattern);
+
+            // Scale keypoint coordinates
+            if (level != 0)
+            {
+                float scale = mvScaleFactor[level]; //getScale(level, firstLevel, scaleFactor);
+                for (vector<KeyPoint>::iterator keypoint = keypoints.begin(),
+                     keypointEnd = keypoints.end(); keypoint != keypointEnd; ++keypoint)
+                    keypoint->pt *= scale;
+            }
+            // And add the keypoints to the output;
+            #pragma omp ordered
+            _keypoints.insert(_keypoints.end(), keypoints.begin(), keypoints.end());
+        }
+    }
+    t2 = std::chrono::steady_clock::now();
+		ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+		std::cout << "Parallel Compute descriptor " << ttrack << "\n";
+    // ofstream outputfile("parallel.txt", ios::app);
+    // outputfile<< ttrack << "\n";
+    // outputfile.close();
+    // _keypoints.clear();
+    // _keypoints.reserve(nkeypoints);
+    //
+    // offset = 0;
+    // t1 = std::chrono::steady_clock::now();
+    // for (int level = 0; level < nlevels; ++level)
+    // {
+    //     vector<KeyPoint>& keypoints = allKeypoints[level];
+    //     int nkeypointsLevel = (int)keypoints.size();
+    //
+    //     if(nkeypointsLevel==0)
+    //         continue;
+    //
+    //     // preprocess the resized image
+    //     Mat workingMat = mvImagePyramid[level].clone();
+    //     GaussianBlur(workingMat, workingMat, Size(7, 7), 2, 2, BORDER_REFLECT_101);
+    //
+    //     // Compute the descriptors
+    //     Mat desc = descriptors.rowRange(offset, offset + nkeypointsLevel);
+    //     computeDescriptors(workingMat, keypoints, desc, pattern);
+    //
+    //     offset += nkeypointsLevel;
+    //
+    //     // Scale keypoint coordinates
+    //     if (level != 0)
+    //     {
+    //         float scale = mvScaleFactor[level]; //getScale(level, firstLevel, scaleFactor);
+    //         for (vector<KeyPoint>::iterator keypoint = keypoints.begin(),
+    //              keypointEnd = keypoints.end(); keypoint != keypointEnd; ++keypoint)
+    //             keypoint->pt *= scale;
+    //     }
+    //     // And add the keypoints to the output
+    //     _keypoints.insert(_keypoints.end(), keypoints.begin(), keypoints.end());
+    // }
+    // t2 = std::chrono::steady_clock::now();
+		// ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+		// std::cout << "Compute descriptor " << ttrack << "\n";
+    // ofstream outputfile("single.txt", ios::app);
+    // outputfile<< ttrack << "\n";
+    // outputfile.close();
 }
 
 void ORBextractor::ComputePyramid(cv::Mat image)

@@ -170,7 +170,7 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
     }
 
 		std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-		double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+		double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
 		std::cout << "Convert gray Image " << ttrack << "\n";
 
 		t1 = std::chrono::steady_clock::now();
@@ -183,13 +183,13 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 					                    mK, mDistCoef, mbf, mThDepth);
 
 		t2 = std::chrono::steady_clock::now();
-		ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+		ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
 		std::cout << "Orb Image " << ttrack << "\n";
 
 		t1 = std::chrono::steady_clock::now();
     Track();
 		t2 = std::chrono::steady_clock::now();
-		ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+		ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
 		std::cout << "Tracking Image " << ttrack << "\n";
 
     return mCurrentFrame.mTcw.clone();

@@ -122,6 +122,18 @@ add_library(
         src/Viewer.cc
 )
 
+if (OPENMP_FOUND)
+    set_target_properties(orig_orb_slam2 PROPERTIES
+            COMPILE_FLAGS ${OpenMP_CXX_FLAGS}
+            LINK_FLAGS ${OpenMP_CXX_FLAGS}
+            )
+endif ()
+
+if (OPENMP_FOUND)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif ()
+
 
 list(APPEND LINK_LIBRARIES
         boost_system

@@ -90,6 +90,8 @@ void ImageGrabber::GrabImage(const sensor_msgs::ImageConstPtr& msg)
         return;
     }
 
+    std::cout << "##########################################\n";
+
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     mpSLAM->TrackMonocular(cv_ptr->image,cv_ptr->header.stamp.toSec());
 
