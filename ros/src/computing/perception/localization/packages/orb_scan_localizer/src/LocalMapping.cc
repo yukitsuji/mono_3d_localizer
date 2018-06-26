@@ -22,7 +22,7 @@
 #include "ORBmatcher.h"
 #include "Optimizer.h"
 
-#include<mutex>
+#include <mutex>
 
 
 
@@ -38,6 +38,11 @@ LocalMapping::LocalMapping(Map *pMap, const float bMonocular):
 void LocalMapping::SetTracker(Tracking *pTracker)
 {
     mpTracker = pTracker;
+}
+
+void LocalMapping::SetTracker(MapTracking *pTracker)
+{
+    mpMapTracker = pTracker;
 }
 
 void LocalMapping::Run()

@@ -22,6 +22,7 @@
 #define FRAMEDRAWER_H
 
 #include "Tracking.h"
+#include "MapTracking.h"
 #include "MapPoint.h"
 #include "Map.h"
 
@@ -35,6 +36,7 @@ namespace ORB_SLAM2
 {
 
 class Tracking;
+class MapTracking;
 class Viewer;
 
 class FrameDrawer
@@ -44,6 +46,7 @@ public:
 
     // Update info from the last processed frame.
     void Update(Tracking *pTracker);
+    void Update(MapTracking *pTracker);
 
     // Draw last processed frame.
     cv::Mat DrawFrame();

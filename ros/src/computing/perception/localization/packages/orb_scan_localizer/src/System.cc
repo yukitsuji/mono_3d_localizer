@@ -31,6 +31,130 @@ namespace ORB_SLAM2
 {
 
 System::System(const string &strVocFile, const string &strSettingsFile,
+               const eSensor sensor, const bool is_publish, const bool bUseMapPublisher,
+               const string &mpMapFileName, const operationMode mode):
+				mSensor(sensor),
+				mapFileName(mpMapFileName),
+				mbReset(false),
+				mbActivateLocalizationMode(false),
+				mbDeactivateLocalizationMode(false),
+				opMode (mode)
+{
+    // Output welcome message
+    cout << endl <<
+    "ORB-SLAM2 Copyright (C) 2014-2016 Raul Mur-Artal, University of Zaragoza." << endl <<
+    "This program comes with ABSOLUTELY NO WARRANTY;" << endl  <<
+    "This is free software, and you are welcome to redistribute it" << endl <<
+    "under certain conditions. See LICENSE.txt." << endl << endl;
+
+    cout << "Input sensor was set to: ";
+
+    if(mSensor==MONOCULAR)
+    {
+      cout << "Monocular" << endl;
+    } else {
+      cout << "Only Monocular mode is provided\n";
+      exit(-1);
+    }
+
+    //Check settings file
+    fsSettings = cv::FileStorage(strSettingsFile.c_str(), cv::FileStorage::READ);
+    if(!fsSettings.isOpened())
+    {
+       cerr << "Failed to open settings file at: " << strSettingsFile << endl;
+       exit(-1);
+    }
+
+    //Load ORB Vocabulary
+    mpVocabulary = new ORBVocabulary();
+    bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+  	cout << endl << "Loading ORB Vocabulary..." << endl;
+		if(!bVocLoad)
+		{
+			cerr << "Wrong path to vocabulary. " << endl;
+			cerr << "Failed to open at: " << strVocFile << endl;
+			exit(-1);
+		}
+		cout << "Vocabulary loaded!" << endl << endl;
+
+    //Create KeyFrame Database
+    mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
+
+    //Create the Map
+    mpMap = new Map();
+    // try {
+    // 	cout << "Loading map..." << endl;
+    // 	mpMap->loadFromDisk (mapFileName, mpKeyFrameDatabase);
+    // } catch (exception &e) {
+    // 	cout << "Unable to load map " << mapFileName << endl;
+    // }
+
+    //Create Drawers. These are used by the MapPublisher
+    mpFrameDrawer = new FrameDrawer(mpMap);
+    mpMapDrawer = new MapDrawer(mpMap, strSettingsFile);
+
+    // if (mpMap->mbMapUpdated)
+    	// mpTracker->setMapLoaded();
+
+    //Initialize the Tracking thread
+    //(it will live in the main thread of execution, the one that called this constructor)
+    mpMapTracker = new MapTracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
+                             mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
+
+    std::cout << "Launched tracker\n";
+    //Initialize the Local Mapping thread and launch
+    mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR);
+    mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run,mpLocalMapper);
+    std::cout << "Launched local map\n";
+
+    mpLocalMapper->SetTracker(mpMapTracker);
+    std::cout << "Set up local map\n";
+
+    //Initialize the MapPublisher thread and launch
+    mpMapPublisher = new MapPublisher(this, mpFrameDrawer, mpMapDrawer, mpMapTracker,
+                                      fsSettings, opMode);
+    if(bUseMapPublisher)
+        mptMapPublisher = new thread(&MapPublisher::Run, mpMapPublisher);
+    mpMapTracker->SetMapPublisher(mpMapPublisher);
+
+    //Set pointers between threads
+    mpMapTracker->SetLocalMapper(mpLocalMapper);
+    std::cout << "Set up tracker\n";
+    std::cout << "Constructor finished\n";
+}
+
+cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp,
+                               const bool is_publish)
+{
+    if(mSensor!=MONOCULAR)
+    {
+        cerr << "ERROR: you called TrackMonocular but input sensor was not set to Monocular." << endl;
+        exit(-1);
+    }
+
+    // Check reset
+    {
+        unique_lock<mutex> lock(mMutexReset);
+        if(mbReset)
+        {
+            mpMapTracker->Reset();
+            mbReset = false;
+        }
+    }
+
+    cv::Mat camPosOrb = mpMapTracker->GrabImageMonocular(im, timestamp);
+
+    {
+        unique_lock<mutex> lock2(mMutexState);
+        mTrackingState = mpMapTracker->mState;
+        mTrackedMapPoints = mpMapTracker->mCurrentFrame.mvpMapPoints;
+        mTrackedKeyPointsUn = mpMapTracker->mCurrentFrame.mvKeysUn;
+    }
+    return camPosOrb;
+}
+
+
+System::System(const string &strVocFile, const string &strSettingsFile,
                const eSensor sensor, const bool bUseViewer,
                const string &mpMapFileName, const operationMode mode):
 				mSensor(sensor),

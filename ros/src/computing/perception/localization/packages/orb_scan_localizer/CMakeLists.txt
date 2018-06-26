@@ -10,6 +10,8 @@ find_package(catkin REQUIRED
         cv_bridge
         message_generation
         std_msgs
+        pcl_ros
+        pcl_conversions
 )
 
 LIST(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules)
@@ -120,6 +122,8 @@ add_library(
         src/Sim3Solver.cc
         src/Initializer.cc
         src/Viewer.cc
+        src/MapPublisher.cc
+        src/MapTracking.cc
 )
 
 if (OPENMP_FOUND)
@@ -176,6 +180,19 @@ add_executable(
 
 target_link_libraries(
         orig_mono_orb_slam2_cl
+        ${ORIG_ORB_BIN_LINKS}
+        ${LINK_LIBRARIES}
+)
+
+add_executable(
+        scan_mono_orb_slam2
+        nodes/mono_orb_slam2/scan_mono_orb_slam2.cpp
+)
+
+# add_dependencies(scan_mono_orb_slam2 ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(
+        scan_mono_orb_slam2
         ${ORIG_ORB_BIN_LINKS}
         ${LINK_LIBRARIES}
 )

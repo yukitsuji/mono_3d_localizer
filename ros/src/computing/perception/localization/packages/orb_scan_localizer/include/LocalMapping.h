@@ -24,6 +24,7 @@
 #include "KeyFrame.h"
 #include "Map.h"
 #include "Tracking.h"
+#include "MapTracking.h"
 #include "KeyFrameDatabase.h"
 
 #include <mutex>
@@ -33,6 +34,7 @@ namespace ORB_SLAM2
 {
 
 class Tracking;
+class MapTracking;
 class Map;
 
 class LocalMapping
@@ -41,6 +43,7 @@ public:
     LocalMapping(Map* pMap, const float bMonocular);
 
     void SetTracker(Tracking* pTracker);
+    void SetTracker(MapTracking* pTracker);
 
     // Main function
     void Run();
@@ -104,6 +107,7 @@ protected:
     Map* mpMap;
 
     Tracking* mpTracker;
+    MapTracking* mpMapTracker;
 
     std::list<KeyFrame*> mlNewKeyFrames;
 
