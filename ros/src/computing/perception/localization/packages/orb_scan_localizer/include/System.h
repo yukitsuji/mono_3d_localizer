@@ -79,16 +79,8 @@ public:
   		const operationMode mode=System::MAPPING
     );
 
-    // System (
-    // 	const string &strVocFile,
-  	// 	const string &strSettingsFile,
-  	// 	const eSensor sensor,
-    //   const bool is_publish,
-  	// 	const bool bUseViewer = true,
-  	// 	const string &mapFileName=string(),
-  	// 	const operationMode mode=System::MAPPING
-    // );
-
+    // It launches the Local Mapping and Viewer threads.
+    // Orb scan matching
     System (
     	const string &strVocFile,
   		const string &strSettingsFile,

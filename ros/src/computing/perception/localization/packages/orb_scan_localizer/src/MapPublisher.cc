@@ -59,7 +59,10 @@ MapPublisher::MapPublisher(
     int argc = 0;
     ros::init (argc, NULL, "orb_map");
     ros::NodeHandle node;
-    map_pub = node.advertise<pcl::PointCloud<pcl::PointXYZ>>("orb_points", 1, true);
+		global_pub = node.advertise<pcl::PointCloud<pcl::PointXYZ>>("global_points", 1, true);
+		lobal_pub = node.advertise<pcl::PointCloud<pcl::PointXYZ>>("local_points", 1, true);
+		// TODO: Get Current Camera Pose
+		// cur_pose_pub = node.advertise<>("")
 }
 
 void MapPublisher::Run()
@@ -70,7 +73,7 @@ void MapPublisher::Run()
     // Twc.SetIdentity();
     while(1)
     {
-        mpMapDrawer->PublishMapPoints(map_pub);
+        mpMapDrawer->PublishMapPoints(global_pub, local_pub);
 
         // cv::Mat im = mpFrameDrawer->getLastFrame();
         // if (im.empty() == false) {

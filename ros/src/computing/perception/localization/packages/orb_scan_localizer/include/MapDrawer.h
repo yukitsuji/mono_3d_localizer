@@ -43,7 +43,7 @@ public:
     Map* mpMap;
 
     void DrawMapPoints();
-    void PublishMapPoints(ros::Publisher &pub);
+    void PublishMapPoints(ros::Publisher &global_pub, ros::Publisher &local_pub);
     void DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph);
     void DrawCurrentCamera(pangolin::OpenGlMatrix &Twc);
     void SetCurrentCameraPose(const cv::Mat &Tcw);

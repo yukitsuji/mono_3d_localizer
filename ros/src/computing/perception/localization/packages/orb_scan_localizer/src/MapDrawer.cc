@@ -46,7 +46,8 @@ MapDrawer::MapDrawer(Map* pMap, const string &strSettingPath):mpMap(pMap)
 
 }
 
-void MapDrawer::PublishMapPoints(ros::Publisher &pub)
+void MapDrawer::PublishMapPoints(ros::Publisher &global_pub,
+                                 ros::Publisher &local_pub)
 {
     const vector<MapPoint*> &vpMPs = mpMap->GetAllMapPoints();
     const vector<MapPoint*> &vpRefMPs = mpMap->GetReferenceMapPoints();
@@ -56,7 +57,7 @@ void MapDrawer::PublishMapPoints(ros::Publisher &pub)
     if(vpMPs.empty())
         return;
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr points (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr g_points (new pcl::PointCloud<pcl::PointXYZ>);
 
     for (auto&& p: vpMPs) {
       if (p == NULL || p->isBad() || spRefMPs.count(p))
@@ -66,19 +67,32 @@ void MapDrawer::PublishMapPoints(ros::Publisher &pub)
       point.x = pos.at<float>(0);
       point.y = pos.at<float>(1);
       point.z = pos.at<float>(2);
-      points->push_back(point);
+      g_points->push_back(point);
     }
-    sensor_msgs::PointCloud2 pc2;
+    sensor_msgs::PointCloud2 pc2_g;
 
-    pc2.header.frame_id= "velodyne";
-    // pc2.header.stamp=header->stamp;
-    // pc2.header.seq=header->seq;
-    points->header = pcl_conversions::toPCL(pc2.header);
-    pub.publish(points);
+    pc2_g.header.frame_id= "velodyne";
+    // pc2_g.header.stamp=header->stamp;
+    // pc2_g.header.seq=header->seq;
+    g_points->header = pcl_conversions::toPCL(pc2_g.header);
+    global_pub.publish(g_points);
 
-    // for(set<MapPoint*>::iterator sit=spRefMPs.begin(), send=spRefMPs.end(); sit!=send; sit++)
-    //     if((*sit)==NULL || (*sit)->isBad())
-    //         continue;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr l_points (new pcl::PointCloud<pcl::PointXYZ>);
+
+    for (auto&& p: spRefMPs) {
+      if (p == NULL || p->isBad())
+        continue;
+      cv::Mat pos = p->GetWorldPos();
+      pcl::PointXYZ point;
+      point.x = pos.at<float>(0);
+      point.y = pos.at<float>(1);
+      point.z = pos.at<float>(2);
+      l_points->push_back(point);
+    }
+    sensor_msgs::PointCloud2 pc2_l;
+    pc2_l.header.frame_id= "velodyne";
+    l_points->header = pcl_conversions::toPCL(pc2_l.header);
+    global_pub.publish(g_points);
 }
 
 void MapDrawer::DrawMapPoints()

@@ -257,11 +257,11 @@ void Map::loadFromDisk(const string &filename, KeyFrameDatabase *kfMemDb)
 			mspKeyFrames.insert (kf);
 		kfListSorted.push_back(kf);
 
-//		const cv::Mat camCenter = kf->GetCameraCenter();
-//		const float
-//			x = camCenter.at<float>(0),
-//			y = camCenter.at<float>(1),
-//			z = camCenter.at<float>(2);
+		//		const cv::Mat camCenter = kf->GetCameraCenter();
+		//		const float
+		//			x = camCenter.at<float>(0),
+		//			y = camCenter.at<float>(1),
+		//			z = camCenter.at<float>(2);
 
 		// XXX: Need to increase KeyFrame::nNextId
 		// Also, adjust Frame::nNextId
@@ -341,7 +341,7 @@ void Map::loadFromDisk(const string &filename, KeyFrameDatabase *kfMemDb)
 	kfOctree->setInputCloud(kfCloud);
 	kfOctree->addPointsFromInputCloud();
 	mKeyFrameDb = kfMemDb;
-//	cout << "Done restoring Octree" << endl;
+		//	cout << "Done restoring Octree" << endl;
 }
 
 
@@ -401,13 +401,13 @@ Map::getNearestKeyFrame (const Eigen::Vector3f &position,
 			continue;
 		else
 			return checkKF;
-//		if (cosT > cosd) {
-//			cosd = cosT;
-//			ckf = checkKF;
-//		}
-//		if (kfSelectors!=NULL)
-//			kfSelectors->at(i) = checkKF;
-//		i+=1;
+		//		if (cosT > cosd) {
+		//			cosd = cosT;
+		//			ckf = checkKF;
+		//		}
+		//		if (kfSelectors!=NULL)
+		//			kfSelectors->at(i) = checkKF;
+		//		i+=1;
 	}
 
 	return ckf;
