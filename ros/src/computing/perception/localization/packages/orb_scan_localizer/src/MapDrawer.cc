@@ -92,7 +92,7 @@ void MapDrawer::PublishMapPoints(ros::Publisher &global_pub,
     sensor_msgs::PointCloud2 pc2_l;
     pc2_l.header.frame_id= "velodyne";
     l_points->header = pcl_conversions::toPCL(pc2_l.header);
-    global_pub.publish(g_points);
+    local_pub.publish(l_points);
 }
 
 void MapDrawer::DrawMapPoints()
