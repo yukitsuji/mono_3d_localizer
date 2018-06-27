@@ -49,6 +49,7 @@ namespace ORB_SLAM2
 {
 
 class MapPublisher;
+class Viewer;
 class FrameDrawer;
 class Map;
 class LocalMapping;
@@ -69,6 +70,7 @@ public:
     Transform3 LocalizeImage (const cv::Mat &image, const double &timestamp);
 
     void SetLocalMapper(LocalMapping* pLocalMapper);
+    void Tracking::SetViewer(Viewer *pViewer);
     void SetMapPublisher(MapPublisher* pMapPublisher);
 
     // Load new settings

@@ -31,7 +31,7 @@ namespace ORB_SLAM2
 {
 
 System::System(const string &strVocFile, const string &strSettingsFile,
-               const eSensor sensor, const bool is_publish, const bool bUseMapPublisher,
+               const eSensor sensor, const bool is_publish, const bool bUseViewer,
                const string &mpMapFileName, const operationMode mode):
 				mSensor(sensor),
 				mapFileName(mpMapFileName),
@@ -99,7 +99,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
     mpMapTracker = new MapTracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
-                             mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
+                                   mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
 
     std::cout << "Launched tracker\n";
     //Initialize the Local Mapping thread and launch
@@ -111,14 +111,26 @@ System::System(const string &strVocFile, const string &strSettingsFile,
     std::cout << "Set up local map\n";
 
     //Initialize the MapPublisher thread and launch
-    mpMapPublisher = new MapPublisher(this, mpFrameDrawer, mpMapDrawer, mpMapTracker,
-                                      fsSettings, opMode);
-    if(bUseMapPublisher)
-        mptMapPublisher = new thread(&MapPublisher::Run, mpMapPublisher);
-    mpMapTracker->SetMapPublisher(mpMapPublisher);
+    if (is_publish) {
+        mpMapPublisher = new MapPublisher(this, mpFrameDrawer, mpMapDrawer, mpMapTracker,
+                                          fsSettings, opMode);
+        if(bUseViewer)
+            mptMapPublisher = new thread(&MapPublisher::Run, mpMapPublisher);
+        mpMapTracker->SetMapPublisher(mpMapPublisher);
 
-    //Set pointers between threads
-    mpMapTracker->SetLocalMapper(mpLocalMapper);
+        //Set pointers between threads
+        mpMapTracker->SetLocalMapper(mpLocalMapper);
+    }
+    if (bUseViewer) {
+        mpViewer = new Viewer(this, mpFrameDrawer, mpMapDrawer, mpMapTracker,
+                              fsSettings, opMode);
+        if(bUseViewer)
+            mptViewer = new thread(&Viewer::Run, mpViewer);
+        mpMapTracker->SetViewer(mpViewer);
+
+        //Set pointers between threads
+        mpMapTracker->SetLocalMapper(mpLocalMapper);
+    }
     std::cout << "Set up tracker\n";
     std::cout << "Constructor finished\n";
 }

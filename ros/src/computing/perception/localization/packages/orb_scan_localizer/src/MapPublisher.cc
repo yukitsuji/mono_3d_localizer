@@ -27,6 +27,26 @@
 #include <pcl/point_types.h>
 #include <sensor_msgs/PointCloud2.h>
 
+// pcl::PointCloud<pcl::PointXYZI>::Ptr points (new pcl::PointCloud<pcl::PointXYZI>);
+//
+// int i;
+// for (i=0; input.good() && !input.eof(); i++) {
+// 		pcl::PointXYZI point;
+// 		input.read((char *) &point.x, 3*sizeof(float));
+// 		input.read((char *) &point.intensity, sizeof(float));
+// 		points->push_back(point);
+// }
+// input.close();
+//
+// //workaround for the PCL headers... http://wiki.ros.org/hydro/Migration#PCL
+// sensor_msgs::PointCloud2 pc2;
+//
+// pc2.header.frame_id= "velodyne"; //ros::this_node::getName();
+// pc2.header.stamp=header->stamp;
+// pc2.header.seq=header->seq;
+// points->header = pcl_conversions::toPCL(pc2.header);
+// pub.publish(points);
+
 namespace ORB_SLAM2
 {
 
@@ -64,39 +84,6 @@ void MapPublisher::Run()
 {
     mbFinished = false;
 
-    string mapViewTitle;
-    if (modeLocalization==true)
-    	mapViewTitle = "ORB-SLAM2: Localizer";
-    else
-    	mapViewTitle = "ORB-SLAM2: Mapper";
-    pangolin::CreateWindowAndBind("ORB-SLAM2: Map MapPublisher",1024,768);
-
-    // 3D Mouse handler requires depth testing to be enabled
-    glEnable(GL_DEPTH_TEST);
-
-    // Issue specific OpenGl we might need
-    glEnable (GL_BLEND);
-    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    pangolin::CreatePanel("menu").SetBounds(0.0,1.0,0.0,pangolin::Attach::Pix(175));
-    pangolin::Var<bool> menuFollowCamera("menu.Follow Camera",true,true);
-    pangolin::Var<bool> menuShowPoints("menu.Show Points",true,true);
-    pangolin::Var<bool> menuShowKeyFrames("menu.Show KeyFrames",true,true);
-    pangolin::Var<bool> menuShowGraph("menu.Show Graph",true,true);
-//    pangolin::Var<bool> menuLocalizationMode("menu.Localization Mode",false,true);
-    pangolin::Var<bool> menuReset("menu.Reset",false,false);
-
-    // Define Camera Render Object (for view / scene browsing)
-    pangolin::OpenGlRenderState s_cam(
-                pangolin::ProjectionMatrix(1024,768,mViewpointF,mViewpointF,512,389,0.1,1000),
-                pangolin::ModelViewLookAt(mViewpointX,mViewpointY,mViewpointZ, 0,0,0,0.0,-1.0, 0.0)
-                );
-
-    // Add named OpenGL viewport to window and provide 3D Handler
-    pangolin::View& d_cam = pangolin::CreateDisplay()
-            .SetBounds(0.0, 1.0, pangolin::Attach::Pix(175), 1.0, -1024.0f/768.0f)
-            .SetHandler(new pangolin::Handler3D(s_cam));
-
     pangolin::OpenGlMatrix Twc;
     Twc.SetIdentity();
 
@@ -107,52 +94,11 @@ void MapPublisher::Run()
 
     while(1)
     {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        mpMapDrawer->GetCurrentOpenGLCameraMatrix(Twc);
-
-        if(menuFollowCamera && bFollow)
-        {
-            s_cam.Follow(Twc);
-        }
-        else if(menuFollowCamera && !bFollow)
-        {
-            s_cam.SetModelViewMatrix(pangolin::ModelViewLookAt(mViewpointX,mViewpointY,mViewpointZ, 0,0,0,0.0,-1.0, 0.0));
-            s_cam.Follow(Twc);
-            bFollow = true;
-        }
-        else if(!menuFollowCamera && bFollow)
-        {
-            bFollow = false;
-        }
-
-        d_cam.Activate(s_cam);
-        glClearColor(1.0f,1.0f,1.0f,1.0f);
-        mpMapDrawer->DrawCurrentCamera(Twc);
-        if(menuShowKeyFrames || menuShowGraph)
-            mpMapDrawer->DrawKeyFrames(menuShowKeyFrames,menuShowGraph);
-        if(menuShowPoints)
-            mpMapDrawer->DrawMapPoints();
-
-        pangolin::FinishFrame();
-
-        mpFrameDrawer->DrawFrame();
+        mpMapDrawer->DrawMapPoints();
         cv::Mat im = mpFrameDrawer->getLastFrame();
-        if (im.empty() == false) {
-        	cv::imshow(mapViewTitle, im);
-        }
-        cv::waitKey(mT);
-
-        if(menuReset and modeLocalization==false)
-        {
-            menuShowGraph = true;
-            menuShowKeyFrames = true;
-            menuShowPoints = true;
-            bFollow = true;
-            menuFollowCamera = true;
-            mpSystem->Reset();
-            menuReset = false;
-        }
+        // if (im.empty() == false) {
+        	// cv::imshow(mapViewTitle, im);
+        // }
 
         if(Stop())
         {
