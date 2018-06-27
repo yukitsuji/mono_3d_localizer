@@ -79,12 +79,24 @@ public:
   		const operationMode mode=System::MAPPING
     );
 
+    // System (
+    // 	const string &strVocFile,
+  	// 	const string &strSettingsFile,
+  	// 	const eSensor sensor,
+    //   const bool is_publish,
+  	// 	const bool bUseViewer = true,
+  	// 	const string &mapFileName=string(),
+  	// 	const operationMode mode=System::MAPPING
+    // );
+
     System (
     	const string &strVocFile,
   		const string &strSettingsFile,
   		const eSensor sensor,
+      const bool bUseMapPublisher,
       const bool is_publish,
-  		const bool bUseViewer = true,
+  		const bool bUseViewer,
+      const bool is_visualize,
   		const string &mapFileName=string(),
   		const operationMode mode=System::MAPPING
     );
@@ -172,6 +184,8 @@ private:
 
     FrameDrawer* mpFrameDrawer;
     MapDrawer* mpMapDrawer;
+
+    bool isUseViewer;
 
     // System threads: Local Mapping, Loop Closing, Viewer.
     // The Tracking thread "lives" in the main execution thread that creates the System object.

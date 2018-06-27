@@ -144,7 +144,7 @@ void MapTracking::SetLocalMapper(LocalMapping *pLocalMapper)
     mpLocalMapper=pLocalMapper;
 }
 
-void Tracking::SetViewer(Viewer *pViewer)
+void MapTracking::SetViewer(Viewer *pViewer)
 {
     mpViewer=pViewer;
 }

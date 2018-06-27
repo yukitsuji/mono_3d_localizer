@@ -70,7 +70,7 @@ public:
     Transform3 LocalizeImage (const cv::Mat &image, const double &timestamp);
 
     void SetLocalMapper(LocalMapping* pLocalMapper);
-    void Tracking::SetViewer(Viewer *pViewer);
+    void SetViewer(Viewer *pViewer);
     void SetMapPublisher(MapPublisher* pMapPublisher);
 
     // Load new settings
@@ -213,6 +213,7 @@ protected:
 
     //Drawers
     MapPublisher* mpMapPublisher;
+    Viewer* mpViewer;
     FrameDrawer* mpFrameDrawer;
     MapDrawer* mpMapDrawer;
 

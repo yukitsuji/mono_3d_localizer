@@ -56,6 +56,38 @@ Viewer::Viewer(
     mViewpointF = fSettings["Viewer.ViewpointF"];
 }
 
+
+Viewer::Viewer(
+	System* pSystem,
+	FrameDrawer *pFrameDrawer,
+	MapDrawer *pMapDrawer,
+	MapTracking *pTracking,
+	const cv::FileStorage &fSettings,
+	int opMode):
+		mpSystem(pSystem), mpFrameDrawer(pFrameDrawer),mpMapDrawer(pMapDrawer), mpMapTracker(pTracking),
+		mbFinishRequested(false), mbFinished(true), mbStopped(false), mbStopRequested(false),
+		modeLocalization (opMode==System::LOCALIZATION ? true : false)
+{
+    float fps = fSettings["Camera.fps"];
+    if(fps<1)
+        fps=30;
+    mT = 1e3/fps;
+
+    mImageWidth = fSettings["Camera.width"];
+    mImageHeight = fSettings["Camera.height"];
+    if(mImageWidth<1 || mImageHeight<1)
+    {
+        mImageWidth = 640;
+        mImageHeight = 480;
+    }
+
+    mViewpointX = fSettings["Viewer.ViewpointX"];
+    mViewpointY = fSettings["Viewer.ViewpointY"];
+    mViewpointZ = fSettings["Viewer.ViewpointZ"];
+    mViewpointF = fSettings["Viewer.ViewpointF"];
+}
+
+
 void Viewer::Run()
 {
     mbFinished = false;

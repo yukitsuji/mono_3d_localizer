@@ -23,6 +23,11 @@
 #include "KeyFrame.h"
 #include <pangolin/pangolin.h>
 #include <mutex>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/point_cloud.h>
+#include <pcl/point_types.h>
+#include <sensor_msgs/PointCloud2.h>
+
 
 namespace ORB_SLAM2
 {
@@ -41,7 +46,7 @@ MapDrawer::MapDrawer(Map* pMap, const string &strSettingPath):mpMap(pMap)
 
 }
 
-void MapDrawer::PublishMapPoints()
+void MapDrawer::PublishMapPoints(ros::Publisher &pub)
 {
     const vector<MapPoint*> &vpMPs = mpMap->GetAllMapPoints();
     const vector<MapPoint*> &vpRefMPs = mpMap->GetReferenceMapPoints();
@@ -51,33 +56,29 @@ void MapDrawer::PublishMapPoints()
     if(vpMPs.empty())
         return;
 
-    glPointSize(mPointSize);
-    glBegin(GL_POINTS);
-    glColor3f(0.0,0.0,0.0);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr points (new pcl::PointCloud<pcl::PointXYZ>);
 
-    for(size_t i=0, iend=vpMPs.size(); i<iend;i++)
-    {
-        if(vpMPs[i]==NULL || vpMPs[i]->isBad() || spRefMPs.count(vpMPs[i]))
-            continue;
-        cv::Mat pos = vpMPs[i]->GetWorldPos();
-        glVertex3f(pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
+    for (auto&& p: vpMPs) {
+      if (p == NULL || p->isBad() || spRefMPs.count(p))
+        continue;
+      cv::Mat pos = p->GetWorldPos();
+      pcl::PointXYZ point;
+      point.x = pos.at<float>(0);
+      point.y = pos.at<float>(1);
+      point.z = pos.at<float>(2);
+      points->push_back(point);
     }
-    glEnd();
+    sensor_msgs::PointCloud2 pc2;
 
-    glPointSize(mPointSize);
-    glBegin(GL_POINTS);
-    glColor3f(1.0,0.0,0.0);
+    pc2.header.frame_id= "velodyne";
+    // pc2.header.stamp=header->stamp;
+    // pc2.header.seq=header->seq;
+    points->header = pcl_conversions::toPCL(pc2.header);
+    pub.publish(points);
 
-    for(set<MapPoint*>::iterator sit=spRefMPs.begin(), send=spRefMPs.end(); sit!=send; sit++)
-    {
-        if((*sit)==NULL || (*sit)->isBad())
-            continue;
-        cv::Mat pos = (*sit)->GetWorldPos();
-        glVertex3f(pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
-
-    }
-
-    glEnd();
+    // for(set<MapPoint*>::iterator sit=spRefMPs.begin(), send=spRefMPs.end(); sit!=send; sit++)
+    //     if((*sit)==NULL || (*sit)->isBad())
+    //         continue;
 }
 
 void MapDrawer::DrawMapPoints()

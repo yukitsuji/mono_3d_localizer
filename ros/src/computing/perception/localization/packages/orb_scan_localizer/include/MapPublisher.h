@@ -29,6 +29,11 @@
 #include "System.h"
 
 #include <mutex>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/point_cloud.h>
+#include <pcl/point_types.h>
+#include <sensor_msgs/PointCloud2.h>
+
 
 namespace ORB_SLAM2
 {
@@ -70,6 +75,8 @@ private:
     FrameDrawer* mpFrameDrawer;
     MapDrawer* mpMapDrawer;
     MapTracking* mpMapTracker;
+
+    ros::Publisher map_pub;
 
     // 1/fps in ms
     double mT;

@@ -27,6 +27,10 @@
 #include<pangolin/pangolin.h>
 
 #include<mutex>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/point_cloud.h>
+#include <pcl/point_types.h>
+#include <sensor_msgs/PointCloud2.h>
 
 namespace ORB_SLAM2
 {
@@ -39,6 +43,7 @@ public:
     Map* mpMap;
 
     void DrawMapPoints();
+    void PublishMapPoints(ros::Publisher &pub);
     void DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph);
     void DrawCurrentCamera(pangolin::OpenGlMatrix &Twc);
     void SetCurrentCameraPose(const cv::Mat &Tcw);

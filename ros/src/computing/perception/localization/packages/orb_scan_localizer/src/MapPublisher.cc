@@ -22,30 +22,7 @@
 #include <pangolin/pangolin.h>
 
 #include <mutex>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl_ros/point_cloud.h>
-#include <pcl/point_types.h>
-#include <sensor_msgs/PointCloud2.h>
 
-// pcl::PointCloud<pcl::PointXYZI>::Ptr points (new pcl::PointCloud<pcl::PointXYZI>);
-//
-// int i;
-// for (i=0; input.good() && !input.eof(); i++) {
-// 		pcl::PointXYZI point;
-// 		input.read((char *) &point.x, 3*sizeof(float));
-// 		input.read((char *) &point.intensity, sizeof(float));
-// 		points->push_back(point);
-// }
-// input.close();
-//
-// //workaround for the PCL headers... http://wiki.ros.org/hydro/Migration#PCL
-// sensor_msgs::PointCloud2 pc2;
-//
-// pc2.header.frame_id= "velodyne"; //ros::this_node::getName();
-// pc2.header.stamp=header->stamp;
-// pc2.header.seq=header->seq;
-// points->header = pcl_conversions::toPCL(pc2.header);
-// pub.publish(points);
 
 namespace ORB_SLAM2
 {
@@ -78,24 +55,24 @@ MapPublisher::MapPublisher(
     mViewpointY = fSettings["Viewer.ViewpointY"];
     mViewpointZ = fSettings["Viewer.ViewpointZ"];
     mViewpointF = fSettings["Viewer.ViewpointF"];
+
+    int argc = 0;
+    ros::init (argc, NULL, "orb_map");
+    ros::NodeHandle node;
+    map_pub = node.advertise<pcl::PointCloud<pcl::PointXYZ>>("orb_points", 1, true);
 }
 
 void MapPublisher::Run()
 {
     mbFinished = false;
 
-    pangolin::OpenGlMatrix Twc;
-    Twc.SetIdentity();
-
-    cv::namedWindow(mapViewTitle);
-
-    bool bFollow = true;
-    bool bLocalizationMode = modeLocalization;
-
+    // pangolin::OpenGlMatrix Twc;
+    // Twc.SetIdentity();
     while(1)
     {
-        mpMapDrawer->DrawMapPoints();
-        cv::Mat im = mpFrameDrawer->getLastFrame();
+        mpMapDrawer->PublishMapPoints(map_pub);
+
+        // cv::Mat im = mpFrameDrawer->getLastFrame();
         // if (im.empty() == false) {
         	// cv::imshow(mapViewTitle, im);
         // }
@@ -110,6 +87,8 @@ void MapPublisher::Run()
 
         if(CheckFinish())
             break;
+
+        usleep(5000);
     }
 
     SetFinish();

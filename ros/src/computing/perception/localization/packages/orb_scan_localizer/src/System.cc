@@ -31,14 +31,16 @@ namespace ORB_SLAM2
 {
 
 System::System(const string &strVocFile, const string &strSettingsFile,
-               const eSensor sensor, const bool is_publish, const bool bUseViewer,
+               const eSensor sensor, const bool bUseMapPublisher, const bool is_publish,
+               const bool bUseViewer, const bool is_visualize,
                const string &mpMapFileName, const operationMode mode):
 				mSensor(sensor),
 				mapFileName(mpMapFileName),
 				mbReset(false),
 				mbActivateLocalizationMode(false),
 				mbDeactivateLocalizationMode(false),
-				opMode (mode)
+				opMode(mode),
+        isUseViewer(bUseViewer)
 {
     // Output welcome message
     cout << endl <<
@@ -110,21 +112,22 @@ System::System(const string &strVocFile, const string &strSettingsFile,
     mpLocalMapper->SetTracker(mpMapTracker);
     std::cout << "Set up local map\n";
 
-    //Initialize the MapPublisher thread and launch
-    if (is_publish) {
-        mpMapPublisher = new MapPublisher(this, mpFrameDrawer, mpMapDrawer, mpMapTracker,
-                                          fsSettings, opMode);
-        if(bUseViewer)
+    // Initialize the MapPublisher thread and launch
+    mpMapPublisher = new MapPublisher(this, mpFrameDrawer, mpMapDrawer, mpMapTracker,
+                                      fsSettings, opMode);
+    if (bUseMapPublisher) {
+        if(is_publish)
             mptMapPublisher = new thread(&MapPublisher::Run, mpMapPublisher);
         mpMapTracker->SetMapPublisher(mpMapPublisher);
 
         //Set pointers between threads
         mpMapTracker->SetLocalMapper(mpLocalMapper);
     }
+
+    mpViewer = new Viewer(this, mpFrameDrawer, mpMapDrawer, mpMapTracker,
+                          fsSettings, opMode);
     if (bUseViewer) {
-        mpViewer = new Viewer(this, mpFrameDrawer, mpMapDrawer, mpMapTracker,
-                              fsSettings, opMode);
-        if(bUseViewer)
+        if(is_visualize)
             mptViewer = new thread(&Viewer::Run, mpViewer);
         mpMapTracker->SetViewer(mpViewer);
 
@@ -301,12 +304,11 @@ void System::Shutdown()
 
 	// Wait until all thread have effectively stopped
 	if (opMode==System::MAPPING) {
-
 		mpViewer->RequestFinish();
-
+    mpMapPublisher->RequestFinish();
 		mpLocalMapper->RequestFinish();
 
-		while(!mpLocalMapper->isFinished() || !mpViewer->isFinished())
+		while(!mpLocalMapper->isFinished() || !mpViewer->isFinished() || !mpMapPublisher->isFinished())
 		{
 			usleep(5000);
 		}
@@ -318,7 +320,12 @@ void System::Shutdown()
 		while (!mpViewer->isFinished())
 			usleep (5000);
 
-		pangolin::BindToContext("ORB-SLAM2: Map Viewer");
+		while (!mpMapPublisher->isFinished())
+			usleep (5000);
+
+    if (isUseViewer) {
+      pangolin::BindToContext("ORB-SLAM2: Map Viewer");
+    }
 	}
 
 }

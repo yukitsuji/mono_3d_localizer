@@ -189,10 +189,19 @@ add_executable(
         nodes/mono_orb_slam2/scan_mono_orb_slam2.cpp
 )
 
-# add_dependencies(scan_mono_orb_slam2 ${catkin_EXPORTED_TARGETS})
-
 target_link_libraries(
         scan_mono_orb_slam2
+        ${ORIG_ORB_BIN_LINKS}
+        ${LINK_LIBRARIES}
+)
+
+add_executable(
+        scan_mono_orb_slam2_pub
+        nodes/mono_orb_slam2/scan_mono_orb_slam2_pub.cpp
+)
+
+target_link_libraries(
+        scan_mono_orb_slam2_pub
         ${ORIG_ORB_BIN_LINKS}
         ${LINK_LIBRARIES}
 )
