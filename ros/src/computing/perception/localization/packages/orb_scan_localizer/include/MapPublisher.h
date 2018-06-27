@@ -77,7 +77,7 @@ private:
     MapTracking* mpMapTracker;
 
     ros::Publisher global_pub;
-    ros::Publisher lobal_pub;
+    ros::Publisher local_pub;
 
     // 1/fps in ms
     double mT;

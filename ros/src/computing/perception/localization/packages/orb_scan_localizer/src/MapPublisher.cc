@@ -60,7 +60,7 @@ MapPublisher::MapPublisher(
     ros::init (argc, NULL, "orb_map");
     ros::NodeHandle node;
 		global_pub = node.advertise<pcl::PointCloud<pcl::PointXYZ>>("global_points", 1, true);
-		lobal_pub = node.advertise<pcl::PointCloud<pcl::PointXYZ>>("local_points", 1, true);
+		local_pub = node.advertise<pcl::PointCloud<pcl::PointXYZ>>("local_points", 1, true);
 		// TODO: Get Current Camera Pose
 		// cur_pose_pub = node.advertise<>("")
 }
