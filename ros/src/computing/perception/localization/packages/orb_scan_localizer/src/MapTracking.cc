@@ -130,6 +130,10 @@ MapTracking::MapTracking (System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrame
     cout << "- Scale Factor: " << fScaleFactor << endl;
     cout << "- Initial Fast Threshold: " << fIniThFAST << endl;
     cout << "- Minimum Fast Threshold: " << fMinThFAST << endl;
+
+		global_pub = pSys->monoNode.advertise<pcl::PointCloud<pcl::PointXYZ>>("global_points", 1, true);
+		local_pub = pSys->monoNode.advertise<pcl::PointCloud<pcl::PointXYZ>>("local_points", 1, true);
+		orb_pose_pub = pSys->monoNode.advertise<geometry_msgs::PoseStamped>("/orb_pose", 10);
 }
 
 
@@ -430,10 +434,10 @@ void MapTracking::Track()
             // TODO: NDT Matching caller
             if (!mpSystem->isUseMapPublisher){
                 std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-                ScanWithNDT();
+                ScanWithNDT(mCurrentFrame.mTcw);
                 std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
                 double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-                std::cout << "NDT Matching " << ttrack << "\n";    
+                std::cout << "NDT Matching " << ttrack << "\n";
             }
     }
     else
@@ -451,13 +455,14 @@ void MapTracking::Track()
     }
 }
 
-void MapTracking::ScanWithNDT()
+void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
 {
     std::cout << "ScanWithNDT\n";
     const vector<MapPoint*> &vpMPs = mpMap->GetAllMapPoints();
     const vector<MapPoint*> &vpRefMPs = mpMap->GetReferenceMapPoints();
 
     set<MapPoint*> spRefMPs(vpRefMPs.begin(), vpRefMPs.end());
+		ros::Time current_scan_time = ros::Time::now();
 
     if(vpMPs.empty())
         return;
@@ -476,11 +481,11 @@ void MapTracking::ScanWithNDT()
     }
     sensor_msgs::PointCloud2 pc2_g;
 
-    pc2_g.header.frame_id= "velodyne";
-    // pc2_g.header.stamp=header->stamp;
+    pc2_g.header.frame_id = "velodyne";
+    pc2_g.header.stamp = current_scan_time; //header->stamp;
     // pc2_g.header.seq=header->seq;
     g_points->header = pcl_conversions::toPCL(pc2_g.header);
-    //global_pub.publish(g_points);
+    global_pub.publish(g_points);
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr l_points (new pcl::PointCloud<pcl::PointXYZ>);
 
@@ -496,8 +501,48 @@ void MapTracking::ScanWithNDT()
     }
     sensor_msgs::PointCloud2 pc2_l;
     pc2_l.header.frame_id= "velodyne";
+		pc2_l.header.stamp = current_scan_time; //header->stamp;
     l_points->header = pcl_conversions::toPCL(pc2_l.header);
-    //local_pub.publish(l_points);
+    local_pub.publish(l_points);
+
+		// orb_pose_msg.header.frame_id = "/orb_pose";
+		// orb_pose_msg.header.stamp = current_scan_time;
+		// orb_pose_msg.pose.position.x = 1;
+		// orb_pose_msg.pose.position.y = 1;
+		// orb_pose_msg.pose.position.z = 1;
+		// orb_pose_msg.pose.orientation.x = 0;
+		// orb_pose_msg.pose.orientation.y = 0;
+		// orb_pose_msg.pose.orientation.z = 0;
+		// orb_pose_msg.pose.orientation.w = 0;
+		// orb_pose_pub.publish(orb_pose_msg);
+
+		static tf::TransformBroadcaster br;
+		tf::Quaternion current_q;
+		// tf::StampedTransform transform;
+		tf::Transform transform;
+		current_q.setRPY(0, 0, 0);
+		transform.setOrigin(tf::Vector3(1, 1, 1));
+    transform.setRotation(current_q);
+		br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "velodyne", "orb_pose"));
+		std::cout << "Transform Success\n";
+
+		// current_q.setRPY(current_pose.roll, current_pose.pitch, current_pose.yaw);
+		// transform.setOrigin(tf::Vector3(current_pose.x, current_pose.y, current_pose.z));
+
+		// tf::TransformListener listener;
+		// tf::Transform transform;
+		// listener.waitForTransform("/orb_pose", "/velodyne", current_scan_time, ros::Duration(10.0));
+		// listener.lookupTransform("/orb_pose", "/velodyne", current_scan_time, transform);
+
+		// br.sendTransform(tf::StampedTransform(transform, current_scan_time, "/orb_pose", "/velodyne"));
+		// ndt_pose_msg.header.stamp = current_scan_time;
+		// ndt_pose_msg.pose.position.x = ndt_pose.x;
+		// ndt_pose_msg.pose.position.y = ndt_pose.y;
+		// ndt_pose_msg.pose.position.z = ndt_pose.z;
+		// ndt_pose_msg.pose.orientation.x = ndt_q.x();
+		// ndt_pose_msg.pose.orientation.y = ndt_q.y();
+		// ndt_pose_msg.pose.orientation.z = ndt_q.z();
+		// ndt_pose_msg.pose.orientation.w = ndt_q.w();
 }
 
 void MapTracking::MapOpenMonocularInitialization ()

@@ -1287,18 +1287,6 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     }
 
     current_q.setRPY(current_pose.roll, current_pose.pitch, current_pose.yaw);
-    // current_pose is published by vel_pose_mux
-    /*
-    current_pose_msg.header.frame_id = "/map";
-    current_pose_msg.header.stamp = current_scan_time;
-    current_pose_msg.pose.position.x = current_pose.x;
-    current_pose_msg.pose.position.y = current_pose.y;
-    current_pose_msg.pose.position.z = current_pose.z;
-    current_pose_msg.pose.orientation.x = current_q.x();
-    current_pose_msg.pose.orientation.y = current_q.y();
-    current_pose_msg.pose.orientation.z = current_q.z();
-    current_pose_msg.pose.orientation.w = current_q.w();
-    */
 
     localizer_q.setRPY(localizer_pose.roll, localizer_pose.pitch, localizer_pose.yaw);
     if (_use_local_transform == true)

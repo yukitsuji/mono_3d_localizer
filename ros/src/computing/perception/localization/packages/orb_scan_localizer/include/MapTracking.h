@@ -41,6 +41,16 @@
 
 #include <mutex>
 
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/point_cloud.h>
+#include <pcl/point_types.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <tf/tf.h>
+#include <tf/transform_broadcaster.h>
+#include <tf/transform_datatypes.h>
+#include <tf/transform_listener.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/TwistStamped.h>
 
 typedef Eigen::Transform<float,3,Eigen::Affine> Transform3;
 
@@ -148,6 +158,12 @@ public:
     bool trackingIsGood() const
     {return mLastProcessedState==ORB_SLAM2::MapTracking::OK and !mCurrentFrame.mTcw.empty(); }
 
+    ros::Publisher global_pub;
+    ros::Publisher local_pub;
+    ros::Publisher orb_pose_pub;
+    geometry_msgs::PoseStamped orb_pose_msg;
+
+
 protected:
 
     // Main tracking function. It is independent of the input sensor.
@@ -166,8 +182,8 @@ protected:
     bool TrackReferenceKeyFrame();
     void UpdateLastFrame();
     bool TrackWithMotionModel();
-    
-    void ScanWithNDT();
+
+    void ScanWithNDT(cv::Mat currAbsolutePos);
 
     enum RelocalizationMode {
     	SEARCH_DB = 1,

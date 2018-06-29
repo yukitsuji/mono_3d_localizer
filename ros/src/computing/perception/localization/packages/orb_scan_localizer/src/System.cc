@@ -31,7 +31,8 @@ namespace ORB_SLAM2
 {
 
 System::System(const string &strVocFile, const string &strSettingsFile,
-               const eSensor sensor, const bool bUseMapPublisher, const bool is_publish,
+               const eSensor sensor, const ros::NodeHandle &node,
+               const bool bUseMapPublisher, const bool is_publish,
                const bool bUseViewer, const bool is_visualize,
                const string &mpMapFileName, const operationMode mode):
 				mSensor(sensor),
@@ -40,8 +41,9 @@ System::System(const string &strVocFile, const string &strSettingsFile,
 				mbActivateLocalizationMode(false),
 				mbDeactivateLocalizationMode(false),
 				opMode(mode),
-                                isUseViewer(bUseViewer),
-                                isUseMapPublisher(bUseMapPublisher)
+        isUseViewer(bUseViewer),
+        isUseMapPublisher(bUseMapPublisher),
+        monoNode(node)
 {
     // Output welcome message
     cout << endl <<

@@ -47,6 +47,7 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "Mono");
     ros::start();
+    ros::NodeHandle nodeHandler;
 
     if(argc != 3)
     {
@@ -56,12 +57,12 @@ int main(int argc, char **argv)
     }
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::MONOCULAR, true, true, false, false,
+    ORB_SLAM2::System SLAM(argv[1], argv[2], ORB_SLAM2::System::MONOCULAR,
+                           nodeHandler, true, true, false, false,
                            "", ORB_SLAM2::System::MAPPING);
 
     ImageGrabber igb(&SLAM);
 
-    ros::NodeHandle nodeHandler;
     ros::Subscriber sub = nodeHandler.subscribe("/image_raw", 100, &ImageGrabber::GrabImage, &igb);
 
     ros::spin();

@@ -37,6 +37,11 @@
 #include "ORBVocabulary.h"
 #include "Viewer.h"
 
+#include <ros/ros.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/point_cloud.h>
+#include <pcl/point_types.h>
+#include <sensor_msgs/PointCloud2.h>
 
 using std::string;
 
@@ -85,6 +90,7 @@ public:
     	const string &strVocFile,
   		const string &strSettingsFile,
   		const eSensor sensor,
+      const ros::NodeHandle &node,
       const bool bUseMapPublisher,
       const bool is_publish,
   		const bool bUseViewer,
@@ -135,6 +141,8 @@ public:
 
     // Move retrievable setting here
     cv::FileStorage fsSettings;
+
+    ros::NodeHandle monoNode;
 
     // 'get' resources
     Tracking* getTracker() { return mpTracker; }
