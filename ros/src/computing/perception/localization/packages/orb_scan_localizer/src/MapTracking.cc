@@ -435,6 +435,8 @@ void MapTracking::Track()
             if (!mpSystem->isUseMapPublisher){
                 std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
                 ScanWithNDT(mCurrentFrame.mTcw);
+								// ScanWithNDT(mCurrentFrame.mpReferenceKF->GetPoseInverse());
+								// mCurrentFrame.mpReferenceKF->GetPoseInverse().t();
                 std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
                 double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
                 std::cout << "NDT Matching " << ttrack << "\n";
@@ -505,26 +507,49 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
     l_points->header = pcl_conversions::toPCL(pc2_l.header);
     local_pub.publish(l_points);
 
-		// orb_pose_msg.header.frame_id = "/orb_pose";
-		// orb_pose_msg.header.stamp = current_scan_time;
-		// orb_pose_msg.pose.position.x = 1;
-		// orb_pose_msg.pose.position.y = 1;
-		// orb_pose_msg.pose.position.z = 1;
-		// orb_pose_msg.pose.orientation.x = 0;
-		// orb_pose_msg.pose.orientation.y = 0;
-		// orb_pose_msg.pose.orientation.z = 0;
-		// orb_pose_msg.pose.orientation.w = 0;
-		// orb_pose_pub.publish(orb_pose_msg);
+		orb_pose_msg.header.frame_id = "/orb_pose";
+		orb_pose_msg.header.stamp = ros::Time::now();
+		orb_pose_msg.pose.position.x = 0;
+		orb_pose_msg.pose.position.y = 0;
+		orb_pose_msg.pose.position.z = 0;
+		orb_pose_msg.pose.orientation.x = 0;
+		orb_pose_msg.pose.orientation.y = 0;
+		orb_pose_msg.pose.orientation.z = 0;
+		orb_pose_msg.pose.orientation.w = 0;
+		orb_pose_pub.publish(orb_pose_msg);
+
+		// currAbsolutePos.copyTo(Tcw);
+		cv::Mat Rcw = currAbsolutePos.rowRange(0,3).colRange(0,3);
+		cv::Mat tcw = currAbsolutePos.rowRange(0,3).col(3);
+		cv::Mat Rwc = Rcw.t();
+		cv::Mat Ow = -Rwc*tcw;
+
+		cv::Mat Twc = cv::Mat::eye(4,4,currAbsolutePos.type());
+		Rwc.copyTo(Twc.rowRange(0,3).colRange(0,3));
+		Ow.copyTo(Twc.rowRange(0,3).col(3));
 
 		static tf::TransformBroadcaster br;
 		tf::Quaternion current_q;
-		// tf::StampedTransform transform;
 		tf::Transform transform;
 		current_q.setRPY(0, 0, 0);
-		transform.setOrigin(tf::Vector3(1, 1, 1));
-    transform.setRotation(current_q);
+		transform.setOrigin(tf::Vector3(Twc.at<float>(0, 3),
+		                                Twc.at<float>(1, 3),
+																		Twc.at<float>(2, 3)));
+		transform.setRotation(current_q);
 		br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "velodyne", "orb_pose"));
-		std::cout << "Transform Success\n";
+		// transform.setOrigin(tf::Vector3(currAbsolutePos.at<float>(0, 3),
+		//                                 currAbsolutePos.at<float>(1, 3),
+		// 																currAbsolutePos.at<float>(2, 3)));
+
+
+		// static tf::TransformBroadcaster br;
+		// tf::Quaternion current_q;
+		// tf::Transform transform;
+		// current_q.setRPY(0, 0, 0);
+		// transform.setOrigin(tf::Vector3(1, 1, 1));
+    // transform.setRotation(current_q);
+		// br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "velodyne", "orb_pose"));
+		// std::cout << "Transform Success\n";
 
 		// current_q.setRPY(current_pose.roll, current_pose.pitch, current_pose.yaw);
 		// transform.setOrigin(tf::Vector3(current_pose.x, current_pose.y, current_pose.z));
@@ -567,7 +592,7 @@ void MapTracking::MonocularInitialization()
             if(mpInitializer)
                 delete mpInitializer;
 
-            mpInitializer =  new Initializer(mCurrentFrame,1.0,200);
+            mpInitializer = new Initializer(mCurrentFrame,1.0,200);
 
             fill(mvIniMatches.begin(),mvIniMatches.end(),-1);
 
