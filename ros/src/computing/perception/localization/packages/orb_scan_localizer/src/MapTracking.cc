@@ -476,9 +476,9 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
         continue;
       cv::Mat pos = p->GetWorldPos();
       pcl::PointXYZ point;
-      point.x = pos.at<float>(0);
-      point.y = pos.at<float>(1);
-      point.z = pos.at<float>(2);
+      point.x = pos.at<float>(2);
+      point.y = -pos.at<float>(0);
+      point.z = -pos.at<float>(1) + 1.68;
       g_points->push_back(point);
     }
     sensor_msgs::PointCloud2 pc2_g;
@@ -496,9 +496,9 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
         continue;
       cv::Mat pos = p->GetWorldPos();
       pcl::PointXYZ point;
-      point.x = pos.at<float>(0);
-      point.y = pos.at<float>(1);
-      point.z = pos.at<float>(2);
+      point.x = pos.at<float>(2);
+      point.y = -pos.at<float>(0);
+      point.z = -pos.at<float>(1) + 1.68;
       l_points->push_back(point);
     }
     sensor_msgs::PointCloud2 pc2_l;
@@ -506,17 +506,6 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
 		pc2_l.header.stamp = current_scan_time; //header->stamp;
     l_points->header = pcl_conversions::toPCL(pc2_l.header);
     local_pub.publish(l_points);
-
-		orb_pose_msg.header.frame_id = "/orb_pose";
-		orb_pose_msg.header.stamp = ros::Time::now();
-		orb_pose_msg.pose.position.x = 0;
-		orb_pose_msg.pose.position.y = 0;
-		orb_pose_msg.pose.position.z = 0;
-		orb_pose_msg.pose.orientation.x = 0;
-		orb_pose_msg.pose.orientation.y = 0;
-		orb_pose_msg.pose.orientation.z = 0;
-		orb_pose_msg.pose.orientation.w = 0;
-		orb_pose_pub.publish(orb_pose_msg);
 
 		// currAbsolutePos.copyTo(Tcw);
 		cv::Mat Rcw = currAbsolutePos.rowRange(0,3).colRange(0,3);
@@ -531,34 +520,32 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
 		static tf::TransformBroadcaster br;
 		tf::Quaternion current_q;
 		tf::Transform transform;
-                float sy = sqrt(Rwc.at<double>(0,0) * Rwc.at<double>(0,0) +  Rwc.at<double>(1,0) * Rwc.at<double>(1,0) );
 
-                bool singular = sy < 1e-6; // If
+		Eigen::Quaterniond q = Converter::toQuaternion(Twc);
 
-                float x, y, z;
-                if (!singular)
-                {
-                    x = atan2(Rwc.at<double>(2,1) , Rwc.at<double>(2,2));
-                    y = atan2(-Rwc.at<double>(2,0), sy);
-                    z = atan2(Rwc.at<double>(1,0), Rwc.at<double>(0,0));
-                }
-                else
-                {
-                    x = atan2(-Rwc.at<double>(1,2), Rwc.at<double>(1,1));
-                    y = atan2(-Rwc.at<double>(2,0), sy);
-                    z = 0;
-                }
+		orb_pose_msg.header.frame_id = "/orb_pose";
+		orb_pose_msg.header.stamp = current_scan_time; //ros::Time::now();
+		orb_pose_msg.pose.position.x = 0;
+		orb_pose_msg.pose.position.y = 0;
+		orb_pose_msg.pose.position.z = 0;
+		orb_pose_msg.pose.orientation.x = q.z();
+		orb_pose_msg.pose.orientation.y = -q.x();
+		orb_pose_msg.pose.orientation.z = -q.y();
+		orb_pose_msg.pose.orientation.w = q.w();
+		orb_pose_pub.publish(orb_pose_msg);
 
-		current_q.setRPY(x, y, z);
-		transform.setOrigin(tf::Vector3(Twc.at<float>(0, 3),
-		                                Twc.at<float>(1, 3),
-																		Twc.at<float>(2, 3)));
+		// current_q.setRPY(x, y, z);
+		current_q.setRPY(0, 0, 0);
+		transform.setOrigin(tf::Vector3(Twc.at<float>(2, 3),
+		                                -Twc.at<float>(0, 3),
+																		-Twc.at<float>(1, 3) + 1.68));
 		transform.setRotation(current_q);
-		br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "velodyne", "orb_pose"));
-		// transform.setOrigin(tf::Vector3(currAbsolutePos.at<float>(0, 3),
-		//                                 currAbsolutePos.at<float>(1, 3),
-		// 																currAbsolutePos.at<float>(2, 3)));
-
+		// br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "velodyne", "orb_pose"));
+		br.sendTransform(tf::StampedTransform(transform, current_scan_time, "velodyne", "orb_pose"));
+		current_q.setRPY(0, 0, 0);
+		transform.setOrigin(tf::Vector3(0, 0, 1.68));
+		transform.setRotation(current_q);
+		br.sendTransform(tf::StampedTransform(transform, current_scan_time, "map", "velodyne"));
 
 		// static tf::TransformBroadcaster br;
 		// tf::Quaternion current_q;
@@ -566,26 +553,6 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
 		// current_q.setRPY(0, 0, 0);
 		// transform.setOrigin(tf::Vector3(1, 1, 1));
     // transform.setRotation(current_q);
-		// br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "velodyne", "orb_pose"));
-		// std::cout << "Transform Success\n";
-
-		// current_q.setRPY(current_pose.roll, current_pose.pitch, current_pose.yaw);
-		// transform.setOrigin(tf::Vector3(current_pose.x, current_pose.y, current_pose.z));
-
-		// tf::TransformListener listener;
-		// tf::Transform transform;
-		// listener.waitForTransform("/orb_pose", "/velodyne", current_scan_time, ros::Duration(10.0));
-		// listener.lookupTransform("/orb_pose", "/velodyne", current_scan_time, transform);
-
-		// br.sendTransform(tf::StampedTransform(transform, current_scan_time, "/orb_pose", "/velodyne"));
-		// ndt_pose_msg.header.stamp = current_scan_time;
-		// ndt_pose_msg.pose.position.x = ndt_pose.x;
-		// ndt_pose_msg.pose.position.y = ndt_pose.y;
-		// ndt_pose_msg.pose.position.z = ndt_pose.z;
-		// ndt_pose_msg.pose.orientation.x = ndt_q.x();
-		// ndt_pose_msg.pose.orientation.y = ndt_q.y();
-		// ndt_pose_msg.pose.orientation.z = ndt_q.z();
-		// ndt_pose_msg.pose.orientation.w = ndt_q.w();
 }
 
 void MapTracking::MapOpenMonocularInitialization ()
@@ -605,14 +572,14 @@ void MapTracking::MonocularInitialization()
             mLastFrame = Frame(mCurrentFrame);
             mvbPrevMatched.resize(mCurrentFrame.mvKeysUn.size());
             for(size_t i=0; i<mCurrentFrame.mvKeysUn.size(); i++)
-                mvbPrevMatched[i]=mCurrentFrame.mvKeysUn[i].pt;
+                mvbPrevMatched[i] = mCurrentFrame.mvKeysUn[i].pt;
 
             if(mpInitializer)
                 delete mpInitializer;
 
-            mpInitializer = new Initializer(mCurrentFrame,1.0,200);
+            mpInitializer = new Initializer(mCurrentFrame, 1.0, 200);
 
-            fill(mvIniMatches.begin(),mvIniMatches.end(),-1);
+            fill(mvIniMatches.begin(), mvIniMatches.end(), -1);
 
             return;
         }
@@ -620,17 +587,17 @@ void MapTracking::MonocularInitialization()
     else
     {
         // Try to initialize
-        if((int)mCurrentFrame.mvKeys.size()<=100)
+        if((int)mCurrentFrame.mvKeys.size() <= 100)
         {
             delete mpInitializer;
             mpInitializer = static_cast<Initializer*>(NULL);
-            fill(mvIniMatches.begin(),mvIniMatches.end(),-1);
+            fill(mvIniMatches.begin(), mvIniMatches.end(), -1);
             return;
         }
 
         // Find correspondences
-        ORBmatcher matcher(0.9,true);
-        int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,100);
+        ORBmatcher matcher(0.9, true);
+        int nmatches = matcher.SearchForInitialization(mInitialFrame, mCurrentFrame, mvbPrevMatched, mvIniMatches, 100);
 
         // Check if there are enough correspondences
         if(nmatches<100)
@@ -647,6 +614,7 @@ void MapTracking::MonocularInitialization()
 
         if(mpInitializer->Initialize(mCurrentFrame, mvIniMatches, Rcw, tcw, mvIniP3D, vbTriangulated))
         {
+						std::cout << "tcw: " << tcw << "\n";
             for(size_t i=0, iend=mvIniMatches.size(); i<iend;i++)
             {
                 if(mvIniMatches[i]>=0 && !vbTriangulated[i])
@@ -659,6 +627,7 @@ void MapTracking::MonocularInitialization()
             // Set Frame Poses
             mInitialFrame.SetPose(cv::Mat::eye(4,4,CV_32F));
             cv::Mat Tcw = cv::Mat::eye(4,4,CV_32F);
+						// tcw *= 100;
             Rcw.copyTo(Tcw.rowRange(0,3).colRange(0,3));
             tcw.copyTo(Tcw.rowRange(0,3).col(3));
             mCurrentFrame.SetPose(Tcw);
@@ -666,9 +635,10 @@ void MapTracking::MonocularInitialization()
             cerr << Tcw << endl;
 
             CreateInitialMapMonocular();
+						std::cout << "##### Initialization Success #####\n";
         }
         else {
-        	cerr << "Initialization failed\n";
+        	cerr << "##### Initialization failed #####\n";
         }
     }
 }
@@ -728,6 +698,9 @@ void MapTracking::CreateInitialMapMonocular()
     float medianDepth = pKFini->ComputeSceneMedianDepth(2);
     float invMedianDepth = 1.0f/medianDepth;
 
+		std::cout << "invMedianDepth: " << invMedianDepth << "\n";
+		invMedianDepth = 0.007;
+
     if(medianDepth<0 || pKFcur->TrackedMapPoints(1)<100)
     {
         cout << "Wrong initialization, reseting..." << endl;
@@ -755,12 +728,12 @@ void MapTracking::CreateInitialMapMonocular()
     mpLocalMapper->InsertKeyFrame(pKFcur);
 
     mCurrentFrame.SetPose(pKFcur->GetPose());
-    mnLastKeyFrameId=mCurrentFrame.mnId;
+    mnLastKeyFrameId = mCurrentFrame.mnId;
     mpLastKeyFrame = pKFcur;
 
     mvpLocalKeyFrames.push_back(pKFcur);
     mvpLocalKeyFrames.push_back(pKFini);
-    mvpLocalMapPoints=mpMap->GetAllMapPoints();
+    mvpLocalMapPoints = mpMap->GetAllMapPoints();
     mpReferenceKF = pKFcur;
     mCurrentFrame.mpReferenceKF = pKFcur;
 
@@ -772,7 +745,7 @@ void MapTracking::CreateInitialMapMonocular()
 
     mpMap->mvpKeyFrameOrigins.push_back(pKFini);
 
-    mState=OK;
+    mState = OK;
 }
 
 void MapTracking::CheckReplacedInLastFrame()

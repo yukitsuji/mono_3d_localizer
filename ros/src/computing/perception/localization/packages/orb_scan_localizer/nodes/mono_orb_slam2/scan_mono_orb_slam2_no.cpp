@@ -32,6 +32,7 @@
 #include "System.h"
 
 using namespace std;
+static int sum_frame = 1;
 
 class ImageGrabber
 {
@@ -90,9 +91,12 @@ void ImageGrabber::GrabImage(const sensor_msgs::ImageConstPtr& msg)
         ROS_ERROR("cv_bridge exception: %s", e.what());
         return;
     }
-    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
     std::cout << "##########################################\n";
+    std::cout << "Frame count: " << sum_frame << "\n";
+    sum_frame++;
+    
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
     mpSLAM->TrackMonocular(cv_ptr->image,cv_ptr->header.stamp.toSec(), true);
 

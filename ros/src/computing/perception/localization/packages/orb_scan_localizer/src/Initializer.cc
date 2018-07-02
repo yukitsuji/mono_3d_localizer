@@ -25,7 +25,7 @@
 #include "Optimizer.h"
 #include "ORBmatcher.h"
 
-#include<thread>
+#include <thread>
 
 namespace ORB_SLAM2
 {
@@ -75,7 +75,7 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
     }
 
     // Generate sets of 8 points for each RANSAC iteration
-    mvSets = vector< vector<size_t> >(mMaxIterations,vector<size_t>(8,0));
+    mvSets = vector<vector<size_t>>(mMaxIterations,vector<size_t>(8,0));
 
     DUtils::Random::SeedRandOnce(0);
 
@@ -101,25 +101,30 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
     float SH, SF;
     cv::Mat H, F;
 
-    thread threadH(&Initializer::FindHomography,this,ref(vbMatchesInliersH), ref(SH), ref(H));
-    thread threadF(&Initializer::FindFundamental,this,ref(vbMatchesInliersF), ref(SF), ref(F));
+    thread threadH(&Initializer::FindHomography, this, ref(vbMatchesInliersH), ref(SH), ref(H));
+    thread threadF(&Initializer::FindFundamental, this, ref(vbMatchesInliersF), ref(SF), ref(F));
 
     // Wait until both threads have finished
     threadH.join();
     threadF.join();
 
     // Compute ratio of scores
-    float RH = SH/(SH+SF);
+    float RH = SH / (SH + SF);
+
+    std::cout << "H21: " << SH  << " F21: " << SF << "\n";
+    std::cout << "H21: " << H  << "\n F21: " << F << "\n";
+
+    return ReconstructF(vbMatchesInliersF,F,mK,R21,t21,vP3D,vbTriangulated,1.0,50);
+    // return ReconstructH(vbMatchesInliersH,H,mK,R21,t21,vP3D,vbTriangulated,1.0,50);
 
     // Try to reconstruct from homography or fundamental depending on the ratio (0.40-0.45)
-    if(RH>0.40)
-        return ReconstructH(vbMatchesInliersH,H,mK,R21,t21,vP3D,vbTriangulated,1.0,50);
-    else //if(pF_HF>0.6)
-        return ReconstructF(vbMatchesInliersF,F,mK,R21,t21,vP3D,vbTriangulated,1.0,50);
+    // if(RH > 0.40)
+    //     return ReconstructH(vbMatchesInliersH,H,mK,R21,t21,vP3D,vbTriangulated,1.0,50);
+    // else //if(pF_HF>0.6)
+    //     return ReconstructF(vbMatchesInliersF,F,mK,R21,t21,vP3D,vbTriangulated,1.0,50);
 
     return false;
 }
-
 
 void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, cv::Mat &H21)
 {
@@ -129,19 +134,19 @@ void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, c
     // Normalize coordinates
     vector<cv::Point2f> vPn1, vPn2;
     cv::Mat T1, T2;
-    Normalize(mvKeys1,vPn1, T1);
-    Normalize(mvKeys2,vPn2, T2);
+    Normalize(mvKeys1, vPn1, T1);
+    Normalize(mvKeys2, vPn2, T2);
     cv::Mat T2inv = T2.inv();
 
     // Best Results variables
     score = 0.0;
-    vbMatchesInliers = vector<bool>(N,false);
+    vbMatchesInliers = vector<bool>(N, false);
 
     // Iteration variables
     vector<cv::Point2f> vPn1i(8);
     vector<cv::Point2f> vPn2i(8);
     cv::Mat H21i, H12i;
-    vector<bool> vbCurrentInliers(N,false);
+    vector<bool> vbCurrentInliers(N, false);
     float currentScore;
 
     // Perform all RANSAC iterations and save the solution with highest score
@@ -156,8 +161,8 @@ void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, c
             vPn2i[j] = vPn2[mvMatches12[idx].second];
         }
 
-        cv::Mat Hn = ComputeH21(vPn1i,vPn2i);
-        H21i = T2inv*Hn*T1;
+        cv::Mat Hn = ComputeH21(vPn1i, vPn2i);
+        H21i = T2inv * Hn * T1;
         H12i = H21i.inv();
 
         currentScore = CheckHomography(H21i, H12i, vbCurrentInliers, mSigma);
@@ -171,7 +176,6 @@ void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, c
     }
 }
 
-
 void Initializer::FindFundamental(vector<bool> &vbMatchesInliers, float &score, cv::Mat &F21)
 {
     // Number of putative matches
@@ -180,19 +184,19 @@ void Initializer::FindFundamental(vector<bool> &vbMatchesInliers, float &score, 
     // Normalize coordinates
     vector<cv::Point2f> vPn1, vPn2;
     cv::Mat T1, T2;
-    Normalize(mvKeys1,vPn1, T1);
-    Normalize(mvKeys2,vPn2, T2);
+    Normalize(mvKeys1, vPn1, T1);
+    Normalize(mvKeys2, vPn2, T2);
     cv::Mat T2t = T2.t();
 
     // Best Results variables
     score = 0.0;
-    vbMatchesInliers = vector<bool>(N,false);
+    vbMatchesInliers = vector<bool>(N, false);
 
     // Iteration variables
     vector<cv::Point2f> vPn1i(8);
     vector<cv::Point2f> vPn2i(8);
     cv::Mat F21i;
-    vector<bool> vbCurrentInliers(N,false);
+    vector<bool> vbCurrentInliers(N, false);
     float currentScore;
 
     // Perform all RANSAC iterations and save the solution with highest score
@@ -207,13 +211,13 @@ void Initializer::FindFundamental(vector<bool> &vbMatchesInliers, float &score, 
             vPn2i[j] = vPn2[mvMatches12[idx].second];
         }
 
-        cv::Mat Fn = ComputeF21(vPn1i,vPn2i);
+        cv::Mat Fn = ComputeF21(vPn1i, vPn2i);
 
-        F21i = T2t*Fn*T1;
+        F21i = T2t * Fn * T1;
 
         currentScore = CheckFundamental(F21i, vbCurrentInliers, mSigma);
 
-        if(currentScore>score)
+        if(currentScore > score)
         {
             F21 = F21i.clone();
             vbMatchesInliers = vbCurrentInliers;
@@ -221,7 +225,6 @@ void Initializer::FindFundamental(vector<bool> &vbMatchesInliers, float &score, 
         }
     }
 }
-
 
 cv::Mat Initializer::ComputeH21(const vector<cv::Point2f> &vP1, const vector<cv::Point2f> &vP2)
 {
@@ -303,7 +306,7 @@ cv::Mat Initializer::ComputeF21(const vector<cv::Point2f> &vP1,const vector<cv::
 }
 
 float Initializer::CheckHomography(const cv::Mat &H21, const cv::Mat &H12, vector<bool> &vbMatchesInliers, float sigma)
-{   
+{
     const int N = mvMatches12.size();
 
     const float h11 = H21.at<float>(0,0);
@@ -481,7 +484,9 @@ bool Initializer::ReconstructF(vector<bool> &vbMatchesInliers, cv::Mat &F21, cv:
     cv::Mat R1, R2, t;
 
     // Recover the 4 motion hypotheses
-    DecomposeE(E21,R1,R2,t);  
+    DecomposeE(E21,R1,R2,t);
+
+    // t = t * 1000;
 
     cv::Mat t1=t;
     cv::Mat t2=-t;
@@ -687,7 +692,7 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
 
 
     int bestGood = 0;
-    int secondBestGood = 0;    
+    int secondBestGood = 0;
     int bestSolutionIdx = -1;
     float bestParallax = -1;
     vector<cv::Point3f> bestP3D;
@@ -760,8 +765,8 @@ void Initializer::Normalize(const vector<cv::KeyPoint> &vKeys, vector<cv::Point2
         meanY += vKeys[i].pt.y;
     }
 
-    meanX = meanX/N;
-    meanY = meanY/N;
+    meanX = meanX / N;
+    meanY = meanY / N;
 
     float meanDevX = 0;
     float meanDevY = 0;
@@ -775,11 +780,11 @@ void Initializer::Normalize(const vector<cv::KeyPoint> &vKeys, vector<cv::Point2
         meanDevY += fabs(vNormalizedPoints[i].y);
     }
 
-    meanDevX = meanDevX/N;
-    meanDevY = meanDevY/N;
+    meanDevX = meanDevX / N;
+    meanDevY = meanDevY / N;
 
-    float sX = 1.0/meanDevX;
-    float sY = 1.0/meanDevY;
+    float sX = 1.0 / meanDevX;
+    float sY = 1.0 / meanDevY;
 
     for(int i=0; i<N; i++)
     {
@@ -790,10 +795,9 @@ void Initializer::Normalize(const vector<cv::KeyPoint> &vKeys, vector<cv::Point2
     T = cv::Mat::eye(3,3,CV_32F);
     T.at<float>(0,0) = sX;
     T.at<float>(1,1) = sY;
-    T.at<float>(0,2) = -meanX*sX;
-    T.at<float>(1,2) = -meanY*sY;
+    T.at<float>(0,2) = -meanX * sX;
+    T.at<float>(1,2) = -meanY * sY;
 }
-
 
 int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::KeyPoint> &vKeys1, const vector<cv::KeyPoint> &vKeys2,
                        const vector<Match> &vMatches12, vector<bool> &vbMatchesInliers,
@@ -912,7 +916,12 @@ void Initializer::DecomposeE(const cv::Mat &E, cv::Mat &R1, cv::Mat &R2, cv::Mat
     cv::SVD::compute(E,w,u,vt);
 
     u.col(2).copyTo(t);
-    t=t/cv::norm(t);
+
+    // TODO: Scale Alignment
+    std::cout << "########### Raw T: " << t << "###############\n";
+    t = t*100;
+
+    // t=t/cv::norm(t);
 
     cv::Mat W(3,3,CV_32F,cv::Scalar(0));
     W.at<float>(0,1)=-1;
