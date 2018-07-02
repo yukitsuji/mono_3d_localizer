@@ -916,12 +916,7 @@ void Initializer::DecomposeE(const cv::Mat &E, cv::Mat &R1, cv::Mat &R2, cv::Mat
     cv::SVD::compute(E,w,u,vt);
 
     u.col(2).copyTo(t);
-
-    // TODO: Scale Alignment
-    std::cout << "########### Raw T: " << t << "###############\n";
-    t = t*100;
-
-    // t=t/cv::norm(t);
+    t=t/cv::norm(t);
 
     cv::Mat W(3,3,CV_32F,cv::Scalar(0));
     W.at<float>(0,1)=-1;

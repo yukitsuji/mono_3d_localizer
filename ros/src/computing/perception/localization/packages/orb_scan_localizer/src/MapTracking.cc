@@ -698,8 +698,9 @@ void MapTracking::CreateInitialMapMonocular()
     float medianDepth = pKFini->ComputeSceneMedianDepth(2);
     float invMedianDepth = 1.0f/medianDepth;
 
+		// TODO: Scale alignment
 		std::cout << "invMedianDepth: " << invMedianDepth << "\n";
-		invMedianDepth = 0.007;
+		// invMedianDepth = 0.007;
 
     if(medianDepth<0 || pKFcur->TrackedMapPoints(1)<100)
     {
