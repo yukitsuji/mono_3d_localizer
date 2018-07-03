@@ -594,24 +594,61 @@ static void initialpose_callback(const geometry_msgs::PoseWithCovarianceStamped:
   {
     ROS_ERROR("%s", ex.what());
   }
+  std::cout << "################################################################\n";
+  std::cout << "##### Initial pose Header: " << input->header.frame_id << "#####\n";
+  std::cout << "################################################################\n";
+  std::cout << input->pose.pose << "\n";
+  std::cout << transform.getOrigin().x() << " " << transform.getOrigin().y() << " " << transform.getOrigin().z() << "\n";
+  std::cout << "################################################################\n";
 
-  tf::Quaternion q(input->pose.pose.orientation.x, input->pose.pose.orientation.y, input->pose.pose.orientation.z,
-                   input->pose.pose.orientation.w);
+  // tf::Quaternion q(input->pose.pose.orientation.x, input->pose.pose.orientation.y, input->pose.pose.orientation.z,
+  //                  input->pose.pose.orientation.w);
+  // tf::Matrix3x3 m(q);
+
+  // current_pose.x = input->pose.pose.position.x + transform.getOrigin().x();
+  // current_pose.y = input->pose.pose.position.y + transform.getOrigin().y();
+  // current_pose.z = input->pose.pose.position.z + transform.getOrigin().z();
+  // }
+  tf::Quaternion q(0.0, 0.0, 0.0, 1.0);
   tf::Matrix3x3 m(q);
-
-  if (_use_local_transform == true)
-  {
-    current_pose.x = input->pose.pose.position.x;
-    current_pose.y = input->pose.pose.position.y;
-    current_pose.z = input->pose.pose.position.z;
-  }
-  else
-  {
-    current_pose.x = input->pose.pose.position.x + transform.getOrigin().x();
-    current_pose.y = input->pose.pose.position.y + transform.getOrigin().y();
-    current_pose.z = input->pose.pose.position.z + transform.getOrigin().z();
-  }
+  current_pose.x = 0;
+  current_pose.y = 0;
+  current_pose.z = 0;
+  current_pose.roll = 0;
+  current_pose.pitch = 0;
+  current_pose.yaw = 0;
   m.getRPY(current_pose.roll, current_pose.pitch, current_pose.yaw);
+
+  // tf::TransformListener listener;
+  // tf::StampedTransform transform;
+  // try
+  // {
+  //   ros::Time now = ros::Time(0);
+  //   listener.waitForTransform("/map", input->header.frame_id, now, ros::Duration(10.0));
+  //   listener.lookupTransform("/map", input->header.frame_id, now, transform);
+  // }
+  // catch (tf::TransformException& ex)
+  // {
+  //   ROS_ERROR("%s", ex.what());
+  // }
+  //
+  // tf::Quaternion q(input->pose.pose.orientation.x, input->pose.pose.orientation.y, input->pose.pose.orientation.z,
+  //                  input->pose.pose.orientation.w);
+  // tf::Matrix3x3 m(q);
+  //
+  // if (_use_local_transform == true)
+  // {
+  //   current_pose.x = input->pose.pose.position.x;
+  //   current_pose.y = input->pose.pose.position.y;
+  //   current_pose.z = input->pose.pose.position.z;
+  // }
+  // else
+  // {
+  //   current_pose.x = input->pose.pose.position.x + transform.getOrigin().x();
+  //   current_pose.y = input->pose.pose.position.y + transform.getOrigin().y();
+  //   current_pose.z = input->pose.pose.position.z + transform.getOrigin().z();
+  // }
+  // m.getRPY(current_pose.roll, current_pose.pitch, current_pose.yaw);
 
   if (_get_height == true && map_loaded == 1)
   {

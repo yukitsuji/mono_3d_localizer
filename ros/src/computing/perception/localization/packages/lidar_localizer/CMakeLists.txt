@@ -68,7 +68,7 @@ add_executable(ndt_matching nodes/ndt_matching/ndt_matching.cpp)
 target_link_libraries(ndt_matching ${catkin_LIBRARIES})
 add_dependencies(ndt_matching ${catkin_EXPORTED_TARGETS})
 
-add_executable(ndt_matching nodes/ndt_matching/ndt_matching_custom.cpp)
+add_executable(ndt_matching_custom nodes/ndt_matching/ndt_matching_custom.cpp)
 target_link_libraries(ndt_matching_custom ${catkin_LIBRARIES})
 add_dependencies(ndt_matching_custom ${catkin_EXPORTED_TARGETS})
 
