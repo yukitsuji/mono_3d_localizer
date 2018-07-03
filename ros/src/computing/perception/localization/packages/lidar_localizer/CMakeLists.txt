@@ -68,18 +68,24 @@ add_executable(ndt_matching nodes/ndt_matching/ndt_matching.cpp)
 target_link_libraries(ndt_matching ${catkin_LIBRARIES})
 add_dependencies(ndt_matching ${catkin_EXPORTED_TARGETS})
 
+add_executable(ndt_matching nodes/ndt_matching/ndt_matching_custom.cpp)
+target_link_libraries(ndt_matching_custom ${catkin_LIBRARIES})
+add_dependencies(ndt_matching_custom ${catkin_EXPORTED_TARGETS})
+
 add_executable(ndt_mapping nodes/ndt_mapping/ndt_mapping.cpp)
 target_link_libraries(ndt_mapping ${catkin_LIBRARIES})
 add_dependencies(ndt_mapping ${catkin_EXPORTED_TARGETS})
 
 if (CUDA_FOUND)
     target_include_directories(ndt_matching PRIVATE ${CUDA_INCLUDE_DIRS})
+    target_include_directories(ndt_matching_custom PRIVATE ${CUDA_INCLUDE_DIRS})
     target_include_directories(ndt_mapping PRIVATE ${CUDA_INCLUDE_DIRS})
 endif ()
 
 
 if (NOT (PCL_VERSION VERSION_LESS "1.7.2"))
     set_target_properties(ndt_matching PROPERTIES COMPILE_DEFINITIONS "USE_PCL_OPENMP")
+    set_target_properties(ndt_matching_custom PROPERTIES COMPILE_DEFINITIONS "USE_PCL_OPENMP")
     set_target_properties(ndt_mapping PROPERTIES COMPILE_DEFINITIONS "USE_PCL_OPENMP")
 endif (NOT (PCL_VERSION VERSION_LESS "1.7.2"))
 
@@ -138,7 +144,7 @@ install(TARGETS ndt_matching_tku ndt_mapping_tku ndt_mapping_tku ndt_matching_mo
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
         )
 
-install(TARGETS ndt_matching ndt_mapping approximate_ndt_mapping tf_mapping lazy_ndt_mapping queue_counter
+install(TARGETS ndt_matching ndt_mapping approximate_ndt_mapping tf_mapping lazy_ndt_mapping queue_counter ndt_matching_custom
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
