@@ -625,6 +625,7 @@ void MapTracking::MonocularInitialization()
             }
 
             // Set Frame Poses
+						// TODO: 仮のTransformの値
             mInitialFrame.SetPose(cv::Mat::eye(4,4,CV_32F));
             cv::Mat Tcw = cv::Mat::eye(4,4,CV_32F);
 						// tcw *= 100;
@@ -691,6 +692,8 @@ void MapTracking::CreateInitialMapMonocular()
 
     // Bundle Adjustment
     cout << "New Map created with " << mpMap->MapPointsInMap() << " points" << endl;
+
+		// # TODO: Update temporary transformation value
 
     Optimizer::GlobalBundleAdjustemnt(mpMap,20);
 
