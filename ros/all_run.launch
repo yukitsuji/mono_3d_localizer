@@ -1,0 +1,46 @@
+<launch>
+
+  <arg name="x" default="0.0"/>
+  <arg name="y" default="0.0"/>
+  <arg name="z" default="0.0"/>
+  <arg name="yaw" default="0.0"/>
+  <arg name="pitch" default="0.0"/>
+  <arg name="roll" default="0.0"/>
+  <arg name="frame_id" default="/base_link"/>
+  <arg name="child_frame_id" default="/velodyne"/>
+  <arg name="period_in_ms" default="10"/>
+
+  <node pkg="tf" type="static_transform_publisher" name="base_link_to_localizer"
+    args="$(arg x) $(arg y) $(arg z) $(arg yaw) $(arg pitch) $(arg roll) $(arg frame_id) $(arg child_frame_id) $(arg period_in_ms)"/>
+
+  <!-- worldからmapへのtf -->
+  <node pkg="tf"  type="static_transform_publisher" name="world_to_map" args="0 0 0 0 0 0 /world /map 10" />
+
+  <!-- mapからmobilityへのtf -->
+  <node pkg="tf"  type="static_transform_publisher" name="map_to_mobility" args="0 0 0 0 0 0 /map /mobility 10" />
+
+  <!-- Mapの起動 -->
+  <node pkg="map_file"  type="points_map_loader" name="run_map" args="noupdate /home/yukitsuji/dataset/2011_09_26_drive_0093.pcd" />
+
+  <arg name="sync" default="false" />
+  <arg name="node_name" default="voxel_grid_filter" />
+  <arg name="points_topic" default="/points_raw" />
+  <arg name="output_log" default="false" />
+
+  <node pkg="points_downsampler" name="$(arg node_name)" type="$(arg node_name)">
+    <param name="points_topic" value="$(arg points_topic)" />
+    <remap from="/points_raw" to="/sync_drivers/points_raw" if="$(arg sync)" />
+    <param name="output_log" value="$(arg output_log)" />
+  </node>
+
+  <rosparam>
+    localizer: velodyne
+    tf_x: 1.73
+    tf_y: 0
+    tf_z: 1.68
+    tf_yaw: 0
+    tf_pitch: 0
+    tf_roll: 0
+  </rosparam>
+
+</launch>

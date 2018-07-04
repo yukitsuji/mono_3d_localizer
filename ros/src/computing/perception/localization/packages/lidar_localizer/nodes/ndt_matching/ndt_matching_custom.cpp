@@ -1415,6 +1415,7 @@ int main(int argc, char** argv)
   Eigen::AngleAxisf rot_y_btol(_tf_pitch, Eigen::Vector3f::UnitY());
   Eigen::AngleAxisf rot_z_btol(_tf_yaw, Eigen::Vector3f::UnitZ());
   tf_btol = (tl_btol * rot_z_btol * rot_y_btol * rot_x_btol).matrix();
+  std::cout << "tf_btol: " << tf_btol << std::endl;
 
   // Updated in initialpose_callback or gnss_callback
   initial_pose.x = 0.0;
@@ -1424,10 +1425,10 @@ int main(int argc, char** argv)
   initial_pose.pitch = 0.0;
   initial_pose.yaw = 0.0;
 
-  // std::cout << "**************************************************************" << std::endl;
-  // std::cout << "                   Initialize position                        " << std::endl;
-  // std::cout << "**************************************************************" << std::endl;
-  // initialpose_callback();
+  std::cout << "**************************************************************" << std::endl;
+  std::cout << "                   Initialize position                        " << std::endl;
+  std::cout << "**************************************************************" << std::endl;
+  initialpose_callback();
 
   // Publishers
   predict_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/predict_pose", 10);
@@ -1449,7 +1450,7 @@ int main(int argc, char** argv)
   ros::Subscriber param_sub = nh.subscribe("config/ndt", 10, param_callback);
   ros::Subscriber gnss_sub = nh.subscribe("gnss_pose", 10, gnss_callback);
   //  ros::Subscriber map_sub = nh.subscribe("points_map", 1, map_callback);
-  ros::Subscriber initialpose_sub = nh.subscribe("initialpose", 10, initialpose_callback);
+  // ros::Subscriber initialpose_sub = nh.subscribe("initialpose", 10, initialpose_callback);
   ros::Subscriber points_sub = nh.subscribe("filtered_points", _queue_size, points_callback);
   // ros::Subscriber odom_sub = nh.subscribe("/vehicle/odom", _queue_size * 10, odom_callback);
   // ros::Subscriber imu_sub = nh.subscribe(_imu_topic.c_str(), _queue_size * 10, imu_callback);
