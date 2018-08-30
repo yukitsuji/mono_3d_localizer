@@ -90,11 +90,11 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     if(mvKeys.empty())
         return;
 
-    t1 = std::chrono::steady_clock::now();
+    // t1 = std::chrono::steady_clock::now();
     UndistortKeyPoints();
-    t2 = std::chrono::steady_clock::now();
-		ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
-		std::cout << "Undistort Orb " << ttrack << "\n";
+    // t2 = std::chrono::steady_clock::now();
+		// ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+		// std::cout << "Undistort Orb " << ttrack << "\n";
 
     // Set no stereo information
     mvuRight = vector<float>(N,-1);
@@ -123,11 +123,11 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
 
     mb = mbf/fx;
 
-    t1 = std::chrono::steady_clock::now();
+    // t1 = std::chrono::steady_clock::now();
     AssignFeaturesToGrid();
-    t2 = std::chrono::steady_clock::now();
-		ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
-		std::cout << "Assign Grid Orb " << ttrack << "\n";
+    // t2 = std::chrono::steady_clock::now();
+		// ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+		// std::cout << "Assign Grid Orb " << ttrack << "\n";
 }
 
 void Frame::AssignFeaturesToGrid()

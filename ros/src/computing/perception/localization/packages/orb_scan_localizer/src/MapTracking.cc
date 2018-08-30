@@ -234,115 +234,34 @@ void MapTracking::Track()
         bool bOK;
 
         // Initial camera pose estimation using motion model or relocalization (if tracking is lost)
-        if(!mbOnlyTracking)
+        // Local Mapping is activated. This is the normal behaviour, unless
+        // you explicitly activate the "only tracking" mode.
+        if(mState == OK)
         {
-            // Local Mapping is activated. This is the normal behaviour, unless
-            // you explicitly activate the "only tracking" mode.
-            if(mState == OK)
-            {
-                // Local Mapping might have changed some MapPoints tracked in last frame
-                CheckReplacedInLastFrame();
+            // Local Mapping might have changed some MapPoints tracked in last frame
+            CheckReplacedInLastFrame();
 
-                if(mVelocity.empty() || mCurrentFrame.mnId<mnLastRelocFrameId+2)
-                {
-                    bOK = TrackReferenceKeyFrame();
-                }
-                else
-                {
-                    bOK = TrackWithMotionModel(); // matching with previous frame
-                    if(!bOK)
-                        bOK = TrackReferenceKeyFrame();
-                }
+            if(mVelocity.empty()) // || mCurrentFrame.mnId<mnLastRelocFrameId+2)
+            {
+                bOK = TrackReferenceKeyFrame();
             }
             else
             {
-                // TODO: Need to implement when tracking is lost.
-                // Triangulation and scan matching is useful.
-                bOK = Relocalization();
+                bOK = TrackWithMotionModel(); // matching with previous frame
+                if(!bOK)
+                    bOK = TrackReferenceKeyFrame();
             }
         }
         else
         {
-            // Only Tracking: Local Mapping is deactivated
-            if(mState == LOST || mState == MAP_OPEN)
-            {
-                bOK = Relocalization();
-            }
-            else
-            {
-                if(!mbVO) // matching with map at previous frame
-                {
-                    // In last frame we tracked enough MapPoints in the map
-                    if(!mVelocity.empty())
-                    {
-                        bOK = TrackWithMotionModel(); // matching with previous frame
-                    }
-                    else
-                    {
-                        bOK = TrackReferenceKeyFrame(); // matching with keyframe
-                    }
-                }
-                else // matching with frame at previous frame (VO)
-                {
-                    // In last frame we tracked mainly "visual odometry" points.
-                    // We compute two camera poses, one from motion model and one doing relocalization.
-                    // If relocalization is successful we choose that solution, otherwise we retain
-                    // the "visual odometry" solution.
-                    bool bOKMM = false;
-                    bool bOKReloc = false;
-                    vector<MapPoint*> vpMPsMM;
-                    vector<bool> vbOutMM;
-                    cv::Mat TcwMM;
-                    if(!mVelocity.empty())
-                    {
-                        bOKMM = TrackWithMotionModel(); // matching with previous frame
-                        vpMPsMM = mCurrentFrame.mvpMapPoints;
-                        vbOutMM = mCurrentFrame.mvbOutlier;
-                        TcwMM = mCurrentFrame.mTcw.clone();
-                    }
-                    // XXX: Need to confirm if we need local map reloc.
-                    // bOKReloc = Relocalization (SEARCH_LOCAL_MAP);
-                    bOKReloc = Relocalization();
-                    if (!bOKReloc)
-                    	cerr << "XXX: Local map reloc failed in here\n";
-
-                    if(bOKMM && !bOKReloc)
-                    {
-                        mCurrentFrame.SetPose(TcwMM);
-                        mCurrentFrame.mvpMapPoints = vpMPsMM;
-                        mCurrentFrame.mvbOutlier = vbOutMM;
-                        for(int i =0; i<mCurrentFrame.N; i++)
-                        {
-                            if(mCurrentFrame.mvpMapPoints[i] && !mCurrentFrame.mvbOutlier[i])
-                            {
-                                mCurrentFrame.mvpMapPoints[i]->IncreaseFound();
-                            }
-                        }
-                    }
-                    else if(bOKReloc)
-                    {
-                        mbVO = false;
-                    }
-
-                    bOK = bOKReloc || bOKMM;
-                }
-            }
+            // // TODO: Need to implement when tracking is lost.
+            // // Triangulation and scan matching is useful.
+            // bOK = Relocalization();
         }
         mCurrentFrame.mpReferenceKF = mpReferenceKF;
         // If we have an initial estimation of the camera pose and matching. Track the local map.
-        if(!mbOnlyTracking)
-        {
-            if(bOK)
-                bOK = TrackLocalMap();
-        }
-        else
-        {
-            // mbVO true means that there are few matches to MapPoints in the map. We cannot retrieve
-            // a local map and therefore we do not perform TrackLocalMap(). Once the system relocalizes
-            // the camera we will use the local map again.
-            if(bOK && !mbVO)
-                bOK = TrackLocalMap();
-        }
+        if(bOK)
+            bOK = TrackLocalMap();
 
         if(bOK){
             mState = OK;
@@ -432,7 +351,7 @@ void MapTracking::Track()
             mlFrameTimes.push_back(mCurrentFrame.mTimeStamp);
             mlbLost.push_back(mState==LOST);
             // TODO: NDT Matching caller
-            if (!mpSystem->isUseMapPublisher){
+            if (mpSystem->isUseMapPublisher){
                 std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
                 ScanWithNDT(mCurrentFrame.mTcw);
                 // ScanWithNDT(mCurrentFrame.mpReferenceKF->GetPoseInverse());
@@ -847,8 +766,14 @@ bool MapTracking::TrackWithMotionModel()
     fill(mCurrentFrame.mvpMapPoints.begin(), mCurrentFrame.mvpMapPoints.end(), static_cast<MapPoint*>(NULL));
 
     // Project points seen in previous frame
+		std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+
     int th = 15;
     int nmatches = matcher.SearchByProjection(mCurrentFrame, mLastFrame, th, mSensor==System::MONOCULAR);
+
+		std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+		double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+		std::cout << "SearchByProjection " << ttrack << "\n";
 
     // If few matches, uses a wider window search <th * 2>
     if(nmatches < 20)
@@ -865,7 +790,7 @@ bool MapTracking::TrackWithMotionModel()
 
     // Discard outliers
     int nmatchesMap = 0;
-    for(int i =0; i<mCurrentFrame.N; i++)
+    for(int i =0; i<mCurrentFrame.N; ++i)
     {
         if(mCurrentFrame.mvpMapPoints[i])
         {
@@ -876,10 +801,10 @@ bool MapTracking::TrackWithMotionModel()
                 mCurrentFrame.mvbOutlier[i] = false;
                 pMP->mbTrackInView = false;
                 pMP->mnLastFrameSeen = mCurrentFrame.mnId;
-                nmatches--;
+                --nmatches;
             }
             else if(mCurrentFrame.mvpMapPoints[i]->Observations() > 0)
-                nmatchesMap++;
+                ++nmatchesMap;
         }
     }
 
@@ -896,6 +821,8 @@ bool MapTracking::TrackLocalMap()
 {
     // We have an estimation of the camera pose and some map points tracked in the frame.
     // We retrieve the local map and try to find matches to points in the local map.
+		std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+
     UpdateLocalMap();
 
     SearchLocalPoints();
@@ -923,13 +850,11 @@ bool MapTracking::TrackLocalMap()
         }
     }
 
-    // Decide if the tracking was successful
-    // More restrictive if there was a relocalization recently
-    if(mCurrentFrame.mnId < mnLastRelocFrameId+mMaxFrames && mnMatchesInliers<50) {
-	//    	cerr << "TrackLocalMap Failure: A" << endl;
-        return false;
-    }
+		std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+		double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+		std::cout << "Track Local Map " << ttrack << "\n";
 
+    // Decide if the tracking was successful
     if(mnMatchesInliers<30) {
 	//    	cerr << "TrackLocalMap Failure: B" << endl;
         return false;
@@ -940,43 +865,18 @@ bool MapTracking::TrackLocalMap()
 
 bool MapTracking::NeedNewKeyFrame()
 {
-    if(mbOnlyTracking)
-        return false;
-
     const int nKFs = mpMap->KeyFramesInMap();
-
-    // Do not insert keyframes if not enough frames have passed from last relocalisation
-    if(mCurrentFrame.mnId < mnLastRelocFrameId+mMaxFrames && nKFs> mMaxFrames)
-        return false;
 
     // Tracked MapPoints in the reference keyframe
     int nMinObs = 3;
-    if(nKFs<=2)
-        nMinObs=2;
+    if (nKFs<=2)
+        nMinObs = 2;
     int nRefMatches = mpReferenceKF->TrackedMapPoints(nMinObs);
 
     // Local Mapping accept keyframes?
     bool bLocalMappingIdle = mpLocalMapper->AcceptKeyFrames();
 
-    // Stereo & RGB-D: Ratio of close "matches to map"/"total matches"
-    // "total matches = matches to map + visual odometry matches"
-    // Visual odometry matches will become MapPoints if we insert a keyframe.
-    // This ratio measures how many MapPoints we could create if we insert a keyframe.
-    int nMap = 0;
-    int nTotal= 0;
-    // There are no visual odometry matches in the monocular case
-    nMap=1;
-    nTotal=1;
-
-    const float ratioMap = (float)nMap/fmax(1.0f,nTotal);
-
-    // Thresholds
-    float thRefRatio = 0.75f;
-    if(nKFs<2)
-        thRefRatio = 0.4f;
-
-    if(mSensor==System::MONOCULAR)
-        thRefRatio = 0.9f;
+    const float ratioMap = 1.0;
 
     float thMapRatio = 0.35f;
     if(mnMatchesInliers>300)
@@ -989,7 +889,7 @@ bool MapTracking::NeedNewKeyFrame()
     //Condition 1c: tracking is weak
     const bool c1c =  mSensor!=System::MONOCULAR && (mnMatchesInliers<nRefMatches*0.25 || ratioMap<0.3f) ;
     // Condition 2: Few tracked points compared to reference keyframe. Lots of visual odometry compared to map matches.
-    const bool c2 = ((mnMatchesInliers<nRefMatches*thRefRatio|| ratioMap<thMapRatio) && mnMatchesInliers>15);
+    const bool c2 = ((mnMatchesInliers<nRefMatches*0.9f || ratioMap<thMapRatio) && mnMatchesInliers>15);
 //    const bool c2 = mnMatchesInliers<nRefMatches*0.78 and mnMatchesInliers>15;
 
 //    cout << "KF Need: " << (int)c1a << " " << (int)c1b << " " << (int)c2 << endl;
@@ -1005,14 +905,6 @@ bool MapTracking::NeedNewKeyFrame()
         else
         {
             mpLocalMapper->InterruptBA();
-            // if(mSensor!=System::MONOCULAR)
-            // {
-            //     if(mpLocalMapper->KeyframesInQueue()<3)
-            //         return true;
-            //     else
-            //         return false;
-            // }
-            // else
             return false;
         }
     }
@@ -1025,7 +917,7 @@ void MapTracking::CreateNewKeyFrame()
     if(!mpLocalMapper->SetNotStop(true))
         return;
 
-    KeyFrame* pKF = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
+    KeyFrame* pKF = new KeyFrame(mCurrentFrame, mpMap, mpKeyFrameDB);
 
     mpReferenceKF = pKF;
     mCurrentFrame.mpReferenceKF = pKF;
@@ -1079,13 +971,7 @@ void MapTracking::SearchLocalPoints()
     if(nToMatch>0)
     {
         ORBmatcher matcher(0.8);
-        int th = 1;
-        if(mSensor==System::RGBD)
-            th=3;
-        // If the camera has been relocalised recently, perform a coarser search
-        if(mCurrentFrame.mnId<mnLastRelocFrameId+2)
-            th=5;
-        matcher.SearchByProjection(mCurrentFrame,mvpLocalMapPoints,th);
+        matcher.SearchByProjection(mCurrentFrame, mvpLocalMapPoints, 1);
     }
 }
 
@@ -1237,176 +1123,7 @@ void MapTracking::UpdateLocalKeyFrames()
 
 bool MapTracking::Relocalization()
 {
-    std::cout << "Relocalization\n";
-
-    // Compute Bag of Words Vector
-    mCurrentFrame.ComputeBoW();
-
-    // Relocalization is performed when tracking is lost
-    vector<KeyFrame*> vpCandidateKFs;
-    //vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates (&mCurrentFrame);
-    //cerr << "Searching previously matches: " << vpCandidateKFs.size() << endl;
-    vpCandidateKFs = mvpLocalKeyFrames;
-    cerr << "Searching Locality: Number of KF " << vpCandidateKFs.size() << endl;
-    if(vpCandidateKFs.empty())
-        return false;
-
-    const int nKFs = vpCandidateKFs.size();
-
-    // We perform first an ORB matching with each candidate
-    // If enough matches are found we setup a PnP solver
-    ORBmatcher matcher(0.75,true);
-
-    vector<PnPsolver*> vpPnPsolvers;
-    vpPnPsolvers.resize(nKFs);
-
-    vector<vector<MapPoint*> > vvpMapPointMatches;
-    vvpMapPointMatches.resize(nKFs);
-
-    vector<bool> vbDiscarded;
-    vbDiscarded.resize(nKFs);
-
-    int nCandidates=0;
-
-    for(int i=0; i<nKFs; i++)
-    {
-        KeyFrame* pKF = vpCandidateKFs[i];
-        if(pKF->isBad())
-            vbDiscarded[i] = true;
-        else
-        {
-            int nmatches = matcher.SearchByBoW(pKF,mCurrentFrame,vvpMapPointMatches[i]);
-	    //            cerr << "# BoW matches: " << nmatches << endl;
-	    //            if(nmatches<7)
-            if(nmatches<15)
-            {
-            	cerr << "KF discarded: #" << pKF->mnId << endl;
-                vbDiscarded[i] = true;
-                continue;
-            }
-            else
-            {
-                PnPsolver* pSolver = new PnPsolver(mCurrentFrame,vvpMapPointMatches[i]);
-                pSolver->SetRansacParameters(0.99,10,300,4,0.5,5.991);
-                vpPnPsolvers[i] = pSolver;
-                nCandidates++;
-            }
-        }
-    }
-
-    // Alternatively perform some iterations of P4P RANSAC
-    // Until we found a camera pose supported by enough inliers
-    bool bMatch = false;
-    ORBmatcher matcher2(0.9,true);
-
-    while(nCandidates>0 && !bMatch)
-    {
-        for(int i=0; i<nKFs; i++)
-        {
-            if(vbDiscarded[i])
-                continue;
-
-            // Perform 5 Ransac Iterations
-            vector<bool> vbInliers;
-            int nInliers;
-            bool bNoMore;
-
-            PnPsolver* pSolver = vpPnPsolvers[i];
-            cv::Mat Tcw = pSolver->iterate(5,bNoMore,vbInliers,nInliers);
-	    //  cerr << "#Inliers: " << nInliers << endl;
-
-            // If Ransac reachs max. iterations discard keyframe
-            if(bNoMore)
-            {
-                vbDiscarded[i]=true;
-                nCandidates--;
-            }
-
-            // If a Camera Pose is computed, optimize
-            if(!Tcw.empty())
-            {
-                Tcw.copyTo(mCurrentFrame.mTcw);
-
-                set<MapPoint*> sFound;
-
-                const int np = vbInliers.size();
-
-                for(int j=0; j<np; j++)
-                {
-                    if(vbInliers[j])
-                    {
-                        mCurrentFrame.mvpMapPoints[j]=vvpMapPointMatches[i][j];
-                        sFound.insert(vvpMapPointMatches[i][j]);
-                    }
-                    else
-                        mCurrentFrame.mvpMapPoints[j]=NULL;
-                }
-
-                int nGood = Optimizer::PoseOptimization(&mCurrentFrame);
-
-                if(nGood<10)
-                    continue;
-
-                for(int io =0; io<mCurrentFrame.N; io++)
-                    if(mCurrentFrame.mvbOutlier[io])
-                        mCurrentFrame.mvpMapPoints[io]=static_cast<MapPoint*>(NULL);
-
-                // If few inliers, search by projection in a coarse window and optimize again
-                if(nGood<50)
-                {
-                    int nadditional =matcher2.SearchByProjection(mCurrentFrame,vpCandidateKFs[i],sFound,10,100);
-
-                    if(nadditional+nGood>=50)
-                    {
-                        nGood = Optimizer::PoseOptimization(&mCurrentFrame);
-
-                        // If many inliers but still not enough, search by projection again in a narrower window
-                        // the camera has been already optimized with many points
-                        if(nGood>30 && nGood<50)
-                        {
-                            sFound.clear();
-                            for(int ip =0; ip<mCurrentFrame.N; ip++)
-                                if(mCurrentFrame.mvpMapPoints[ip])
-                                    sFound.insert(mCurrentFrame.mvpMapPoints[ip]);
-                            nadditional =matcher2.SearchByProjection(mCurrentFrame,vpCandidateKFs[i],sFound,3,64);
-
-                            // Final optimization
-                            if(nGood+nadditional>=50)
-                            {
-                                nGood = Optimizer::PoseOptimization(&mCurrentFrame);
-
-                                for(int io =0; io<mCurrentFrame.N; io++)
-                                    if(mCurrentFrame.mvbOutlier[io])
-                                        mCurrentFrame.mvpMapPoints[io]=NULL;
-                            }
-                        }
-                    }
-                }
-
-
-                // If the pose is supported by enough inliers stop ransacs and continue
-                if(nGood>=50)
-                {
-                    bMatch = true;
-		    //  cout << "Relocalization successful" << endl;
-	            //  mpReferenceKF = vpCandidateKFs[i];
-                    break;
-                }
-            }
-        }
-    }
-
-    if(!bMatch)
-    {
-        //fprintf(stderr, "#KF: %d\n", nKFs);
-        return false;
-    }
-    else
-    {
-        mnLastRelocFrameId = mCurrentFrame.mnId;
-        return true;
-    }
-
+	  return true;
 }
 
 void MapTracking::Reset()

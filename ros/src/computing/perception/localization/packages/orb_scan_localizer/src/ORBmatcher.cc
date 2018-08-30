@@ -47,8 +47,12 @@ int ORBmatcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoint
     int nmatches=0;
 
     const bool bFactor = th!=1.0;
+    const int vp_size = (int)vpMapPoints.size();
 
-    for(size_t iMP=0; iMP<vpMapPoints.size(); iMP++)
+    #ifdef _OPENMP
+    #pragma omp parallel for num_threads(4)
+    #endif
+    for(int iMP=0; iMP<vp_size; ++iMP)
     {
         MapPoint* pMP = vpMapPoints[iMP];
         if(!pMP->mbTrackInView)
@@ -80,7 +84,7 @@ int ORBmatcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoint
         int bestIdx =-1 ;
 
         // Get best and second matches with near keypoints
-        for(vector<size_t>::const_iterator vit=vIndices.begin(), vend=vIndices.end(); vit!=vend; vit++)
+        for(vector<size_t>::const_iterator vit=vIndices.begin(), vend=vIndices.end(); vit!=vend; ++vit)
         {
             const size_t idx = *vit;
 
@@ -121,7 +125,10 @@ int ORBmatcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoint
                 continue;
 
             F.mvpMapPoints[bestIdx]=pMP;
-            nmatches++;
+            #ifdef _OPENMP
+            #pragma omp atomic
+            #endif
+            ++nmatches;
         }
     }
 
