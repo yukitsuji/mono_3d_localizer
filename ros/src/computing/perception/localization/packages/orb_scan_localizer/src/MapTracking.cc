@@ -476,9 +476,9 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
         continue;
       cv::Mat pos = p->GetWorldPos();
       pcl::PointXYZ point;
-      point.x = pos.at<float>(2);
-      point.y = -pos.at<float>(0);
-      point.z = -pos.at<float>(1) + 1.68;
+      point.x = pos.at<float>(2) + 0.27;
+      point.y = -pos.at<float>(0) + 0.06;
+      point.z = -pos.at<float>(1) - 0.05;
       g_points->push_back(point);
     }
     sensor_msgs::PointCloud2 pc2_g;
@@ -496,9 +496,9 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
         continue;
       cv::Mat pos = p->GetWorldPos();
       pcl::PointXYZ point;
-      point.x = pos.at<float>(2);
-      point.y = -pos.at<float>(0);
-      point.z = -pos.at<float>(1) + 1.68;
+      point.x = pos.at<float>(2) + 0.27;
+      point.y = -pos.at<float>(0) + 0.06;
+      point.z = -pos.at<float>(1) - 0.05;
       l_points->push_back(point);
     }
     sensor_msgs::PointCloud2 pc2_l;
@@ -536,14 +536,14 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
 
 		// current_q.setRPY(x, y, z);
 		current_q.setRPY(0, 0, 0);
-		transform.setOrigin(tf::Vector3(Twc.at<float>(2, 3),
-		                                -Twc.at<float>(0, 3),
-																		-Twc.at<float>(1, 3) + 1.68));
+		transform.setOrigin(tf::Vector3(Twc.at<float>(2, 3) + 0.27,
+		                                -Twc.at<float>(0, 3) + 0.06,
+																		-Twc.at<float>(1, 3) - 0.05));
 		transform.setRotation(current_q);
 		// br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "velodyne", "orb_pose"));
 		br.sendTransform(tf::StampedTransform(transform, current_scan_time, "velodyne", "orb_pose"));
 		current_q.setRPY(0, 0, 0);
-		transform.setOrigin(tf::Vector3(0, 0, 1.68));
+		transform.setOrigin(tf::Vector3(0.81, 0, 1.73));
 		transform.setRotation(current_q);
 		br.sendTransform(tf::StampedTransform(transform, current_scan_time, "map", "velodyne"));
 
@@ -703,7 +703,7 @@ void MapTracking::CreateInitialMapMonocular()
 
 		// TODO: Scale alignment
 		std::cout << "invMedianDepth: " << invMedianDepth << "\n";
-		// invMedianDepth = 0.007;
+		invMedianDepth = 0.72;
 
     if(medianDepth<0 || pKFcur->TrackedMapPoints(1)<100)
     {
@@ -920,9 +920,6 @@ bool MapTracking::TrackLocalMap()
                 else
                     mnMatchesInliers++;
             }
-            else if(mSensor==System::STEREO)
-                mCurrentFrame.mvpMapPoints[i] = static_cast<MapPoint*>(NULL);
-
         }
     }
 

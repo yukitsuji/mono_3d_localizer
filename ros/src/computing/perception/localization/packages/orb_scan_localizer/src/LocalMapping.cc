@@ -209,11 +209,7 @@ void LocalMapping::MapPointCulling()
     list<MapPoint*>::iterator lit = mlpRecentAddedMapPoints.begin();
     const unsigned long int nCurrentKFid = mpCurrentKeyFrame->mnId;
 
-    int nThObs;
-    if(mbMonocular)
-        nThObs = 2;
-    else
-        nThObs = 3;
+    int nThObs = 2;
     const int cnThObs = nThObs;
 
     while(lit!=mlpRecentAddedMapPoints.end())
@@ -243,9 +239,7 @@ void LocalMapping::MapPointCulling()
 void LocalMapping::CreateNewMapPoints()
 {
     // Retrieve neighbor keyframes in covisibility graph
-    int nn = 10;
-    if(mbMonocular)
-        nn=20;
+    int nn=20;
     const vector<KeyFrame*> vpNeighKFs = mpCurrentKeyFrame->GetBestCovisibilityKeyFrames(nn);
 
     ORBmatcher matcher(0.6,false);
@@ -282,19 +276,11 @@ void LocalMapping::CreateNewMapPoints()
         cv::Mat vBaseline = Ow2-Ow1;
         const float baseline = cv::norm(vBaseline);
 
-        if(!mbMonocular)
-        {
-            if(baseline<pKF2->mb)
-            continue;
-        }
-        else
-        {
-            const float medianDepthKF2 = pKF2->ComputeSceneMedianDepth(2);
-            const float ratioBaselineDepth = baseline/medianDepthKF2;
+        const float medianDepthKF2 = pKF2->ComputeSceneMedianDepth(2);
+        const float ratioBaselineDepth = baseline/medianDepthKF2;
 
-            if(ratioBaselineDepth<0.01)
-                continue;
-        }
+        if(ratioBaselineDepth<0.01)
+            continue;
 
         // Compute Fundamental Matrix
         cv::Mat F12 = ComputeF12(mpCurrentKeyFrame,pKF2);
@@ -490,9 +476,7 @@ void LocalMapping::CreateNewMapPoints()
 void LocalMapping::SearchInNeighbors()
 {
     // Retrieve neighbor keyframes
-    int nn = 10;
-    if(mbMonocular)
-        nn=20;
+    int nn = 20;
     const vector<KeyFrame*> vpNeighKFs = mpCurrentKeyFrame->GetBestCovisibilityKeyFrames(nn);
     vector<KeyFrame*> vpTargetKFs;
     for(vector<KeyFrame*>::const_iterator vit=vpNeighKFs.begin(), vend=vpNeighKFs.end(); vit!=vend; vit++)
@@ -680,9 +664,7 @@ void LocalMapping::KeyFrameCulling()
             continue;
         const vector<MapPoint*> vpMapPoints = pKF->GetMapPointMatches();
 
-        int /*nObs = 2;
-        if(mbMonocular)*/
-            nObs = 3;
+        int nObs = 3;
         const int thObs=nObs;
         int nRedundantObservations=0;
         int nMPs=0;
@@ -693,12 +675,6 @@ void LocalMapping::KeyFrameCulling()
             {
                 if(!pMP->isBad())
                 {
-                    if(!mbMonocular)
-                    {
-                        if(pKF->mvDepth[i]>pKF->mThDepth || pKF->mvDepth[i]<0)
-                            continue;
-                    }
-
                     nMPs++;
                     if(pMP->Observations()>thObs)
                     {

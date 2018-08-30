@@ -585,16 +585,16 @@ static void initialpose_callback(const geometry_msgs::PoseWithCovarianceStamped:
 {
   tf::TransformListener listener;
   tf::StampedTransform transform;
-  try
-  {
-    ros::Time now = ros::Time(0);
-    listener.waitForTransform("/map", input->header.frame_id, now, ros::Duration(10.0));
-    listener.lookupTransform("/map", input->header.frame_id, now, transform);
-  }
-  catch (tf::TransformException& ex)
-  {
-    ROS_ERROR("%s", ex.what());
-  }
+  // try
+  // {
+  //   ros::Time now = ros::Time(0);
+  //   listener.waitForTransform("/map", input->header.frame_id, now, ros::Duration(10.0));
+  //   listener.lookupTransform("/map", input->header.frame_id, now, transform);
+  // }
+  // catch (tf::TransformException& ex)
+  // {
+  //   ROS_ERROR("%s", ex.what());
+  // }
 
   std::cout << "################################################################\n";
   std::cout << "##### Initial pose Header: " << input->header.frame_id << "#####\n";
@@ -681,16 +681,16 @@ static void initialpose_callback()
 {
   tf::TransformListener listener;
   tf::StampedTransform transform;
-  try
-  {
-    ros::Time now = ros::Time(0); // velodyne or base_link
-    listener.waitForTransform("/map", "/base_link", now, ros::Duration(10.0));
-    listener.lookupTransform("/map", "/base_link", now, transform);
-  }
-  catch (tf::TransformException& ex)
-  {
-    ROS_ERROR("%s", ex.what());
-  }
+  // try
+  // {
+  //   ros::Time now = ros::Time(0); // velodyne or base_link
+  //   listener.waitForTransform("/map", "/base_link", now, ros::Duration(10.0));
+  //   listener.lookupTransform("/map", "/base_link", now, transform);
+  // }
+  // catch (tf::TransformException& ex)
+  // {
+  //   ROS_ERROR("%s", ex.what());
+  // }
 
   std::cout << "################################################################\n";
   std::cout << "##### Initial pose Header: "  << "#####\n";
@@ -1415,7 +1415,7 @@ int main(int argc, char** argv)
   Eigen::AngleAxisf rot_y_btol(_tf_pitch, Eigen::Vector3f::UnitY());
   Eigen::AngleAxisf rot_z_btol(_tf_yaw, Eigen::Vector3f::UnitZ());
   tf_btol = (tl_btol * rot_z_btol * rot_y_btol * rot_x_btol).matrix();
-  std::cout << "tf_btol: " << tf_btol << std::endl;
+  std::cout << "tf_btol\n" << tf_btol << std::endl;
 
   // Updated in initialpose_callback or gnss_callback
   initial_pose.x = 0.0;

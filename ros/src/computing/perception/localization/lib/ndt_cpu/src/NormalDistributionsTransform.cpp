@@ -427,7 +427,8 @@ void NormalDistributionsTransform<PointSourceType, PointTargetType>::computeAngl
 
 
 template <typename PointSourceType, typename PointTargetType>
-double NormalDistributionsTransform<PointSourceType, PointTargetType>::computeStepLengthMT(const Eigen::Matrix<double, 6, 1> &x, Eigen::Matrix<double, 6, 1> &step_dir,
+double NormalDistributionsTransform<PointSourceType, PointTargetType>::computeStepLengthMT(
+	                                            const Eigen::Matrix<double, 6, 1> &x, Eigen::Matrix<double, 6, 1> &step_dir,
 																							double step_init, double step_max, double step_min, double &score,
 																							Eigen::Matrix<double, 6, 1> &score_gradient, Eigen::Matrix<double, 6, 6> &hessian,
 																							typename pcl::PointCloud<PointSourceType> &trans_cloud)

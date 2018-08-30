@@ -791,9 +791,6 @@ bool Tracking::TrackLocalMap()
                 else
                     mnMatchesInliers++;
             }
-            else if(mSensor==System::STEREO)
-                mCurrentFrame.mvpMapPoints[i] = static_cast<MapPoint*>(NULL);
-
         }
     }
 
@@ -839,8 +836,8 @@ bool Tracking::NeedNewKeyFrame()
     int nMap = 0;
     int nTotal= 0;
     // There are no visual odometry matches in the monocular case
-    nMap=1;
-    nTotal=1;
+    nMap = 1;
+    nTotal = 1;
 
     const float ratioMap = (float)nMap/fmax(1.0f,nTotal);
 

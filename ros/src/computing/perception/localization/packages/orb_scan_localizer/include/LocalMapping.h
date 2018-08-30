@@ -92,8 +92,6 @@ protected:
 
     cv::Mat SkewSymmetricMatrix(const cv::Mat &v);
 
-    bool mbMonocular;
-
     void ResetIfRequested();
     bool mbResetRequested;
     std::mutex mMutexReset;
