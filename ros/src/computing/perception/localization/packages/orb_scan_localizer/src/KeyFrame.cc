@@ -180,7 +180,7 @@ void KeyFrame::UpdateBestCovisibles()
     }
 
     mvpOrderedConnectedKeyFrames = vector<KeyFrame*>(lKFs.begin(),lKFs.end());
-    mvOrderedWeights = vector<int>(lWs.begin(), lWs.end());    
+    mvOrderedWeights = vector<int>(lWs.begin(), lWs.end());
 }
 
 set<KeyFrame*> KeyFrame::GetConnectedKeyFrames()
@@ -237,20 +237,20 @@ int KeyFrame::GetWeight(KeyFrame *pKF)
 void KeyFrame::AddMapPoint(MapPoint *pMP, const size_t &idx)
 {
     unique_lock<mutex> lock(mMutexFeatures);
-    mvpMapPoints[idx]=pMP;
+    mvpMapPoints[idx] = pMP;
 }
 
 void KeyFrame::EraseMapPointMatch(const size_t &idx)
 {
     unique_lock<mutex> lock(mMutexFeatures);
-    mvpMapPoints[idx]=static_cast<MapPoint*>(NULL);
+    mvpMapPoints[idx] = static_cast<MapPoint*>(NULL);
 }
 
 void KeyFrame::EraseMapPointMatch(MapPoint* pMP)
 {
     int idx = pMP->GetIndexInKeyFrame(this);
     if(idx>=0)
-        mvpMapPoints[idx]=static_cast<MapPoint*>(NULL);
+        mvpMapPoints[idx] = static_cast<MapPoint*>(NULL);
 }
 
 
@@ -353,7 +353,7 @@ void KeyFrame::UpdateConnections()
     //If the counter is greater than threshold add connection
     //In case no keyframe counter is over threshold add the one with maximum counter
     int nmax=0;
-    KeyFrame* pKFmax=NULL;
+    KeyFrame* pKFmax = NULL;
     int th = 15;
 
     vector<pair<int,KeyFrame*> > vPairs;
@@ -374,8 +374,8 @@ void KeyFrame::UpdateConnections()
 
     if(vPairs.empty())
     {
-        vPairs.push_back(make_pair(nmax,pKFmax));
-        pKFmax->AddConnection(this,nmax);
+        vPairs.push_back(make_pair(nmax, pKFmax));
+        pKFmax->AddConnection(this, nmax);
     }
 
     sort(vPairs.begin(),vPairs.end());
@@ -478,7 +478,7 @@ void KeyFrame::SetErase()
 }
 
 void KeyFrame::SetBadFlag()
-{   
+{
     {
         unique_lock<mutex> lock(mMutexConnections);
         if(mnId==0)

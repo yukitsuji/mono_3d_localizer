@@ -108,7 +108,7 @@ void MapPoint::AddObservation(KeyFrame* pKF, size_t idx)
         return;
     mObservations[pKF]=idx;
 
-    if(pKF->mvuRight[idx]>=0)
+    if(pKF->mvuRight[idx] >= 0)
         nObs+=2;
     else
         nObs++;
@@ -122,18 +122,18 @@ void MapPoint::EraseObservation(KeyFrame* pKF)
         if(mObservations.count(pKF))
         {
             int idx = mObservations[pKF];
-            if(pKF->mvuRight[idx]>=0)
-                nObs-=2;
+            if(pKF->mvuRight[idx] >= 0)
+                nObs -= 2;
             else
                 nObs--;
 
             mObservations.erase(pKF);
 
-            if(mpRefKF==pKF)
-                mpRefKF=mObservations.begin()->first;
+            if(mpRefKF == pKF)
+                mpRefKF = mObservations.begin()->first;
 
             // If only 2 observations or less, discard point
-            if(nObs<=2)
+            if(nObs <= 2)
                 bBad=true;
         }
     }
@@ -160,7 +160,7 @@ void MapPoint::SetBadFlag()
     {
         unique_lock<mutex> lock1(mMutexFeatures);
         unique_lock<mutex> lock2(mMutexPos);
-        mbBad=true;
+        mbBad = true;
         obs = mObservations;
         mObservations.clear();
     }
@@ -190,15 +190,15 @@ void MapPoint::Replace(MapPoint* pMP)
     {
         unique_lock<mutex> lock1(mMutexFeatures);
         unique_lock<mutex> lock2(mMutexPos);
-        obs=mObservations;
+        obs = mObservations;
         mObservations.clear();
-        mbBad=true;
+        mbBad = true;
         nvisible = mnVisible;
         nfound = mnFound;
         mpReplaced = pMP;
     }
 
-    for(map<KeyFrame*,size_t>::iterator mit=obs.begin(), mend=obs.end(); mit!=mend; mit++)
+    for(map<KeyFrame*,size_t>::iterator mit=obs.begin(), mend=obs.end(); mit!=mend; ++mit)
     {
         // Replace measurement in keyframe
         KeyFrame* pKF = mit->first;
@@ -206,7 +206,7 @@ void MapPoint::Replace(MapPoint* pMP)
         if(!pMP->IsInKeyFrame(pKF))
         {
             pKF->ReplaceMapPointMatch(mit->second, pMP);
-            pMP->AddObservation(pKF,mit->second);
+            pMP->AddObservation(pKF, mit->second);
         }
         else
         {
@@ -308,7 +308,7 @@ void MapPoint::ComputeDistinctiveDescriptors()
 
     {
         unique_lock<mutex> lock(mMutexFeatures);
-        mDescriptor = vDescriptors[BestIdx].clone();       
+        mDescriptor = vDescriptors[BestIdx].clone();
     }
 }
 
@@ -360,7 +360,7 @@ void MapPoint::UpdateNormalAndDepth()
         cv::Mat normali = mWorldPos - Owi;
         normal = normal + normali/cv::norm(normali);
         n++;
-    } 
+    }
 
     cv::Mat PC = Pos - pRefKF->GetCameraCenter();
     const float dist = cv::norm(PC);

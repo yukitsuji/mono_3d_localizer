@@ -138,7 +138,7 @@ void LocalMapping::RunOnce()
 		{
 			// Local BA
 			if(mpMap->KeyFramesInMap()>2)
-				Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame,&mbAbortBA, mpMap);
+				Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, &mbAbortBA, mpMap);
 
 			// Check redundant local Keyframes
 			KeyFrameCulling();
@@ -219,7 +219,7 @@ void LocalMapping::MapPointCulling()
         {
             lit = mlpRecentAddedMapPoints.erase(lit);
         }
-        else if(pMP->GetFoundRatio()<0.25f )
+        else if(pMP->GetFoundRatio() < 0.25f)
         {
             pMP->SetBadFlag();
             lit = mlpRecentAddedMapPoints.erase(lit);
@@ -311,7 +311,7 @@ void LocalMapping::CreateNewMapPoints()
             const int &idx2 = vMatchedIndices[ikp].second;
 
             const cv::KeyPoint &kp1 = mpCurrentKeyFrame->mvKeysUn[idx1];
-            const float kp1_ur=mpCurrentKeyFrame->mvuRight[idx1];
+            const float kp1_ur = mpCurrentKeyFrame->mvuRight[idx1];
             bool bStereo1 = kp1_ur>=0;
 
             const cv::KeyPoint &kp2 = pKF2->mvKeysUn[idx2];
@@ -453,7 +453,7 @@ void LocalMapping::CreateNewMapPoints()
                 continue;
 
             // Triangulation is succesfull
-            MapPoint* pMP = new MapPoint(x3D,mpCurrentKeyFrame,mpMap);
+            MapPoint* pMP = new MapPoint(x3D, mpCurrentKeyFrame, mpMap);
 
             pMP->AddObservation(mpCurrentKeyFrame,idx1);
             pMP->AddObservation(pKF2,idx2);
@@ -506,7 +506,7 @@ void LocalMapping::SearchInNeighbors()
     {
         KeyFrame* pKFi = *vit;
 
-        matcher.Fuse(pKFi,vpMapPointMatches);
+        matcher.Fuse(pKFi, vpMapPointMatches);
     }
 
     // Search matches by projection from target KFs in current KF

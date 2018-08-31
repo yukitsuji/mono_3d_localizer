@@ -186,6 +186,9 @@ public:
     // Number of KeyPoints
     int N;
 
+		// Unique ID
+		int id;
+
     // KeyPoints, stereo coordinate and descriptors (all associated by an index)
     std::vector<cv::KeyPoint> mvKeys;
     std::vector<cv::KeyPoint> mvKeysUn;
@@ -258,7 +261,7 @@ protected:
     // Bad flags
     bool mbNotErase;
     bool mbToBeErased;
-    bool mbBad;    
+    bool mbBad;
 
     float mHalfBaseline; // Only for visualization
 

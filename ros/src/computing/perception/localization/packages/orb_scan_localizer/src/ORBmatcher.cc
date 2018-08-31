@@ -888,7 +888,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
         // Viewing angle must be less than 60 deg
         cv::Mat Pn = pMP->GetNormal();
 
-        if(PO.dot(Pn)<0.5*dist3D)
+        if(PO.dot(Pn) < 0.5*dist3D)
             continue;
 
         int nPredictedLevel = pMP->PredictScale(dist3D,pKF->mfLogScaleFactor);
@@ -963,7 +963,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
             {
                 if(!pMPinKF->isBad())
                 {
-                    if(pMPinKF->Observations()>pMP->Observations())
+                    if(pMPinKF->Observations() > pMP->Observations())
                         pMP->Replace(pMPinKF);
                     else
                         pMPinKF->Replace(pMP);
@@ -971,10 +971,10 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
             }
             else
             {
-                pMP->AddObservation(pKF,bestIdx);
-                pKF->AddMapPoint(pMP,bestIdx);
+                pMP->AddObservation(pKF, bestIdx);
+                pKF->AddMapPoint(pMP, bestIdx);
             }
-            nFused++;
+            ++nFused;
         }
     }
 
@@ -1364,18 +1364,20 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
             if(!LastFrame.mvbOutlier[i])
             {
                 // Project
-                cv::Mat x3Dw = pMP->GetWorldPos();
-                cv::Mat x3Dc = Rcw*x3Dw+tcw;
+                const cv::Mat x3Dw = pMP->GetWorldPos();
+                const cv::Mat x3Dc = Rcw*x3Dw+tcw;
+
+                const float invzc = 1.0 / x3Dc.at<float>(2);
+
+                if(invzc < 0)
+                    continue;
 
                 const float xc = x3Dc.at<float>(0);
                 const float yc = x3Dc.at<float>(1);
-                const float invzc = 1.0/x3Dc.at<float>(2);
 
-                if(invzc<0)
-                    continue;
 
-                float u = CurrentFrame.fx*xc*invzc+CurrentFrame.cx;
-                float v = CurrentFrame.fy*yc*invzc+CurrentFrame.cy;
+                const float u = CurrentFrame.fx*xc*invzc+CurrentFrame.cx;
+                const float v = CurrentFrame.fy*yc*invzc+CurrentFrame.cy;
 
                 if(u<CurrentFrame.mnMinX || u>CurrentFrame.mnMaxX)
                     continue;
@@ -1385,7 +1387,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
                 int nLastOctave = LastFrame.mvKeys[i].octave;
 
                 // Search in a window. Size depends on scale
-                float radius = th*CurrentFrame.mvScaleFactors[nLastOctave];
+                const float radius = th*CurrentFrame.mvScaleFactors[nLastOctave];
 
                 vector<size_t> vIndices2;
 
@@ -1432,7 +1434,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
 
                 if(bestDist<=TH_HIGH)
                 {
-                    CurrentFrame.mvpMapPoints[bestIdx2]=pMP;
+                    CurrentFrame.mvpMapPoints[bestIdx2] = pMP;
                     nmatches++;
 
                     if(mbCheckOrientation)
