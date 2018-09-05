@@ -43,15 +43,22 @@ include_directories(
 
 add_library(g2o STATIC
         #types
-        g2o/types/types_sba.h
-        g2o/types/types_six_dof_expmap.h
-        g2o/types/types_sba.cpp
-        g2o/types/types_six_dof_expmap.cpp
-        g2o/types/types_seven_dof_expmap.cpp
-        g2o/types/types_seven_dof_expmap.h
-        g2o/types/se3quat.h
+        g2o/types/g2o_types_icp_api.h
+        g2o/types/g2o_types_sba_api.h
+        g2o/types/sbacam.h
         g2o/types/se3_ops.h
         g2o/types/se3_ops.hpp
+        g2o/types/se3quat.h
+        g2o/types/sim3.h
+        g2o/types/types_icp.cpp
+        g2o/types/types_icp.h
+        g2o/types/types_sba.cpp
+        g2o/types/types_sba.h
+        g2o/types/types_seven_dof_expmap.cpp
+        g2o/types/types_seven_dof_expmap.h
+        g2o/types/types_six_dof_expmap.cpp
+        g2o/types/types_six_dof_expmap.h
+
         #core
         g2o/core/base_edge.h
         g2o/core/base_binary_edge.h
@@ -114,6 +121,7 @@ add_library(g2o STATIC
         g2o/core/robust_kernel_factory.h
         g2o/core/robust_kernel_impl.cpp
         g2o/core/robust_kernel_impl.h
+
         #stuff
         g2o/stuff/string_tools.h
         g2o/stuff/color_macros.h

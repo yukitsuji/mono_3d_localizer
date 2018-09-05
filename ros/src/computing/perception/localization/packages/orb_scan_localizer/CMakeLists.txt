@@ -216,3 +216,14 @@ target_link_libraries(
         ${ORIG_ORB_BIN_LINKS}
         ${LINK_LIBRARIES}
 )
+
+add_executable(
+        icp_sample
+        nodes/mono_orb_slam2/icp_sample.cpp
+)
+
+target_link_libraries(
+        icp_sample
+        ${ORIG_ORB_BIN_LINKS}
+        ${LINK_LIBRARIES}
+)
