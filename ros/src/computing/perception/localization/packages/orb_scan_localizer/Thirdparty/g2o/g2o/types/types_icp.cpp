@@ -244,7 +244,7 @@ namespace g2o {
     VertexSCam *vc = static_cast<VertexSCam *>(_vertices[1]);
 
     VertexSBAPointXYZ *vp = static_cast<VertexSBAPointXYZ *>(_vertices[0]);
-    Vector4 pt, trans;
+    Vector4d pt, trans;
     pt.head<3>() = vp->estimate();
     pt(3) = 1.0;
     trans.head<3>() = vc->estimate().translation();

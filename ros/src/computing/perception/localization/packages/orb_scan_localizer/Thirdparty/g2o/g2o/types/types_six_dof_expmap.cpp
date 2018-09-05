@@ -48,18 +48,18 @@ G2O_REGISTER_TYPE(PARAMS_CAMERAPARAMETERS, CameraParameters);
 CameraParameters
 ::CameraParameters()
   : focal_length(1.),
-    principle_point(Vector2(0., 0.)),
+    principle_point(Vector2d(0., 0.)),
     baseline(0.5)  {
 }
 
-Vector2 project2d(const Vector3d& v)  {
-  Vector2 res;
+Vector2d project2d(const Vector3d& v)  {
+  Vector2d res;
   res(0) = v(0)/v(2);
   res(1) = v(1)/v(2);
   return res;
 }
 
-Vector3d unproject2d(const Vector2& v)  {
+Vector3d unproject2d(const Vector2d& v)  {
   Vector3d res;
   res(0) = v(0);
   res(1) = v(1);
@@ -71,16 +71,16 @@ inline Vector3d invert_depth(const Vector3d & x){
   return unproject2d(x.head<2>())/x[2];
 }
 
-Vector2  CameraParameters::cam_map(const Vector3d & trans_xyz) const {
-  Vector2 proj = project2d(trans_xyz);
-  Vector2 res;
+Vector2d  CameraParameters::cam_map(const Vector3d & trans_xyz) const {
+  Vector2d proj = project2d(trans_xyz);
+  Vector2d res;
   res[0] = proj[0]*focal_length + principle_point[0];
   res[1] = proj[1]*focal_length + principle_point[1];
   return res;
 }
 
 Vector3d CameraParameters::stereocam_uvu_map(const Vector3d & trans_xyz) const {
-  Vector2 uv_left = cam_map(trans_xyz);
+  Vector2d uv_left = cam_map(trans_xyz);
   double proj_x_right = (trans_xyz[0]-baseline)/trans_xyz[2];
   double u_right = proj_x_right*focal_length + principle_point[0];
   return Vector3d(uv_left[0],uv_left[1],u_right);
@@ -91,7 +91,7 @@ VertexSE3Expmap::VertexSE3Expmap() : BaseVertex<6, SE3Quat>() {
 }
 
 bool VertexSE3Expmap::read(std::istream& is) {
-  Vector7 est;
+  Vector7d est;
   for (int i=0; i<7; i++)
     is  >> est[i];
   SE3Quat cam2world;
@@ -112,7 +112,7 @@ EdgeSE3Expmap::EdgeSE3Expmap() :
 }
 
 bool EdgeSE3Expmap::read(std::istream& is)  {
-  Vector7 meas;
+  Vector7d meas;
   for (int i=0; i<7; i++)
     is >> meas[i];
   SE3Quat cam2world;
@@ -139,7 +139,7 @@ bool EdgeSE3Expmap::write(std::ostream& os) const {
   return os.good();
 }
 
-EdgeProjectXYZ2UV::EdgeProjectXYZ2UV() : BaseBinaryEdge<2, Vector2, VertexSBAPointXYZ, VertexSE3Expmap>() {
+EdgeProjectXYZ2UV::EdgeProjectXYZ2UV() : BaseBinaryEdge<2, Vector2d, VertexSBAPointXYZ, VertexSE3Expmap>() {
   _cam = 0;
   resizeParameters(1);
   installParameter(_cam, 0);
@@ -181,7 +181,7 @@ void EdgeProjectPSI2UV::computeError(){
   const VertexSE3Expmap * T_anchor_from_world = static_cast<const VertexSE3Expmap*>(_vertices[2]);
   const CameraParameters * cam = static_cast<const CameraParameters *>(parameter(0));
 
-  Vector2 obs(_measurement);
+  Vector2d obs(_measurement);
   _error = obs - cam->cam_map(T_p_from_world->estimate()
         *T_anchor_from_world->estimate().inverse()
         *invert_depth(psi->estimate()));
@@ -357,7 +357,7 @@ bool EdgeProjectXYZ2UVU::write(std::ostream& os) const {
   return os.good();
 }
 
-EdgeSE3ProjectXYZ::EdgeSE3ProjectXYZ() : BaseBinaryEdge<2, Vector2, VertexSBAPointXYZ, VertexSE3Expmap>() {
+EdgeSE3ProjectXYZ::EdgeSE3ProjectXYZ() : BaseBinaryEdge<2, Vector2d, VertexSBAPointXYZ, VertexSE3Expmap>() {
 }
 
 bool EdgeSE3ProjectXYZ::read(std::istream &is) {
@@ -424,9 +424,9 @@ void EdgeSE3ProjectXYZ::linearizeOplus() {
   _jacobianOplusXj(1, 5) = y / z_2 * fy;
 }
 
-Vector2 EdgeSE3ProjectXYZ::cam_project(const Vector3d &trans_xyz) const {
-  Vector2 proj = project2d(trans_xyz);
-  Vector2 res;
+Vector2d EdgeSE3ProjectXYZ::cam_project(const Vector3d &trans_xyz) const {
+  Vector2d proj = project2d(trans_xyz);
+  Vector2d res;
   res[0] = proj[0] * fx + cx;
   res[1] = proj[1] * fy + cy;
   return res;
@@ -568,9 +568,9 @@ void EdgeSE3ProjectXYZOnlyPose::linearizeOplus() {
   _jacobianOplusXi(1, 5) = y * invz_2 * fy;
 }
 
-Vector2 EdgeSE3ProjectXYZOnlyPose::cam_project(const Vector3d &trans_xyz) const {
-  Vector2 proj = project2d(trans_xyz);
-  Vector2 res;
+Vector2d EdgeSE3ProjectXYZOnlyPose::cam_project(const Vector3d &trans_xyz) const {
+  Vector2d proj = project2d(trans_xyz);
+  Vector2d res;
   res[0] = proj[0] * fx + cx;
   res[1] = proj[1] * fy + cy;
   return res;

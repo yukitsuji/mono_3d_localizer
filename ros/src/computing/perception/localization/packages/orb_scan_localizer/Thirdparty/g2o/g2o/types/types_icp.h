@@ -281,7 +281,7 @@ namespace g2o {
         {
           m.block<3,3>(0,0) = qrot.toRotationMatrix().transpose();
           m.col(3).setZero();         // make sure there's no translation
-          Vector4 tt;
+          Vector4d tt;
           tt.head(3) = trans;
           tt[3] = 1.0;
           m.col(3) = -m*tt;
@@ -339,7 +339,7 @@ namespace g2o {
       // calculate stereo projection
       void mapPoint(Vector3d &res, const Vector3d &pt3)
       {
-        Vector4 pt;
+        Vector4d pt;
         pt.head<3>() = pt3;
         pt(3) = cst(1.0);
         Vector3d p1 = w2i * pt;

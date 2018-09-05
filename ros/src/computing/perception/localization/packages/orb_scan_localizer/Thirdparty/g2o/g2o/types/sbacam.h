@@ -92,7 +92,7 @@ namespace g2o {
 
       // update from the linear solution
       //defined in se3quat
-      void update(const Vector6& update)
+      void update(const Vector6d& update)
       {
         //      std::cout << "UPDATE " << update.transpose() << std::endl;
         // position update
@@ -117,7 +117,7 @@ namespace g2o {
       {
         m.block<3,3>(0,0) = qrot.toRotationMatrix().transpose();
         m.col(3).setZero();         // make sure there's no translation
-        Vector4 tt;
+        Vector4d tt;
         tt.head(3) = trans;
         tt[3] = 1.0;
         m.col(3) = -m*tt;

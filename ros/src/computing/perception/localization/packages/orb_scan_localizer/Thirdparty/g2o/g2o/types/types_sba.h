@@ -49,14 +49,14 @@ class G2O_TYPES_SBA_API VertexIntrinsics : public BaseVertex<4, Eigen::Matrix<do
     VertexIntrinsics();
     virtual bool read(std::istream& is);
     virtual bool write(std::ostream& os) const;
-      
+
     virtual void setToOriginImpl() {
       _estimate << cst(1.), cst(1.), cst(0.5), cst(0.5), cst(0.1);
     }
-      
+
     virtual void oplusImpl(const double* update)
     {
-      _estimate.head<4>() += Vector4(update);
+      _estimate.head<4>() += Vector4d(update);
     }
  };
 
@@ -80,32 +80,32 @@ class G2O_TYPES_SBA_API VertexIntrinsics : public BaseVertex<4, Eigen::Matrix<do
     virtual void setToOriginImpl() {
       _estimate = SBACam();
     }
-    
+
     virtual void setEstimate(const SBACam& cam){
       BaseVertex<6, SBACam>::setEstimate(cam);
       _estimate.setTransform();
       _estimate.setProjection();
       _estimate.setDr();
     }
-    
+
     virtual void oplusImpl(const double* update)
     {
-      Eigen::Map<const Vector6> v(update);
+      Eigen::Map<const Vector6d> v(update);
       _estimate.update(v);
       _estimate.setTransform();
       _estimate.setProjection();
       _estimate.setDr();
     }
-    
+
 
     virtual bool setEstimateDataImpl(const double* est){
-      Eigen::Map <const Vector7> v(est);
+      Eigen::Map <const Vector7d> v(est);
       _estimate.fromVector(v);
       return true;
     }
 
     virtual bool getEstimateData(double* est) const{
-      Eigen::Map <Vector7> v(est);
+      Eigen::Map <Vector7d> v(est);
       v = estimate().toVector();
       return true;
     }
@@ -115,13 +115,13 @@ class G2O_TYPES_SBA_API VertexIntrinsics : public BaseVertex<4, Eigen::Matrix<do
     }
 
     virtual bool setMinimalEstimateDataImpl(const double* est){
-      Eigen::Map<const Vector6> v(est);
+      Eigen::Map<const Vector6d> v(est);
       _estimate.fromMinimalVector(v);
       return true;
     }
 
     virtual bool getMinimalEstimateData(double* est) const{
-      Eigen::Map<Vector6> v(est);
+      Eigen::Map<Vector6d> v(est);
       v = _estimate.toMinimalVector();
       return true;
     }
@@ -137,7 +137,7 @@ class G2O_TYPES_SBA_API VertexIntrinsics : public BaseVertex<4, Eigen::Matrix<do
  class G2O_TYPES_SBA_API VertexSBAPointXYZ : public BaseVertex<3, Vector3d>
 {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW    
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     VertexSBAPointXYZ();
     virtual bool read(std::istream& is);
     virtual bool write(std::ostream& os) const;
@@ -156,7 +156,7 @@ class G2O_TYPES_SBA_API VertexIntrinsics : public BaseVertex<4, Eigen::Matrix<do
 
 // monocular projection
 // first two args are the measurement type, second two the connection classes
- class G2O_TYPES_SBA_API EdgeProjectP2MC : public  BaseBinaryEdge<2, Vector2, VertexSBAPointXYZ, VertexCam> 
+ class G2O_TYPES_SBA_API EdgeProjectP2MC : public  BaseBinaryEdge<2, Vector2d, VertexSBAPointXYZ, VertexCam>
 {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -173,9 +173,9 @@ class G2O_TYPES_SBA_API VertexIntrinsics : public BaseVertex<4, Eigen::Matrix<do
 
       // calculate the projection
       const Vector3d &pt = point->estimate();
-      Vector4 ppt(pt(0),pt(1),pt(2),1);
+      Vector4d ppt(pt(0),pt(1),pt(2),1);
       Vector3d p = cam->estimate().w2i * ppt;
-      Vector2 perr;
+      Vector2d perr;
       perr = p.head<2>()/p(2);
       //      std::cout << std::endl << "CAM   " << cam->estimate() << std::endl;
       //      std::cout << "POINT " << pt.transpose() << std::endl;
@@ -212,7 +212,7 @@ class G2O_TYPES_SBA_API VertexIntrinsics : public BaseVertex<4, Eigen::Matrix<do
 
       // calculate the projection
       Vector3d kp;
-      Vector4 pt;
+      Vector4d pt;
       pt.head<3>() = point->estimate();
       pt(3) = 1;
       const SBACam& nd = cam->estimate();
@@ -221,8 +221,8 @@ class G2O_TYPES_SBA_API VertexIntrinsics : public BaseVertex<4, Eigen::Matrix<do
       /* nd.setProjection(); */
       /* nd.setDr(); */
 
-      Vector3d p1 = nd.w2i * pt; 
-      Vector3d p2 = nd.w2n * pt; 
+      Vector3d p1 = nd.w2i * pt;
+      Vector3d p2 = nd.w2n * pt;
       Vector3d pb(nd.baseline,0,0);
 
       double invp1 = cst(1.0)/p1(2);
@@ -232,12 +232,12 @@ class G2O_TYPES_SBA_API VertexIntrinsics : public BaseVertex<4, Eigen::Matrix<do
       p2 = nd.Kcam*(p2-pb);
       kp(2) = p2(0)/p2(2);
 
-      // std::cout << std::endl << "CAM   " << cam->estimate() << std::endl; 
-      // std::cout << "POINT " << pt.transpose() << std::endl; 
-      // std::cout << "PROJ  " << p1.transpose() << std::endl; 
-      // std::cout << "PROJ  " << p2.transpose() << std::endl; 
-      // std::cout << "CPROJ " << kp.transpose() << std::endl; 
-      // std::cout << "MEAS  " << _measurement.transpose() << std::endl; 
+      // std::cout << std::endl << "CAM   " << cam->estimate() << std::endl;
+      // std::cout << "POINT " << pt.transpose() << std::endl;
+      // std::cout << "PROJ  " << p1.transpose() << std::endl;
+      // std::cout << "PROJ  " << p2.transpose() << std::endl;
+      // std::cout << "CPROJ " << kp.transpose() << std::endl;
+      // std::cout << "MEAS  " << _measurement.transpose() << std::endl;
 
       // error, which is backwards from the normal observed - calculated
       // _measurement is the measured projection
@@ -251,7 +251,7 @@ class G2O_TYPES_SBA_API VertexIntrinsics : public BaseVertex<4, Eigen::Matrix<do
 
 // monocular projection with parameter calibration
 // first two args are the measurement type, second two the connection classes
- class G2O_TYPES_SBA_API EdgeProjectP2MC_Intrinsics : public  BaseMultiEdge<2, Vector2> 
+ class G2O_TYPES_SBA_API EdgeProjectP2MC_Intrinsics : public  BaseMultiEdge<2, Vector2d>
 {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -267,9 +267,9 @@ class G2O_TYPES_SBA_API VertexIntrinsics : public BaseVertex<4, Eigen::Matrix<do
       VertexCam *cam = static_cast<VertexCam*>(_vertices[1]);
       // calculate the projection
       const Vector3d &pt = point->estimate();
-      Vector4 ppt(pt(0),pt(1),pt(2),cst(1.0));
+      Vector4d ppt(pt(0),pt(1),pt(2),cst(1.0));
       Vector3d p = cam->estimate().w2i * ppt;
-      Vector2 perr = p.head<2>()/p(2);
+      Vector2d perr = p.head<2>()/p(2);
       _error = perr - _measurement;
     }
 
@@ -301,7 +301,7 @@ class G2O_TYPES_SBA_API VertexIntrinsics : public BaseVertex<4, Eigen::Matrix<do
       _error[4]=delta.rotation().y();
       _error[5]=delta.rotation().z();
     }
-    
+
     virtual void setMeasurement(const SE3Quat& meas){
       _measurement=meas;
       _inverseMeasurement=meas.inverse();
@@ -311,14 +311,14 @@ class G2O_TYPES_SBA_API VertexIntrinsics : public BaseVertex<4, Eigen::Matrix<do
     virtual void initialEstimate(const OptimizableGraph::VertexSet& from, OptimizableGraph::Vertex* to);
 
     virtual bool setMeasurementData(const double* d){
-      Eigen::Map<const Vector7> v(d);
+      Eigen::Map<const Vector7d> v(d);
       _measurement.fromVector(v);
       _inverseMeasurement = _measurement.inverse();
       return true;
     }
 
     virtual bool getMeasurementData(double* d) const{
-      Eigen::Map<Vector7> v(d);
+      Eigen::Map<Vector7d> v(d);
       v = _measurement.toVector();
       return true;
     }
@@ -326,7 +326,7 @@ class G2O_TYPES_SBA_API VertexIntrinsics : public BaseVertex<4, Eigen::Matrix<do
     virtual int measurementDimension() const {return 7;}
 
     virtual bool setMeasurementFromState();
-    
+
   protected:
     SE3Quat _inverseMeasurement;
 };

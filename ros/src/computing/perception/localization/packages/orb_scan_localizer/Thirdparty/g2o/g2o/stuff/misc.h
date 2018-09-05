@@ -27,12 +27,12 @@
 #ifndef G2O_STUFF_MISC_H
 #define G2O_STUFF_MISC_H
 
-#include <cmath>
-#include "g2o/stuff/macros.h"
+#include "macros.h"
+#include "g2o/config.h"
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
+#include <cmath>
+#include <memory>
+
 
 /** @addtogroup utils **/
 // @{
@@ -44,6 +44,26 @@
  **/
 
 namespace g2o {
+
+/**
+ * helper function for creating an object in a unique_ptr.
+ */
+template<typename T, typename ...ArgTs>
+std::unique_ptr<T> make_unique(ArgTs&& ...args)
+{
+  return std::unique_ptr<T>(new T(std::forward<ArgTs>(args)...));
+};
+
+/**
+* converts a number constant to a double constant at compile time
+* to avoid having to cast everything to avoid warnings.
+**/
+inline constexpr double cst(long double v)
+{
+  return (double)v;
+}
+
+constexpr double const_pi() { return cst(3.14159265358979323846); }
 
 /**
  * return the square value
@@ -60,7 +80,7 @@ inline T square(T x)
 template <typename T>
 inline T hypot(T x, T y)
 {
-  return (T) (sqrt(x*x + y*y));
+  return (T) (std::sqrt(x*x + y*y));
 }
 
 /**
@@ -77,7 +97,7 @@ inline T hypot_sqr(T x, T y)
  */
 inline double deg2rad(double degree)
 {
-  return degree * 0.01745329251994329576;
+  return degree * cst(0.01745329251994329576);
 }
 
 /**
@@ -85,7 +105,7 @@ inline double deg2rad(double degree)
  */
 inline double rad2deg(double rad)
 {
-  return rad * 57.29577951308232087721;
+  return rad * cst(57.29577951308232087721);
 }
 
 /**
@@ -93,15 +113,15 @@ inline double rad2deg(double rad)
  */
 inline double normalize_theta(double theta)
 {
-  if (theta >= -M_PI && theta < M_PI)
+  if (theta >= -const_pi() && theta < const_pi())
     return theta;
-  
-  double multiplier = floor(theta / (2*M_PI));
-  theta = theta - multiplier*2*M_PI;
-  if (theta >= M_PI)
-    theta -= 2*M_PI;
-  if (theta < -M_PI)
-    theta += 2*M_PI;
+
+  double multiplier = std::floor(theta / (2*const_pi()));
+  theta = theta - multiplier*2*const_pi();
+  if (theta >= const_pi())
+    theta -= 2*const_pi();
+  if (theta < -const_pi())
+    theta += 2*const_pi();
 
   return theta;
 }
@@ -111,7 +131,7 @@ inline double normalize_theta(double theta)
  */
 inline double inverse_theta(double th)
 {
-  return normalize_theta(th + M_PI);
+  return normalize_theta(th + const_pi());
 }
 
 /**
@@ -121,8 +141,8 @@ inline double average_angle(double theta1, double theta2)
 {
   double x, y;
 
-  x = cos(theta1) + cos(theta2);
-  y = sin(theta1) + sin(theta2);
+  x = std::cos(theta1) + std::cos(theta2);
+  y = std::sin(theta1) + std::sin(theta2);
   if(x == 0 && y == 0)
     return 0;
   else
@@ -148,7 +168,7 @@ inline int sign(T x)
  * clamp x to the interval [l, u]
  */
 template <typename T>
-inline T clamp(T l, T x, T u) 
+inline T clamp(T l, T x, T u)
 {
   if (x < l)
     return l;
@@ -161,7 +181,7 @@ inline T clamp(T l, T x, T u)
  * wrap x to be in the interval [l, u]
  */
 template <typename T>
-inline T wrap(T l, T x, T u) 
+inline T wrap(T l, T x, T u)
 {
   T intervalWidth = u - l;
   while (x < l)

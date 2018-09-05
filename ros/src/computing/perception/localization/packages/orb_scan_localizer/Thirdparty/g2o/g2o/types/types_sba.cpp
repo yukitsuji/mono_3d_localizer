@@ -78,7 +78,7 @@ namespace g2o {
     for (int i=0; i<3; i++){
       is >> t[i];
     }
-    Vector4 rc;
+    Vector4d rc;
     for (int i=0; i<4; i++) {
       is >> rc[i];
     }
@@ -137,7 +137,7 @@ namespace g2o {
 
   bool EdgeSBACam::read(std::istream& is)
   {
-    Vector7 meas;
+    Vector7d meas;
     for (int i=0; i<7; i++)
       is >> meas[i];
     setMeasurement(SE3Quat(meas));
@@ -196,7 +196,7 @@ namespace g2o {
 
   // point to camera projection, monocular
   EdgeProjectP2MC::EdgeProjectP2MC() :
-  BaseBinaryEdge<2, Vector2, VertexSBAPointXYZ, VertexCam>()
+  BaseBinaryEdge<2, Vector2d, VertexSBAPointXYZ, VertexCam>()
   {
     information().setIdentity();
   }
@@ -252,7 +252,7 @@ namespace g2o {
     const SBACam &cam = vc->estimate();
 
     VertexSBAPointXYZ *vp = static_cast<VertexSBAPointXYZ *>(_vertices[0]);
-    Vector4 pt, trans;
+    Vector4d pt, trans;
     pt.head<3>() = vp->estimate();
     pt(3) = 1.0;
     trans.head<3>() = cam.translation();
@@ -337,7 +337,7 @@ namespace g2o {
     const SBACam &cam = vc->estimate();
 
     VertexSBAPointXYZ *vp = static_cast<VertexSBAPointXYZ *>(_vertices[0]);
-    Vector4 pt, trans;
+    Vector4d pt, trans;
     pt.head<3>() = vp->estimate();
     pt(3) = 1.0;
     trans.head<3>() = cam.translation();
@@ -406,7 +406,7 @@ namespace g2o {
 
   // point to camera projection, monocular
   EdgeProjectP2MC_Intrinsics::EdgeProjectP2MC_Intrinsics() :
-    BaseMultiEdge<2, Vector2>()
+    BaseMultiEdge<2, Vector2d>()
   {
     information().setIdentity();
     resize(3);
@@ -427,7 +427,7 @@ namespace g2o {
 
     //VertexIntrinsics *intr = static_cast<VertexIntrinsics *>(_vertices[2]);
 
-    Vector4 pt, trans;
+    Vector4d pt, trans;
     pt.head<3>() = vp->estimate();
     pt(3) = 1.0;
     trans.head<3>() = cam.translation();
@@ -502,7 +502,7 @@ namespace g2o {
   bool EdgeProjectP2MC_Intrinsics::read(std::istream& is)
   {
     // measured keypoint
-    Vector2 meas;
+    Vector2d meas;
     for (int i=0; i<2; i++)
       is >> meas[i];
     setMeasurement(meas);

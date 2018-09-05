@@ -45,6 +45,9 @@ namespace g2o {
   typedef Eigen::Matrix<double,2,1,Eigen::ColMajor>                               Vector2D;
   typedef Eigen::Matrix<double,3,1,Eigen::ColMajor>                               Vector3D;
   typedef Eigen::Matrix<double,4,1,Eigen::ColMajor>                               Vector4D;
+  typedef Eigen::Matrix<double,5,1,Eigen::ColMajor>                               Vector5D;
+  typedef Eigen::Matrix<double,6,1,Eigen::ColMajor>                               Vector6D;
+  typedef Eigen::Matrix<double,7,1,Eigen::ColMajor>                               Vector7D;
   typedef Eigen::Matrix<double,Eigen::Dynamic,1,Eigen::ColMajor>                  VectorXD;
 
   typedef Eigen::Matrix<int,2,2,Eigen::ColMajor>                                  Matrix2I;
@@ -67,6 +70,12 @@ namespace g2o {
 
   typedef Eigen::Transform<double,2,Eigen::Affine,Eigen::ColMajor>                Affine2D;
   typedef Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor>                Affine3D;
+
+  typedef Eigen::Quaternion<double>                                               Quaternion;
+
+  typedef Eigen::Rotation2D<double>                                               Rotation2D;
+
+  typedef Eigen::AngleAxis<double>                                                AngleAxis;
 
 } // end namespace g2o
 
