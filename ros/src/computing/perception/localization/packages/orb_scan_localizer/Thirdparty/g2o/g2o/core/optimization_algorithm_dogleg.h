@@ -27,7 +27,10 @@
 #ifndef G2O_OPTIMIZATION_ALGORITHM_DOGLEG_H
 #define G2O_OPTIMIZATION_ALGORITHM_DOGLEG_H
 
-#include "g2o/core/optimization_algorithm_with_hessian.h"
+#include "optimization_algorithm_with_hessian.h"
+#include "g2o_core_api.h"
+
+#include <memory>
 
 namespace g2o {
 
@@ -36,7 +39,7 @@ namespace g2o {
   /**
    * \brief Implementation of Powell's Dogleg Algorithm
    */
-  class  OptimizationAlgorithmDogleg : public OptimizationAlgorithmWithHessian
+  class G2O_CORE_API OptimizationAlgorithmDogleg : public OptimizationAlgorithmWithHessian
   {
     public:
       /** \brief type of the step to take */
@@ -50,7 +53,7 @@ namespace g2o {
        * construct the Dogleg algorithm, which will use the given Solver for solving the
        * linearized system.
        */
-      explicit OptimizationAlgorithmDogleg(BlockSolverBase* solver);
+      explicit OptimizationAlgorithmDogleg(std::unique_ptr<BlockSolverBase> solver);
       virtual ~OptimizationAlgorithmDogleg();
 
       virtual SolverResult solve(int iteration, bool online = false);
@@ -73,15 +76,18 @@ namespace g2o {
       Property<double>* _initialLambda;
       Property<double>* _lamdbaFactor;
 
-      Eigen::VectorXd _hsd;         ///< steepest decent step
-      Eigen::VectorXd _hdl;         ///< final dogleg step
-      Eigen::VectorXd _auxVector;   ///< auxilary vector used to perform multiplications or other stuff
+      VectorXD _hsd;         ///< steepest decent step
+      VectorXD _hdl;         ///< final dogleg step
+      VectorXD _auxVector;   ///< auxilary vector used to perform multiplications or other stuff
 
       double _currentLambda;        ///< the damping factor to force positive definite matrix
       double _delta;                ///< trust region
       int _lastStep;                ///< type of the step taken by the algorithm
       bool _wasPDInAllIterations;   ///< the matrix we solve was positive definite in all iterations -> if not apply damping
       int _lastNumTries;
+
+  private:
+      std::unique_ptr<BlockSolverBase> m_solver;
   };
 
 } // end namespace

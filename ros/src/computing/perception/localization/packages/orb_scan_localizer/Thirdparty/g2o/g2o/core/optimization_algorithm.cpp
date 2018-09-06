@@ -24,20 +24,18 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "g2o/core/optimization_algorithm.h"
+#include "optimization_algorithm.h"
 
 using namespace std;
 
 namespace g2o {
 
-OptimizationAlgorithm::OptimizationAlgorithm() :
-  _optimizer(0)
-{
-}
+OptimizationAlgorithm::OptimizationAlgorithm()
+  : _optimizer(nullptr)
+{}
 
 OptimizationAlgorithm::~OptimizationAlgorithm()
-{
-}
+{}
 
 void OptimizationAlgorithm::printProperties(std::ostream& os) const
 {

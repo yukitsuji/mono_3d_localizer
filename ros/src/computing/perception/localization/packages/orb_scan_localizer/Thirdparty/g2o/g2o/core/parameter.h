@@ -29,11 +29,11 @@
 
 #include <iosfwd>
 
-#include "g2o/core/hyper_graph.h"
+#include "hyper_graph.h"
 
 namespace g2o {
 
-    class  Parameter : public HyperGraph::HyperGraphElement
+    class G2O_CORE_API Parameter : public HyperGraph::HyperGraphElement
     {
       public:
         Parameter();

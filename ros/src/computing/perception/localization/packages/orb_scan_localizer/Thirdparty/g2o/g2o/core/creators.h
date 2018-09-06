@@ -27,9 +27,10 @@
 #ifndef G2O_CREATORS_H
 #define G2O_CREATORS_H
 
+#include "hyper_graph.h"
+
 #include <string>
 #include <typeinfo>
-#include "g2o/core/hyper_graph.h"
 
 namespace g2o
 {
@@ -37,7 +38,7 @@ namespace g2o
   /**
    * \brief Abstract interface for allocating HyperGraphElement
    */
-  class  AbstractHyperGraphElementCreator
+  class G2O_CORE_API AbstractHyperGraphElementCreator
   {
     public:
       /**

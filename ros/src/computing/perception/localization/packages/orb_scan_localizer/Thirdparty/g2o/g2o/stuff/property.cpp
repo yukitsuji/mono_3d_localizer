@@ -24,13 +24,14 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "g2o/stuff/property.h"
+#include "property.h"
 
 #include <vector>
 #include <iostream>
 
-#include "g2o/stuff/macros.h"
-#include "g2o/stuff/string_tools.h"
+#include "macros.h"
+
+#include "string_tools.h"
 using namespace std;
 
 namespace g2o {

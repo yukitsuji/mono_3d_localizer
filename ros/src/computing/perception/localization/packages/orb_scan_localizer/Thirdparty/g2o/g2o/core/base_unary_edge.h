@@ -31,13 +31,13 @@
 #include <cassert>
 #include <limits>
 
-#include "g2o/core/base_edge.h"
-#include "g2o/core/robust_kernel.h"
 #include "g2o/config.h"
+#include "g2o/stuff/misc.h"
+#include "base_edge.h"
+#include "robust_kernel.h"
 
 namespace g2o {
 
-  using namespace Eigen;
 
   template <int D, typename E, typename VertexXi>
   class BaseUnaryEdge : public BaseEdge<D,E>
@@ -46,14 +46,14 @@ namespace g2o {
       static const int Dimension = BaseEdge<D, E>::Dimension;
       typedef typename BaseEdge<D,E>::Measurement Measurement;
       typedef VertexXi VertexXiType;
-      typedef typename Matrix<double, D, VertexXiType::Dimension>::AlignedMapType JacobianXiOplusType;
+      typedef typename Eigen::Matrix<double, D, VertexXiType::Dimension, D==1?Eigen::RowMajor:Eigen::ColMajor>::AlignedMapType JacobianXiOplusType;
       typedef typename BaseEdge<D,E>::ErrorVector ErrorVector;
       typedef typename BaseEdge<D,E>::InformationType InformationType;
 
       BaseUnaryEdge() : BaseEdge<D,E>(),
         _jacobianOplusXi(0, D, VertexXiType::Dimension)
       {
-        _vertices.resize(1);
+        _vertices.resize(1, nullptr);
       }
 
       virtual void resize(size_t size);
@@ -61,6 +61,8 @@ namespace g2o {
       virtual bool allVerticesFixed() const;
 
       virtual void linearizeOplus(JacobianWorkspace& jacobianWorkspace);
+
+      virtual OptimizableGraph::Vertex* createVertex(int i);
 
       /**
        * Linearizes the oplus operator in the vertex, and stores
@@ -93,7 +95,7 @@ namespace g2o {
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
-#include "g2o/core/base_unary_edge.hpp"
+#include "base_unary_edge.hpp"
 
 } // end namespace g2o
 

@@ -72,7 +72,7 @@ add_definitions(
 )
 
 # For building Pangolin
-if (NOT TARGET pangolin)
+#if (NOT TARGET pangolin)
     add_subdirectory(Thirdparty/Pangolin)
 
     # For building DBoW2
@@ -80,7 +80,7 @@ if (NOT TARGET pangolin)
 
     # For building g2o
     add_subdirectory(Thirdparty/g2o)
-endif()
+#endif()
 
 include_directories(
         # my own

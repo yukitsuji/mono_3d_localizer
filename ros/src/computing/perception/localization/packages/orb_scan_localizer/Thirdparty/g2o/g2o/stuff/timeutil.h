@@ -27,14 +27,11 @@
 #ifndef G2O_TIMEUTIL_H
 #define G2O_TIMEUTIL_H
 
-#ifdef _WINDOWS
-#include <time.h>
-#else
-#include <sys/time.h>
-#endif
-
 #include <string>
+#include <chrono>
 
+#include "g2o_stuff_api.h"
+#include "g2o/stuff/misc.h"
 
 /** @addtogroup utils **/
 // @{
@@ -77,33 +74,22 @@ if (1) {\
 
 namespace g2o {
 
-#ifdef _WINDOWS
-typedef struct timeval {
-  long tv_sec;
-  long tv_usec;
-} timeval;
- int gettimeofday(struct timeval *tv, struct timezone *tz);
-#endif
+using seconds = std::chrono::duration<double>;
 
 /**
  * return the current time in seconds since 1. Jan 1970
  */
 inline double get_time() 
 {
-  struct timeval ts;
-  gettimeofday(&ts,0);
-  return ts.tv_sec + ts.tv_usec*1e-6;
+  return seconds{ std::chrono::system_clock::now().time_since_epoch() }.count();
 }
 
 /**
  * return a monotonic increasing time which basically does not need to
  * have a reference point. Consider this for measuring how long some
  * code fragments required to execute.
- *
- * On Linux we call clock_gettime() on other systems we currently
- * call get_time().
  */
- double get_monotonic_time();
+G2O_STUFF_API double get_monotonic_time();
 
 /**
  * \brief Class to measure the time spent in a scope
@@ -111,7 +97,7 @@ inline double get_time()
  * To use this class, e.g. to measure the time spent in a function,
  * just create and instance at the beginning of the function.
  */
-class  ScopeTime {
+class G2O_STUFF_API ScopeTime {
   public: 
     ScopeTime(const char* title);
     ~ScopeTime();

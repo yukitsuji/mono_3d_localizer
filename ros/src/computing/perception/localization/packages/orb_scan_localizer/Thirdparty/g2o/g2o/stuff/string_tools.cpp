@@ -24,7 +24,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "g2o/stuff/string_tools.h"
+#include "string_tools.h"
+#include "os_specific.h"
+#include "macros.h"
 
 #include <cctype>
 #include <string>
@@ -34,8 +36,6 @@
 #include <cstdio>
 #include <iostream>
 #include <iterator>
-#include "g2o/stuff/macros.h"
-#include "g2o/stuff/os_specific.h"
 
 #if (defined (UNIX) || defined(CYGWIN)) && !defined(ANDROID)
 #include <wordexp.h>

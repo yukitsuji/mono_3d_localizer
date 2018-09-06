@@ -24,7 +24,7 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "g2o/core/optimization_algorithm_factory.h"
+#include "optimization_algorithm_factory.h"
 
 #include <iostream>
 #include <typeinfo>
@@ -89,13 +89,13 @@ namespace g2o {
       return (*foundIt)->construct();
     }
     cerr << "SOLVER FACTORY WARNING: Unable to create solver " << name << endl;
-    return 0;
+    return nullptr;
   }
 
   void OptimizationAlgorithmFactory::destroy()
   {
     delete factoryInstance;
-    factoryInstance = 0;
+    factoryInstance = nullptr;
   }
 
   void OptimizationAlgorithmFactory::listSolvers(std::ostream& os) const

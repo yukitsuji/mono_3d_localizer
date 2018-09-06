@@ -24,10 +24,10 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "g2o/core/robust_kernel_factory.h"
+#include "robust_kernel_factory.h"
+#include "robust_kernel.h"
 
 #include <cassert>
-#include "g2o/core/robust_kernel.h"
 
 using namespace std;
 
@@ -83,7 +83,7 @@ RobustKernel* RobustKernelFactory::construct(const std::string& tag) const
   if (foundIt != _creator.end()) {
     return foundIt->second->construct();
   }
-  return 0;
+  return nullptr;
 }
 
 AbstractRobustKernelCreator* RobustKernelFactory::creator(const std::string& tag) const
@@ -92,7 +92,7 @@ AbstractRobustKernelCreator* RobustKernelFactory::creator(const std::string& tag
   if (foundIt != _creator.end()) {
     return foundIt->second;
   }
-  return 0;
+  return nullptr;
 }
 
 void RobustKernelFactory::fillKnownKernels(std::vector<std::string>& types) const

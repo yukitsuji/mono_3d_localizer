@@ -24,16 +24,17 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "g2o/core/factory.h"
+#include "factory.h"
+
+#include "creators.h"
+#include "parameter.h"
+#include "cache.h"
+#include "optimizable_graph.h"
+#include "g2o/stuff/color_macros.h"
 
 #include <iostream>
 #include <typeinfo>
 #include <cassert>
-#include "g2o/core/cache.h"
-#include "g2o/core/creators.h"
-#include "g2o/core/optimizable_graph.h"
-#include "g2o/core/parameter.h"
-#include "g2o/stuff/color_macros.h"
 
 using namespace std;
 
@@ -150,7 +151,7 @@ HyperGraph::HyperGraphElement* Factory::construct(const std::string& tag) const
     //cerr << "tag " << tag << " -> " << (void*) foundIt->second->creator << " " << foundIt->second->creator->name() << endl;
     return foundIt->second->creator->construct();
   }
-  return 0;
+  return nullptr;
 }
 
 const std::string& Factory::tag(const HyperGraph::HyperGraphElement* e) const
@@ -209,7 +210,7 @@ HyperGraph::HyperGraphElement* Factory::construct(const std::string& tag, const 
   if (foundIt != _creator.end() && foundIt->second->elementTypeBit >= 0 && elemsToConstruct.test(foundIt->second->elementTypeBit)) {
     return foundIt->second->creator->construct();
   }
-  return 0;
+  return nullptr;
 }
 
 } // end namespace

@@ -115,7 +115,7 @@ inline double normalize_theta(double theta)
 {
   if (theta >= -const_pi() && theta < const_pi())
     return theta;
-
+  
   double multiplier = std::floor(theta / (2*const_pi()));
   theta = theta - multiplier*2*const_pi();
   if (theta >= const_pi())
@@ -168,7 +168,7 @@ inline int sign(T x)
  * clamp x to the interval [l, u]
  */
 template <typename T>
-inline T clamp(T l, T x, T u)
+inline T clamp(T l, T x, T u) 
 {
   if (x < l)
     return l;
@@ -181,7 +181,7 @@ inline T clamp(T l, T x, T u)
  * wrap x to be in the interval [l, u]
  */
 template <typename T>
-inline T wrap(T l, T x, T u)
+inline T wrap(T l, T x, T u) 
 {
   T intervalWidth = u - l;
   while (x < l)

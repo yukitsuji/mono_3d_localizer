@@ -27,21 +27,24 @@
 #ifndef G2O_SOLVER_LEVENBERG_H
 #define G2O_SOLVER_LEVENBERG_H
 
-#include "g2o/core/optimization_algorithm_with_hessian.h"
+#include "optimization_algorithm_with_hessian.h"
+#include "g2o_core_api.h"
+
+#include <memory>
 
 namespace g2o {
 
   /**
    * \brief Implementation of the Levenberg Algorithm
    */
-  class  OptimizationAlgorithmLevenberg : public OptimizationAlgorithmWithHessian
+  class G2O_CORE_API OptimizationAlgorithmLevenberg : public OptimizationAlgorithmWithHessian
   {
     public:
       /**
        * construct the Levenberg algorithm, which will use the given Solver for solving the
        * linearized system.
        */
-      explicit OptimizationAlgorithmLevenberg(Solver* solver);
+      explicit OptimizationAlgorithmLevenberg(std::unique_ptr<Solver> solver);
       virtual ~OptimizationAlgorithmLevenberg();
 
       virtual SolverResult solve(int iteration, bool online = false);
@@ -75,8 +78,6 @@ namespace g2o {
       double _goodStepUpperScale; ///< upper bound for lambda decrease if a good LM step
       double _ni;
       int _levenbergIterations;   ///< the numer of levenberg iterations performed to accept the last step
-      //RAUL
-      int _nBad;
 
       /**
        * helper for Levenberg, this function computes the initial damping factor, if the user did not
@@ -85,6 +86,8 @@ namespace g2o {
       double computeLambdaInit() const;
       double computeScale() const;
 
+  private:
+      std::unique_ptr<Solver> m_solver;
   };
 
 } // end namespace

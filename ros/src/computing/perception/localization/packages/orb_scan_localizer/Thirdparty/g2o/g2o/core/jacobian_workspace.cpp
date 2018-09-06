@@ -24,11 +24,11 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "g2o/core/jacobian_workspace.h"
+#include "jacobian_workspace.h"
 
 #include <cmath>
 
-#include "g2o/core/optimizable_graph.h"
+#include "optimizable_graph.h"
 
 using namespace std;
 

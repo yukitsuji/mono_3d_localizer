@@ -24,15 +24,16 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "g2o/core/parameter_container.h"
+#include "parameter_container.h"
 
 #include <iostream>
 
-#include "g2o/core/factory.h"
-#include "g2o/core/parameter.h"
+#include "factory.h"
+#include "parameter.h"
+
+#include "g2o/stuff/macros.h"
 #include "g2o/stuff/color_macros.h"
 #include "g2o/stuff/string_tools.h"
-#include "g2o/stuff/macros.h"
 
 namespace g2o {
 
@@ -69,14 +70,21 @@ namespace g2o {
   Parameter* ParameterContainer::getParameter(int id) {
     iterator it=find(id);
     if (it==end())
-      return 0;
+      return nullptr;
+    return it->second;
+  }
+
+  const Parameter* ParameterContainer::getParameter(int id) const {
+    const_iterator it=find(id);
+    if (it==end())
+      return nullptr;
     return it->second;
   }
 
   Parameter* ParameterContainer::detachParameter(int id){
     iterator it=find(id);
     if (it==end())
-      return 0;
+      return nullptr;
     Parameter* p=it->second;
     erase(it);
     return p;

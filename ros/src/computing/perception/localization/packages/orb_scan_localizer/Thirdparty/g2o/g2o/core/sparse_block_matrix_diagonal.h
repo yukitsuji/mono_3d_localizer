@@ -31,8 +31,8 @@
 #include <Eigen/Core>
 #include <Eigen/StdVector>
 
-#include "g2o/core/matrix_operations.h"
 #include "g2o/config.h"
+#include "matrix_operations.h"
 
 namespace g2o {
 
@@ -83,8 +83,8 @@ namespace g2o {
         }
 
         // map the memory by Eigen
-        Eigen::Map<Eigen::VectorXd> destVec(dest, destSize);
-        Eigen::Map<const Eigen::VectorXd> srcVec(src, rows());
+        Eigen::Map<VectorXD> destVec(dest, destSize);
+        Eigen::Map<const VectorXD> srcVec(src, rows());
 
 #      ifdef G2O_OPENMP
 #      pragma omp parallel for default (shared) schedule(dynamic, 10)
@@ -94,7 +94,7 @@ namespace g2o {
           int srcOffset = destOffset;
           const SparseMatrixBlock& A = _diagonal[i];
           // destVec += *A.transpose() * srcVec (according to the sub-vector parts)
-          internal::axpy(A, srcVec, srcOffset, destVec, destOffset);
+          internal::template axpy<SparseMatrixBlock>(A, srcVec, srcOffset, destVec, destOffset);
         }
       }
 

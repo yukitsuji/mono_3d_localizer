@@ -27,11 +27,13 @@
 #ifndef G2O_ROBUST_KERNEL_FACTORY_H
 #define G2O_ROBUST_KERNEL_FACTORY_H
 
+#include "g2o_core_api.h"
+#include "g2o/stuff/misc.h"
+
 #include <string>
 #include <map>
 #include <vector>
 #include <iostream>
-#include "g2o/stuff/misc.h"
 
 namespace g2o {
 
@@ -40,7 +42,7 @@ namespace g2o {
     /**
    * \brief Abstract interface for allocating a robust kernel
    */
-  class  AbstractRobustKernelCreator
+  class G2O_CORE_API AbstractRobustKernelCreator
   {
     public:
       /**
@@ -63,7 +65,7 @@ namespace g2o {
   /**
    * \brief create robust kernels based on their human readable name
    */
-  class  RobustKernelFactory
+  class G2O_CORE_API RobustKernelFactory
   {
     public:
 
