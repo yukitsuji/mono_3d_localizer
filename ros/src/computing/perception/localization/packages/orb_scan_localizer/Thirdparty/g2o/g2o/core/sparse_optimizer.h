@@ -31,7 +31,6 @@
 
 #include "optimizable_graph.h"
 #include "sparse_block_matrix.h"
-#include "g2o_core_api.h"
 #include "batch_stats.h"
 
 #include <map>
@@ -43,7 +42,7 @@ namespace g2o {
   class OptimizationAlgorithm;
   class EstimatePropagatorCost;
 
-  class G2O_CORE_API SparseOptimizer : public OptimizableGraph {
+  class  SparseOptimizer : public OptimizableGraph {
 
     public:
     enum {
@@ -201,7 +200,7 @@ namespace g2o {
      * mapping is erased. In case you need the index mapping for manipulating the
      * graph, you have to store it in your own copy.
      */
-    virtual bool removeVertex(HyperGraph::Vertex* v, bool detach=false);
+    virtual bool removeVertex(HyperGraph::Vertex* v);
 
     /**
      * search for an edge in _activeVertices and return the iterator pointing to it

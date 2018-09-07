@@ -14,6 +14,12 @@ using namespace Eigen;
 using namespace std;
 using namespace g2o;
 
+int main(){
+    return 0;
+}
+
+/*
+
 // sampling distributions
 class Sample
 {
@@ -193,3 +199,5 @@ int main()
   cout <<  dynamic_cast<VertexSE3*>(optimizer.vertices().find(1)->second)
     ->estimate().translation().transpose() << endl;
 }
+
+*/

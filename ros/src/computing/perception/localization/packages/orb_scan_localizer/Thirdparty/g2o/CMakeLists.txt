@@ -372,7 +372,6 @@ add_library(g2o STATIC
     g2o/stuff/unscented.h
 
     g2o/solvers/cholmod/linear_solver_cholmod.h
-    g2o/solvers/cholmod/solver_cholmod.cpp
     g2o/solvers/csparse/csparse_extension.cpp
     g2o/solvers/csparse/csparse_extension.h
     g2o/solvers/csparse/csparse_helper.cpp
@@ -380,19 +379,15 @@ add_library(g2o STATIC
     g2o/solvers/csparse/g2o_csparse_api.h
     g2o/solvers/csparse/g2o_csparse_extension_api.h
     g2o/solvers/csparse/linear_solver_csparse.h
-    g2o/solvers/csparse/solver_csparse.cpp
     g2o/solvers/dense/linear_solver_dense.h
-    g2o/solvers/dense/solver_dense.cpp
     g2o/solvers/eigen/linear_solver_eigen.h
-    g2o/solvers/eigen/solver_eigen.cpp
     g2o/solvers/pcg/linear_solver_pcg.h
     g2o/solvers/pcg/linear_solver_pcg.hpp
-    g2o/solvers/pcg/solver_pcg.cpp
     g2o/solvers/slam2d_linear/g2o_slam2d_linear_api.h
-    g2o/solvers/slam2d_linear/slam2d_linear.cpp
-    g2o/solvers/slam2d_linear/solver_slam2d_linear.cpp
+    #g2o/solvers/slam2d_linear/slam2d_linear.cpp
+    #g2o/solvers/slam2d_linear/solver_slam2d_linear.cpp
     g2o/solvers/slam2d_linear/solver_slam2d_linear.h
-    g2o/solvers/structure_only/structure_only.cpp
+    #g2o/solvers/structure_only/structure_only.cpp
     g2o/solvers/structure_only/structure_only_solver.h
 )
 

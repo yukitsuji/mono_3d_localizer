@@ -34,15 +34,14 @@
 #include <iomanip>
 #include <cassert>
 #include <Eigen/Core>
-#include <memory>
 
 #include "sparse_block_matrix_ccs.h"
 #include "matrix_structure.h"
 #include "matrix_operations.h"
 #include "g2o/config.h"
-#include "g2o/stuff/misc.h"
 
 namespace g2o {
+  using namespace Eigen;
 /**
  * \brief Sparse matrix which uses blocks
  *
@@ -77,7 +76,7 @@ class SparseBlockMatrix {
      * constructs a sparse block matrix having a specific layout
      * @param rbi: array of int containing the row layout of the blocks. 
      * the component i of the array should contain the index of the first row of the block i+1.
-     * @param cbi: array of int containing the column layout of the blocks. 
+     * @param rbi: array of int containing the column layout of the blocks. 
      *  the component i of the array should contain the index of the first col of the block i+1.
      * @param rb: number of row blocks
      * @param cb: number of col blocks
@@ -131,14 +130,10 @@ class SparseBlockMatrix {
 
     //! transposes a block matrix, The transposed type should match the argument false on failure
     template <class MatrixTransposedType>
-    bool transpose(SparseBlockMatrix<MatrixTransposedType>& dest) const;
-
-    template <class MatrixTransposedType>
-    std::unique_ptr<SparseBlockMatrix<MatrixTransposedType>> transposed() const;
+    bool transpose(SparseBlockMatrix<MatrixTransposedType>*& dest) const;
 
     //! adds the current matrix to the destination
-    bool add(SparseBlockMatrix<MatrixType>& dest) const;
-    std::unique_ptr<SparseBlockMatrix<MatrixType>> added() const;
+    bool add(SparseBlockMatrix<MatrixType>*& dest) const ;
 
     //! dest = (*this) *  M
     template <class MatrixResultType, class MatrixFactorType>
@@ -222,18 +217,12 @@ class SparseBlockMatrix {
     //! and the block column is stored as a map row_block -> matrix_block_ptr.
     std::vector <IntBlockMap> _blockCols;
     bool _hasStorage;
-
-  private:
-    template <class MatrixTransposedType>
-    void transpose_internal(SparseBlockMatrix<MatrixTransposedType>& dest) const;
-
-    void add_internal(SparseBlockMatrix<MatrixType>& dest) const;
 };
 
 template < class  MatrixType >
 std::ostream& operator << (std::ostream&, const SparseBlockMatrix<MatrixType>& m);
 
-  typedef SparseBlockMatrix<MatrixXD> SparseBlockMatrixX;   
+  typedef SparseBlockMatrix<MatrixXD> SparseBlockMatrixXd;   
 
 } //end namespace
 

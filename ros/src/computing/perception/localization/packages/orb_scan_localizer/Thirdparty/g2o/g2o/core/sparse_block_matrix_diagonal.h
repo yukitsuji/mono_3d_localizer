@@ -83,8 +83,8 @@ namespace g2o {
         }
 
         // map the memory by Eigen
-        Eigen::Map<VectorXD> destVec(dest, destSize);
-        Eigen::Map<const VectorXD> srcVec(src, rows());
+        Eigen::Map<Eigen::VectorXd> destVec(dest, destSize);
+        Eigen::Map<const Eigen::VectorXd> srcVec(src, rows());
 
 #      ifdef G2O_OPENMP
 #      pragma omp parallel for default (shared) schedule(dynamic, 10)
@@ -94,7 +94,7 @@ namespace g2o {
           int srcOffset = destOffset;
           const SparseMatrixBlock& A = _diagonal[i];
           // destVec += *A.transpose() * srcVec (according to the sub-vector parts)
-          internal::template axpy<SparseMatrixBlock>(A, srcVec, srcOffset, destVec, destOffset);
+          internal::axpy(A, srcVec, srcOffset, destVec, destOffset);
         }
       }
 
