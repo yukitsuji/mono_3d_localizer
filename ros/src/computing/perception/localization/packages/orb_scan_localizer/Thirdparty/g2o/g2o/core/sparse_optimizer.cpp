@@ -67,24 +67,10 @@ namespace g2o{
         (*(*it))(this);
     }
 
-#   ifdef G2O_OPENMP
-#   pragma omp parallel for default (shared) if (_activeEdges.size() > 50)
-#   endif
     for (int k = 0; k < static_cast<int>(_activeEdges.size()); ++k) {
       OptimizableGraph::Edge* e = _activeEdges[k];
       e->computeError();
     }
-
-#  ifndef NDEBUG
-    for (int k = 0; k < static_cast<int>(_activeEdges.size()); ++k) {
-      OptimizableGraph::Edge* e = _activeEdges[k];
-      bool hasNan = arrayHasNaN(e->errorData(), e->dimension());
-      if (hasNan) {
-        cerr << "computeActiveErrors(): found NaN in error for edge " << e << endl;
-      }
-    }
-#  endif
-
   }
 
   double SparseOptimizer::activeChi2( ) const

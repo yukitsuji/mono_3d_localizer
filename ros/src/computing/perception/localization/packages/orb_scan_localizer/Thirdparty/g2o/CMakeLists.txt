@@ -4,22 +4,21 @@ project(g2o)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/)
 
-find_package(SuiteSparse REQUIRED)
-find_package(BLAS REQUIRED)
-find_package(LAPACK REQUIRED)
-find_package(OpenMP)
-
 SET(g2o_C_FLAGS "-std=c++11")
 SET(g2o_CXX_FLAGS "-std=c++11")
 
+IF(NOT CMAKE_BUILD_TYPE)
+  SET(CMAKE_BUILD_TYPE Release)
+ENDIF()
+
+# For building the CHOLMOD / CSPARSE solvers
+find_package(SuiteSparse REQUIRED)
+find_package(BLAS REQUIRED)
+find_package(LAPACK REQUIRED)
 include(CPack)
 # The library prefix
 set(LIB_PREFIX g2o_)
 
-set(g2o_C_FLAGS)
-set(g2o_CXX_FLAGS)
-
-# For building the CHOLMOD / CSPARSE solvers
 find_package(Cholmod)
 find_package(BLAS)
 find_package(LAPACK)
@@ -58,12 +57,12 @@ endif(G2O_USE_OPENMP)
 
 
 # C++11 support
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#set(CMAKE_CXX_STANDARD 11)
+#set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # specifying compiler flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${g2o_CXX_FLAGS}")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${g2o_C_FLAGS}")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${g2o_CXX_FLAGS}")
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${g2o_C_FLAGS}")
 
 find_package(Eigen3 NO_MODULE)
 if (TARGET Eigen3::Eigen)
@@ -73,7 +72,6 @@ else()
   include_directories(${EIGEN3_INCLUDE_DIR})
 endif ()
 
-# Set up the top-level include directories
 include_directories(${g2o_SOURCE_DIR} ${PROJECT_BINARY_DIR})
 include_directories(${SUITESPARSE_INCLUDE_DIRS})
 include_directories(${CSPARSE_INCLUDE_DIR})

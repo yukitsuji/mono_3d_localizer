@@ -62,13 +62,6 @@ void BaseMultiEdge<D, E>::linearizeOplus(JacobianWorkspace& jacobianWorkspace)
 template <int D, typename E>
 void BaseMultiEdge<D, E>::linearizeOplus()
 {
-#ifdef G2O_OPENMP
-  for (size_t i = 0; i < _vertices.size(); ++i) {
-    OptimizableGraph::Vertex* v = static_cast<OptimizableGraph::Vertex*>(_vertices[i]);
-    v->lockQuadraticForm();
-  }
-#endif
-
   const double delta = cst(1e-9);
   const double scalar = 1 / (2*delta);
   ErrorVector errorBak;
@@ -112,14 +105,6 @@ void BaseMultiEdge<D, E>::linearizeOplus()
     } // end dimension
   }
   _error = errorBeforeNumeric;
-
-#ifdef G2O_OPENMP
-  for (int i = (int)(_vertices.size()) - 1; i >= 0; --i) {
-    OptimizableGraph::Vertex* v = static_cast<OptimizableGraph::Vertex*>(_vertices[i]);
-    v->unlockQuadraticForm();
-  }
-#endif
-
 }
 
 template <int D, typename E>
@@ -181,18 +166,12 @@ void BaseMultiEdge<D, E>::computeQuadraticForm(const InformationType& omega, con
       Eigen::Map<VectorXD> fromB(from->bData(), fromDim);
 
       // ii block in the hessian
-#ifdef G2O_OPENMP
-      from->lockQuadraticForm();
-#endif
       fromMap.noalias() += AtO * A;
       fromB.noalias() += A.transpose() * weightedError;
 
       // compute the off-diagonal blocks ij for all j
       for (size_t j = i+1; j < _vertices.size(); ++j) {
         OptimizableGraph::Vertex* to = static_cast<OptimizableGraph::Vertex*>(_vertices[j]);
-#ifdef G2O_OPENMP
-        to->lockQuadraticForm();
-#endif
         bool jstatus = !(to->fixed());
         if (jstatus) {
           const JacobianType& B = _jacobianOplus[j];
@@ -205,14 +184,7 @@ void BaseMultiEdge<D, E>::computeQuadraticForm(const InformationType& omega, con
             hhelper.matrix.noalias() += AtO * B;
           }
         }
-#ifdef G2O_OPENMP
-        to->unlockQuadraticForm();
-#endif
       }
-
-#ifdef G2O_OPENMP
-      from->unlockQuadraticForm();
-#endif
     }
 
   }
@@ -251,13 +223,6 @@ void BaseMultiEdge<-1, E>::linearizeOplus(JacobianWorkspace& jacobianWorkspace)
 template <typename E>
 void BaseMultiEdge<-1, E>::linearizeOplus()
 {
-#ifdef G2O_OPENMP
-  for (size_t i = 0; i < _vertices.size(); ++i) {
-    OptimizableGraph::Vertex* v = static_cast<OptimizableGraph::Vertex*>(_vertices[i]);
-    v->lockQuadraticForm();
-  }
-#endif
-
   const double delta = cst(1e-9);
   const double scalar = 1 / (2*delta);
   ErrorVector errorBak;
@@ -301,14 +266,6 @@ void BaseMultiEdge<-1, E>::linearizeOplus()
     } // end dimension
   }
   _error = errorBeforeNumeric;
-
-#ifdef G2O_OPENMP
-  for (int i = (int)(_vertices.size()) - 1; i >= 0; --i) {
-    OptimizableGraph::Vertex* v = static_cast<OptimizableGraph::Vertex*>(_vertices[i]);
-    v->unlockQuadraticForm();
-  }
-#endif
-
 }
 
 template <typename E>
@@ -370,18 +327,12 @@ void BaseMultiEdge<-1, E>::computeQuadraticForm(const InformationType& omega, co
       Eigen::Map<VectorXD> fromB(from->bData(), fromDim);
 
       // ii block in the hessian
-#ifdef G2O_OPENMP
-      from->lockQuadraticForm();
-#endif
       fromMap.noalias() += AtO * A;
       fromB.noalias() += A.transpose() * weightedError;
 
       // compute the off-diagonal blocks ij for all j
       for (size_t j = i+1; j < _vertices.size(); ++j) {
         OptimizableGraph::Vertex* to = static_cast<OptimizableGraph::Vertex*>(_vertices[j]);
-#ifdef G2O_OPENMP
-        to->lockQuadraticForm();
-#endif
         bool jstatus = !(to->fixed());
         if (jstatus) {
           const JacobianType& B = _jacobianOplus[j];
@@ -394,14 +345,7 @@ void BaseMultiEdge<-1, E>::computeQuadraticForm(const InformationType& omega, co
             hhelper.matrix.noalias() += AtO * B;
           }
         }
-#ifdef G2O_OPENMP
-        to->unlockQuadraticForm();
-#endif
       }
-
-#ifdef G2O_OPENMP
-      from->unlockQuadraticForm();
-#endif
     }
 
   }

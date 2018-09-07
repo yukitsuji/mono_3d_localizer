@@ -28,6 +28,7 @@
 #include <Eigen/LU>
 #include <fstream>
 #include <iomanip>
+#include <iostream>
 
 #include "../stuff/timeutil.h"
 #include "../stuff/macros.h"
@@ -85,9 +86,6 @@ void BlockSolver<Traits>::resize(int* blockPoseIndices, int numPoseBlocks,
     _Hpl=new PoseLandmarkHessianType(blockPoseIndices, blockLandmarkIndices, numPoseBlocks, numLandmarkBlocks);
     _HplCCS = new SparseBlockMatrixCCS<PoseLandmarkMatrixType>(_Hpl->rowBlockIndices(), _Hpl->colBlockIndices());
     _HschurTransposedCCS = new SparseBlockMatrixCCS<PoseMatrixType>(_Hschur->colBlockIndices(), _Hschur->rowBlockIndices());
-#ifdef G2O_OPENMP
-    _coefficientsMutex.resize(numPoseBlocks);
-#endif
   }
 }
 
@@ -375,9 +373,6 @@ bool BlockSolver<Traits>::solve(){
 
   //_DInvSchur->clear();
   memset (_coefficients, 0, _sizePoses*sizeof(double));
-# ifdef G2O_OPENMP
-# pragma omp parallel for default (shared) schedule(dynamic, 10)
-# endif
   for (int landmarkIndex = 0; landmarkIndex < static_cast<int>(_Hll->blockCols().size()); ++landmarkIndex) {
     const typename SparseBlockMatrix<LandmarkMatrixType>::IntBlockMap& marginalizeColumn = _Hll->blockCols()[landmarkIndex];
     assert(marginalizeColumn.size() == 1 && "more than one block in _Hll column");
@@ -407,9 +402,6 @@ bool BlockSolver<Traits>::solve(){
       PoseLandmarkMatrixType BDinv = (*Bi)*(Dinv);
       assert(_HplCCS->rowBaseOfBlock(i1) < _sizePoses && "Index out of bounds");
       typename PoseVectorType::MapType Bb(&_coefficients[_HplCCS->rowBaseOfBlock(i1)], Bi->rows());
-#    ifdef G2O_OPENMP
-      ScopedOpenMPMutex mutexLock(&_coefficientsMutex[i1]);
-#    endif
       Bb.noalias() += (*Bi)*db;
 
       assert(i1 >= 0 && i1 < static_cast<int>(_HschurTransposedCCS->blockCols().size()) && "Index out of bounds");
@@ -502,9 +494,6 @@ template <typename Traits>
 bool BlockSolver<Traits>::buildSystem()
 {
   // clear b vector
-# ifdef G2O_OPENMP
-# pragma omp parallel for default (shared) if (_optimizer->indexMapping().size() > 1000)
-# endif
   for (int i = 0; i < static_cast<int>(_optimizer->indexMapping().size()); ++i) {
     OptimizableGraph::Vertex* v=_optimizer->indexMapping()[i];
     assert(v);
@@ -518,36 +507,17 @@ bool BlockSolver<Traits>::buildSystem()
 
   // resetting the terms for the pairwise constraints
   // built up the current system by storing the Hessian blocks in the edges and vertices
-# ifndef G2O_OPENMP
   // no threading, we do not need to copy the workspace
   JacobianWorkspace& jacobianWorkspace = _optimizer->jacobianWorkspace();
-# else
   // if running with threads need to produce copies of the workspace for each thread
-  JacobianWorkspace jacobianWorkspace = _optimizer->jacobianWorkspace();
-# pragma omp parallel for default (shared) firstprivate(jacobianWorkspace) if (_optimizer->activeEdges().size() > 100)
-# endif
+  // JacobianWorkspace jacobianWorkspace = _optimizer->jacobianWorkspace();
   for (int k = 0; k < static_cast<int>(_optimizer->activeEdges().size()); ++k) {
     OptimizableGraph::Edge* e = _optimizer->activeEdges()[k];
     e->linearizeOplus(jacobianWorkspace); // jacobian of the nodes' oplus (manifold)
     e->constructQuadraticForm();
-#  ifndef NDEBUG
-    for (size_t i = 0; i < e->vertices().size(); ++i) {
-      const OptimizableGraph::Vertex* v = static_cast<const OptimizableGraph::Vertex*>(e->vertex(i));
-      if (! v->fixed()) {
-        bool hasANan = arrayHasNaN(jacobianWorkspace.workspaceForVertex(i), e->dimension() * v->dimension());
-        if (hasANan) {
-          cerr << "buildSystem(): NaN within Jacobian for edge " << e << " for vertex " << i << endl;
-          break;
-        }
-      }
-    }
-#  endif
   }
 
   // flush the current system in a sparse block matrix
-# ifdef G2O_OPENMP
-# pragma omp parallel for default (shared) if (_optimizer->indexMapping().size() > 1000)
-# endif
   for (int i = 0; i < static_cast<int>(_optimizer->indexMapping().size()); ++i) {
     OptimizableGraph::Vertex* v=_optimizer->indexMapping()[i];
     int iBase = v->colInHessian();
@@ -567,18 +537,12 @@ bool BlockSolver<Traits>::setLambda(double lambda, bool backup)
     _diagonalBackupPose.resize(_numPoses);
     _diagonalBackupLandmark.resize(_numLandmarks);
   }
-# ifdef G2O_OPENMP
-# pragma omp parallel for default (shared) if (_numPoses > 100)
-# endif
   for (int i = 0; i < _numPoses; ++i) {
     PoseMatrixType *b=_Hpp->block(i,i);
     if (backup)
       _diagonalBackupPose[i] = b->diagonal();
     b->diagonal().array() += lambda;
   }
-# ifdef G2O_OPENMP
-# pragma omp parallel for default (shared) if (_numLandmarks > 100)
-# endif
   for (int i = 0; i < _numLandmarks; ++i) {
     LandmarkMatrixType *b=_Hll->block(i,i);
     if (backup)

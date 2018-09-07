@@ -900,9 +900,9 @@ bool OptimizableGraph::verifyInformationMatrices(bool verbose) const
 
 bool OptimizableGraph::initMultiThreading()
 {
-# if (defined G2O_OPENMP) && EIGEN_VERSION_AT_LEAST(3,1,0)
-  Eigen::initParallel();
-# endif
+// # if (defined G2O_OPENMP) && EIGEN_VERSION_AT_LEAST(3,1,0)
+//  Eigen::initParallel();
+// # endif
   return true;
 }
 

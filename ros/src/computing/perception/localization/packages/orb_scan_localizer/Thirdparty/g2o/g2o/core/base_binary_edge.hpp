@@ -28,15 +28,9 @@ namespace {
 
 struct QuadraticFormLock {
   QuadraticFormLock(OptimizableGraph::Vertex& vertex) : _vertex(vertex) {
-#ifdef G2O_OPENMP
-    _vertex.lockQuadraticForm();
-#endif
   }
 
   ~QuadraticFormLock() {
-#ifdef G2O_OPENMP
-    _vertex.unlockQuadraticForm();
-#endif
   }
 
 private:

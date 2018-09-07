@@ -113,9 +113,6 @@ namespace g2o {
         Eigen::Map<Eigen::VectorXd> destVec(dest, destSize);
         Eigen::Map<const Eigen::VectorXd> srcVec(src, rows());
 
-#      ifdef G2O_OPENMP
-#      pragma omp parallel for default (shared) schedule(dynamic, 10)
-#      endif
         for (int i=0; i < static_cast<int>(_blockCols.size()); ++i){
           int destOffset = colBaseOfBlock(i);
           for (typename SparseColumn::const_iterator it = _blockCols[i].begin(); it!=_blockCols[i].end(); ++it) {

@@ -86,9 +86,6 @@ namespace g2o {
         Eigen::Map<Eigen::VectorXd> destVec(dest, destSize);
         Eigen::Map<const Eigen::VectorXd> srcVec(src, rows());
 
-#      ifdef G2O_OPENMP
-#      pragma omp parallel for default (shared) schedule(dynamic, 10)
-#      endif
         for (int i=0; i < static_cast<int>(_diagonal.size()); ++i){
           int destOffset = baseOfBlock(i);
           int srcOffset = destOffset;
