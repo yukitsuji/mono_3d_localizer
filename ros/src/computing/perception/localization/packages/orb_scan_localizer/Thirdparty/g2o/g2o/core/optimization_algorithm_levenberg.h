@@ -78,7 +78,7 @@ namespace g2o {
       double _goodStepUpperScale; ///< upper bound for lambda decrease if a good LM step
       double _ni;
       int _levenbergIterations;   ///< the numer of levenberg iterations performed to accept the last step
-
+      int _nBad;
       /**
        * helper for Levenberg, this function computes the initial damping factor, if the user did not
        * specify an own value, see setUserLambdaInit()

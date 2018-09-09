@@ -49,6 +49,7 @@ namespace g2o {
     _maxTrialsAfterFailure = _properties.makeProperty<Property<int> >("maxTrialsAfterFailure", 10);
     _ni=2.;
     _levenbergIterations = 0;
+    _nBad = 0;
   }
 
   OptimizationAlgorithmLevenberg::~OptimizationAlgorithmLevenberg()
@@ -78,6 +79,7 @@ namespace g2o {
 
     double currentChi = _optimizer->activeRobustChi2();
     double tempChi=currentChi;
+    double iniChi = currentChi;
 
     _solver.buildSystem();
     if (globalStats) {
@@ -88,6 +90,7 @@ namespace g2o {
     if (iteration == 0) {
       _currentLambda = computeLambdaInit();
       _ni = 2;
+      _nBad = 0;
     }
 
     double rho=0;
@@ -144,8 +147,17 @@ namespace g2o {
       qmax++;
     } while (rho<0 && qmax < _maxTrialsAfterFailure->value() && ! _optimizer->terminate());
 
-    if (qmax == _maxTrialsAfterFailure->value() || rho==0 || !g2o_isfinite(_currentLambda))
-      return Terminate;
+    if (qmax == _maxTrialsAfterFailure->value() || rho==0)
+        return Terminate;
+
+    if((iniChi-currentChi)*1e3<iniChi)
+        _nBad++;
+    else
+        _nBad=0;
+
+    if(_nBad>=3)
+        return Terminate;
+
     return OK;
   }
 
