@@ -57,6 +57,7 @@ void MapDrawer::PublishMapPoints(ros::Publisher &global_pub,
     if(vpMPs.empty())
         return;
 
+    /**
     pcl::PointCloud<pcl::PointXYZ>::Ptr g_points (new pcl::PointCloud<pcl::PointXYZ>);
 
     for (auto&& p: vpMPs) {
@@ -93,6 +94,7 @@ void MapDrawer::PublishMapPoints(ros::Publisher &global_pub,
     pc2_l.header.frame_id= "velodyne";
     l_points->header = pcl_conversions::toPCL(pc2_l.header);
     local_pub.publish(l_points);
+    **/
 }
 
 void MapDrawer::DrawMapPoints()
