@@ -90,7 +90,7 @@ public:
     void SetBadFlag();
     bool isBad();
 
-    void Replace(MapPoint* pMP);    
+    void Replace(MapPoint* pMP);
     MapPoint* GetReplaced();
 
     void IncreaseVisible(int n=1);
@@ -109,10 +109,7 @@ public:
     float GetMinDistanceInvariance();
     float GetMaxDistanceInvariance();
     int PredictScale(const float &currentDist, const float &logScaleFactor);
-
-    friend void Map::loadFromDisk (const std::string &filename, KeyFrameDatabase *kfMemDb);
-    friend void Map::saveToDisk (const std::string &filename, KeyFrameDatabase *kfMemDb);
-
+		
 public:
     long unsigned int mnId;
     static long unsigned int nNextId;
@@ -137,7 +134,7 @@ public:
     // Variables used by loop closing
     long unsigned int mnLoopPointForKF;
     long unsigned int mnCorrectedByKF;
-    long unsigned int mnCorrectedReference;    
+    long unsigned int mnCorrectedReference;
     cv::Mat mPosGBA;
     long unsigned int mnBAGlobalForKF;
 

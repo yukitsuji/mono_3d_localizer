@@ -1054,11 +1054,11 @@ bool MapTracking::Relocalization()
 
 void MapTracking::Reset()
 {
-    mpMapPublisher->RequestStop();
+    // mpMapPublisher->RequestStop();
 
     cout << "System Reseting" << endl;
-    while(!mpMapPublisher->isStopped())
-        usleep(3000);
+    // while(!mpMapPublisher->isStopped())
+    //     usleep(3000);
 
 		// Reset Local Mapping
 		cout << "Reseting Local Mapper...";
@@ -1089,7 +1089,7 @@ void MapTracking::Reset()
     // mlFrameTimes.clear();
     // mlbLost.clear();
 
-    mpMapPublisher->Release();
+    // mpMapPublisher->Release();
 }
 
 void MapTracking::ChangeCalibration(const string &strSettingPath)

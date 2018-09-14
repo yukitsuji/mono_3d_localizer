@@ -50,9 +50,9 @@ int main(int argc, char **argv)
     ros::start();
     ros::NodeHandle nodeHandler;
 
-    if(argc != 3)
+    if(argc != 4)
     {
-        cerr << endl << "Usage: rosrun ORB_SLAM2 Mono path_to_vocabulary path_to_settings" << endl;
+        cerr << endl << "Usage: rosrun ORB_SLAM2 Mono path_to_vocabulary path_to_settings map_file" << endl;
         ros::shutdown();
         return 1;
     }
@@ -60,7 +60,7 @@ int main(int argc, char **argv)
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM2::System SLAM(argv[1], argv[2], ORB_SLAM2::System::MONOCULAR,
                            nodeHandler, true, true, false, false,
-                           "", ORB_SLAM2::System::MAPPING);
+                           argv[3], ORB_SLAM2::System::MAPPING);
 
     ImageGrabber igb(&SLAM);
 
@@ -96,7 +96,7 @@ void ImageGrabber::GrabImage(const sensor_msgs::ImageConstPtr& msg)
     std::cout << "##########################################\n";
     std::cout << "Frame count: " << sum_frame << "\n";
     sum_frame++;
-    
+
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
     mpSLAM->TrackMonocular(cv_ptr->image,cv_ptr->header.stamp.toSec(), true);

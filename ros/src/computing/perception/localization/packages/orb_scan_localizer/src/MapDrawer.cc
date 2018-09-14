@@ -130,7 +130,13 @@ void MapDrawer::DrawMapPoints()
             continue;
         cv::Mat pos = (*sit)->GetWorldPos();
         glVertex3f(pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
+    }
 
+    pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap = mpMap->GetPriorMapPoints();
+    if (priorMap) {
+        for (const auto& point : priorMap->points) {
+            glVertex3f(-point.y, -point.z, point.x);
+        }  
     }
 
     glEnd();

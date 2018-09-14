@@ -34,6 +34,8 @@
 #include <pcl/point_cloud.h>
 #include <pcl/octree/octree.h>
 #include <pcl/octree/impl/octree_search.hpp>
+#include <pcl/io/pcd_io.h>
+
 
 #include <ORBVocabulary.h>
 
@@ -89,39 +91,37 @@ public:
     std::mutex mMutexPointCreation;
 
 
-// Map Storage Handlers
-    class BadMapFile : public std::exception
-	{};
-    class MapFileException : public std::exception
-	{};
+		// Map Storage Handlers
+    class BadMapFile : public std::exception {};
+    class MapFileException : public std::exception {};
 
-    void saveToDisk (const std::string &filename, KeyFrameDatabase *kfMemDb);
-    void loadFromDisk (const std::string &filename, KeyFrameDatabase *kfMemDb=NULL);
+		// Load pcd file
+		void loadPCDFile(const std::string &filename);
+		pcl::PointCloud<pcl::PointXYZ>::Ptr GetPriorMapPoints();
 
-	struct MapFileHeader {
-		char signature[7];
-		long unsigned int
-			numOfKeyFrame,
-			numOfMapPoint,
-			numOfReferencePoint;
-	};
 
-//	KeyFrame* getNearestKeyFrame (
-//		const float &x, const float &y, const float &z,
-//		const float fdir_x, const float fdir_y, const float fdir_z,
-//		vector<KeyFrame*> *kfSelectors=NULL);
-	KeyFrame* getNearestKeyFrame (
-		const Eigen::Vector3f &position,
-		const Eigen::Quaternionf &orientation,
-		vector<KeyFrame*> *kfSelectors);
+		struct MapFileHeader {
+			char signature[7];
+			long unsigned int
+				numOfKeyFrame,
+				numOfMapPoint,
+				numOfReferencePoint;
+		};
 
-	KeyFrame* offsetKeyframe (KeyFrame* kfSrc, int offset);
+		KeyFrame* getNearestKeyFrame (
+			const Eigen::Vector3f &position,
+			const Eigen::Quaternionf &orientation,
+			vector<KeyFrame*> *kfSelectors);
 
-	// These are used for augmented localization
-	std::vector<KeyFrame*> kfListSorted;
-	std::map<KeyFrame*, int> kfMapSortedId;
+		KeyFrame* offsetKeyframe (KeyFrame* kfSrc, int offset);
 
-	bool mbMapUpdated;
+		// These are used for augmented localization
+		std::vector<KeyFrame*> kfListSorted;
+		std::map<KeyFrame*, int> kfMapSortedId;
+
+		pcl::PointCloud<pcl::PointXYZ>::Ptr _pcd;
+
+		bool mbMapUpdated;
 
 protected:
     std::set<MapPoint*> mspMapPoints;

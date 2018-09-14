@@ -87,19 +87,18 @@ System::System(const string &strVocFile, const string &strSettingsFile,
 
     //Create the Map
     mpMap = new Map();
-    // try {
-    // 	cout << "Loading map..." << endl;
-    // 	mpMap->loadFromDisk (mapFileName, mpKeyFrameDatabase);
-    // } catch (exception &e) {
-    // 	cout << "Unable to load map " << mapFileName << endl;
-    // }
+    try {
+      std::cout << "Map File Name: " << mapFileName << "\n";
+      if (!mapFileName.empty()) {
+        mpMap->loadPCDFile(mapFileName);
+      }
+    } catch (exception &e) {
+      std::cout << e.what() << "\n";
+    }
 
     //Create Drawers. These are used by the MapPublisher
     mpFrameDrawer = new FrameDrawer(mpMap);
     mpMapDrawer = new MapDrawer(mpMap, strSettingsFile);
-
-    // if (mpMap->mbMapUpdated)
-    	// mpTracker->setMapLoaded();
 
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
@@ -116,16 +115,16 @@ System::System(const string &strVocFile, const string &strSettingsFile,
     std::cout << "Set up local map\n";
 
     // Initialize the MapPublisher thread and launch
-    mpMapPublisher = new MapPublisher(this, mpFrameDrawer, mpMapDrawer, mpMapTracker,
-                                      fsSettings, opMode);
-    if (bUseMapPublisher) {
-        if(is_publish)
-            mptMapPublisher = new thread(&MapPublisher::Run, mpMapPublisher);
-        mpMapTracker->SetMapPublisher(mpMapPublisher);
-
-        //Set pointers between threads
-        mpMapTracker->SetLocalMapper(mpLocalMapper);
-    }
+    // mpMapPublisher = new MapPublisher(this, mpFrameDrawer, mpMapDrawer, mpMapTracker,
+    //                                   fsSettings, opMode);
+    // if (bUseMapPublisher) {
+    //     if(is_publish)
+    //         mptMapPublisher = new thread(&MapPublisher::Run, mpMapPublisher);
+    //     mpMapTracker->SetMapPublisher(mpMapPublisher);
+    //
+    //     //Set pointers between threads
+    //     mpMapTracker->SetLocalMapper(mpLocalMapper);
+    // }
 
     mpViewer = new Viewer(this, mpFrameDrawer, mpMapDrawer, mpMapTracker,
                           fsSettings, opMode);
@@ -138,10 +137,10 @@ System::System(const string &strVocFile, const string &strSettingsFile,
         mpMapTracker->SetLocalMapper(mpLocalMapper);
     }
 
-    if (!bUseMapPublisher && !bUseViewer) {
-        mpMapTracker->SetMapPublisher(mpMapPublisher);
-        mpMapTracker->SetLocalMapper(mpLocalMapper);
-    }
+    // if (!bUseMapPublisher && !bUseViewer) {
+    //     mpMapTracker->SetMapPublisher(mpMapPublisher);
+    //     mpMapTracker->SetLocalMapper(mpLocalMapper);
+    // }
     std::cout << "Set up tracker\n";
     std::cout << "Constructor finished\n";
 }
@@ -313,23 +312,23 @@ void System::Shutdown()
 	// Wait until all thread have effectively stopped
 	if (opMode==System::MAPPING) {
 		mpViewer->RequestFinish();
-    mpMapPublisher->RequestFinish();
+    // mpMapPublisher->RequestFinish();
 		mpLocalMapper->RequestFinish();
 
-		while(!mpLocalMapper->isFinished() || !mpViewer->isFinished() || !mpMapPublisher->isFinished())
+		while(!mpLocalMapper->isFinished() || !mpViewer->isFinished()) // || !mpMapPublisher->isFinished())
 		{
 			usleep(5000);
 		}
 
-		try {
-			mpMap->saveToDisk(mapFileName, mpKeyFrameDatabase);
-		} catch (...) {}
+		// try {
+		// 	mpMap->saveToDisk(mapFileName, mpKeyFrameDatabase);
+		// } catch (...) {}
 
 		while (!mpViewer->isFinished())
 			usleep (5000);
 
-		while (!mpMapPublisher->isFinished())
-			usleep (5000);
+		// while (!mpMapPublisher->isFinished())
+		// 	usleep (5000);
 
     if (isUseViewer) {
       pangolin::BindToContext("ORB-SLAM2: Map Viewer");
@@ -401,14 +400,14 @@ void System::SaveTrajectoryKITTI(const string &filename)
 
 void System::LoadMap(const string &filename)
 {
-	mpMap->loadFromDisk (filename, mpKeyFrameDatabase);
+	// mpMap->loadFromDisk (filename, mpKeyFrameDatabase);
 	mpTracker->setMapLoaded();
 }
 
 
 void System::SaveMap(const string &filename)
 {
-	mpMap->saveToDisk(filename, mpKeyFrameDatabase);
+	// mpMap->saveToDisk(filename, mpKeyFrameDatabase);
 }
 
 } //namespace ORB_SLAM

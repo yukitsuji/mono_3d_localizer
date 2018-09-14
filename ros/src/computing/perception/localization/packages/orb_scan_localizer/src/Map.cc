@@ -158,192 +158,20 @@ KeyFrame* Map::offsetKeyframe (KeyFrame* kfSrc, int offset)
 }
 
 
-const char *signature = "ORBSLAM";
 
-void Map::saveToDisk(const string &mapfilename, KeyFrameDatabase *keyframeDatabase)
-{
-	MapFileHeader header;
-	memcpy (header.signature, signature, sizeof(header.signature));
-	header.numOfKeyFrame = this->mspKeyFrames.size();
-	header.numOfMapPoint = this->mspMapPoints.size();
-	header.numOfReferencePoint = this->mvpReferenceMapPoints.size();
-
-	fstream mapFileFd;
-	mapFileFd.open(mapfilename.c_str(), fstream::out | fstream::trunc);
-	if (!mapFileFd.is_open())
-		throw MapFileException();
-	mapFileFd.write ((const char*)&header, sizeof(header));
-
-	cout << "Header written: " << header.numOfKeyFrame << " keyframes, " << header.numOfMapPoint << " points" << endl;
-
-	boost::archive::binary_oarchive mapArchive (mapFileFd);
-
-	// Create new vocabulary
-	cout << "Creating new vocabulary... ";
-	ORBVocabulary mapVoc(10, 6);
-	extractVocabulary (&mapVoc);
-	keyframeDatabase->replaceVocabulary(&mapVoc, this);
-	cout << "Done\n";
-
-	int p = 0;
-	for (set<KeyFrame*>::const_iterator kfit=mspKeyFrames.begin(); kfit!=mspKeyFrames.end(); kfit++) {
-		const KeyFrame *kf = *kfit;
-		if (kf==NULL) {
-			cerr << endl << "NULL KF found" << endl;
-			continue;
+void Map::loadPCDFile(const std::string &filename) {
+		pcl::PointCloud<pcl::PointXYZ>::Ptr pcd (new pcl::PointCloud<pcl::PointXYZ>);
+		if (pcl::io::loadPCDFile(filename.c_str(), *pcd) == -1) {
+			std::cerr << "Load 3D Prior Map Failed " << filename << "\n";
 		}
-
-		mapArchive << *kf;
-		cout << "Keyframes: " << ++p << "/" << mspKeyFrames.size() << "\r";
-	}
-	cout << endl;
-
-	p = 0;
-	for (set<MapPoint*>::iterator mpit=mspMapPoints.begin(); mpit!=mspMapPoints.end(); mpit++) {
-		const MapPoint *mp = *mpit;
-		if (mp==NULL) {
-			cerr << endl << "NULL MP found" << endl;
-			continue;
-		}
-		mapArchive << *mp;
-		cout << "Map Points: " << ++p << "/" << mspMapPoints.size() << "\r";
-	}
-	cout << endl;
-
-	vector<idtype> vmvpReferenceMapPoints = createIdList (mvpReferenceMapPoints);
-	mapArchive << vmvpReferenceMapPoints;
-
-	mapArchive << *keyframeDatabase;
-	mapFileFd.close();
-
-	cout << "Saving vocabulary... ";
-	boost::filesystem::path mapPath (mapfilename);
-	boost::filesystem::path mapDir = mapPath.parent_path();
-	string mapVocab = mapPath.string() + ".voc";
-	mapVoc.saveToTextFile (mapVocab);
-	cout << "Done\n";
-}
-
-
-struct _keyframeTimestampSortComparator {
-	bool operator() (KeyFrame *kf1, KeyFrame *kf2)
-	{ return kf1->mTimeStamp < kf2->mTimeStamp; }
-} keyframeTimestampSortComparator;
-
-
-#define MapOctreeResolution 1.0
-
-void Map::loadFromDisk(const string &filename, KeyFrameDatabase *kfMemDb)
-{
-	MapFileHeader header;
-
-	cout << "Opening " << filename << " ...\n";
-	fstream mapFileFd;
-	mapFileFd.open (filename.c_str(), fstream::in);
-	if (!mapFileFd.is_open())
-		throw BadMapFile();
-	mapFileFd.read ((char*)&header, sizeof(header));
-
-	if (strncmp(header.signature, signature, sizeof(signature)-1) !=0)
-		throw BadMapFile();
-	cout << "Keyframes: " << header.numOfKeyFrame << ", MapPoint: " << header.numOfMapPoint << endl;
-
-	boost::archive::binary_iarchive mapArchive (mapFileFd);
-
-	for (unsigned int p=0; p<header.numOfKeyFrame; p++) {
-		KeyFrame *kf = new KeyFrame;
-		mapArchive >> *kf;
-		if (!kf->isBad())
-			mspKeyFrames.insert (kf);
-		kfListSorted.push_back(kf);
-
-		//		const cv::Mat camCenter = kf->GetCameraCenter();
-		//		const float
-		//			x = camCenter.at<float>(0),
-		//			y = camCenter.at<float>(1),
-		//			z = camCenter.at<float>(2);
-
-		// XXX: Need to increase KeyFrame::nNextId
-		// Also, adjust Frame::nNextId
-		if (kf->mnId > KeyFrame::nNextId) {
-			KeyFrame::nNextId = kf->mnId + 2;
-			Frame::nNextId = kf->mnId + 3;
-		}
-
-	}
-
-	std::sort(kfListSorted.begin(), kfListSorted.end(), keyframeTimestampSortComparator);
-	for (unsigned int p=0; p<kfListSorted.size(); p++) {
-		KeyFrame *kf = kfListSorted[p];
-		kfMapSortedId[kf] = p;
-	}
-
-	for (unsigned int p=0; p<header.numOfMapPoint; p++) {
-		try {
-
-			MapPoint *mp = new MapPoint;
-			mapArchive >> *mp;
-			// Only insert if mapPoint has reference keyframe
-			if (mp->mpRefKF != NULL)
-				mspMapPoints.insert (mp);
-			else
-				delete (mp);
-			if (mp->mnId > MapPoint::nNextId) {
-				MapPoint::nNextId = mp->mnId + 2;
-			}
-
-		} catch (boost::archive::archive_exception &ae) {
-			cout << "Archive exception at " << p << ": " << ae.code << endl;
-		} catch (std::exception &e) {
-			cout << "Unknown exception at " << p << ": " << e.what() << endl;
-		}
-	}
-
-	// Set KeyFrame::nNextId and Frame::nNextId as next largest
-
-	if (kfMemDb==NULL)
+		std::cerr << "Load 3D Prior Map " << filename << '\n';
+		_pcd = pcd;
 		return;
-
-	for (set<KeyFrame*>::iterator kfset=mspKeyFrames.begin(); kfset!=mspKeyFrames.end(); kfset++) {
-		(*kfset)->fixConnections (this, kfMemDb);
-	}
-
-	for (set<MapPoint*>::iterator mpset=mspMapPoints.begin(); mpset!=mspMapPoints.end(); mpset++) {
-		(*mpset)->fixConnections (this);
-	}
-
-	vector<idtype> vmvpReferenceMapPoints;
-	mapArchive >> vmvpReferenceMapPoints;
-	mvpReferenceMapPoints = createObjectList<MapPoint> (vmvpReferenceMapPoints);
-
-	mapArchive >> *kfMemDb;
-
-	mapFileFd.close();
-	mbMapUpdated = true;
-	cout << "Done restoring map" << endl;
-
-	/* Point Cloud Reconstruction */
-	kfCloud = pcl::PointCloud<KeyFramePt>::Ptr (new pcl::PointCloud<KeyFramePt>);
-	kfCloud->width = mspKeyFrames.size();
-	kfCloud->height = 1;
-	kfCloud->resize(kfCloud->width);
-	int p=0;
-	for (set<KeyFrame*>::iterator kfi=mspKeyFrames.begin(); kfi!=mspKeyFrames.end(); kfi++) {
-		KeyFrame *kf = *kfi;
-		cv::Mat pos = kf->GetCameraCenter();
-		kfCloud->at(p).x = pos.at<float>(0);
-		kfCloud->at(p).y = pos.at<float>(1);
-		kfCloud->at(p).z = pos.at<float>(2);
-		kfCloud->at(p).kf = kf;
-		p++;
-	}
-	kfOctree = pcl::octree::OctreePointCloudSearch<KeyFramePt>::Ptr (new pcl::octree::OctreePointCloudSearch<KeyFramePt> (MapOctreeResolution));
-	kfOctree->setInputCloud(kfCloud);
-	kfOctree->addPointsFromInputCloud();
-	mKeyFrameDb = kfMemDb;
-		//	cout << "Done restoring Octree" << endl;
 }
 
+pcl::PointCloud<pcl::PointXYZ>::Ptr Map::GetPriorMapPoints() {
+	return _pcd;
+}
 
 // we expect direction vector has been normalized,
 // as returned by Frame::getDirectionVector()
