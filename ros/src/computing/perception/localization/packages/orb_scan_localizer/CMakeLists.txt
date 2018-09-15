@@ -227,3 +227,14 @@ target_link_libraries(
         ${ORIG_ORB_BIN_LINKS}
         ${LINK_LIBRARIES}
 )
+
+add_executable(
+        icp_solver
+        src/icp_solver.cpp
+)
+
+target_link_libraries(
+        icp_solver
+        ${ORIG_ORB_BIN_LINKS}
+        ${LINK_LIBRARIES}
+)
