@@ -1,6 +1,7 @@
 #ifndef ICP_7DOF_TRANSFORM_H_
 #define ICP_7DOF_TRANSFORM_H_
 
+#include "icp_7dof/warp_point_nonrigid_7d.h"
 #include <pcl/registration/transformation_estimation.h>
 #include <pcl/registration/warp_point_rigid.h>
 #include <pcl/registration/distances.h>
@@ -37,11 +38,11 @@ namespace pcl
           * \param[in] cloud_tgt the target point cloud dataset
           * \param[out] transformation_matrix the resultant transformation matrix
           */
-        inline void
+        virtual void
         estimateNonRigidTransformation (
             const pcl::PointCloud<PointSource> &cloud_src,
             const pcl::PointCloud<PointTarget> &cloud_tgt,
-            Matrix4 &transformation_matrix) const;
+            Matrix4 &transformation_matrix) const = 0;
 
         /** \brief Estimate a non-rigid rotation transformation between a source and a target point cloud using LM.
           * \param[in] cloud_src the source point cloud dataset
@@ -49,12 +50,12 @@ namespace pcl
           * \param[in] cloud_tgt the target point cloud dataset
           * \param[out] transformation_matrix the resultant transformation matrix
           */
-        inline void
+        virtual void
         estimateNonRigidTransformation (
             const pcl::PointCloud<PointSource> &cloud_src,
             const std::vector<int> &indices_src,
             const pcl::PointCloud<PointTarget> &cloud_tgt,
-            Matrix4 &transformation_matrix) const;
+            Matrix4 &transformation_matrix) const = 0;
 
         /** \brief Estimate a non-rigid rotation transformation between a source and a target point cloud using LM.
           * \param[in] cloud_src the source point cloud dataset
@@ -64,13 +65,13 @@ namespace pcl
           * \a indices_src
           * \param[out] transformation_matrix the resultant transformation matrix
           */
-        inline void
+        virtual void
         estimateNonRigidTransformation (
             const pcl::PointCloud<PointSource> &cloud_src,
             const std::vector<int> &indices_src,
             const pcl::PointCloud<PointTarget> &cloud_tgt,
             const std::vector<int> &indices_tgt,
-            Matrix4 &transformation_matrix) const;
+            Matrix4 &transformation_matrix) const = 0;
 
         /** \brief Estimate a non-rigid rotation transformation between a source and a target point cloud using LM.
           * \param[in] cloud_src the source point cloud dataset
@@ -78,12 +79,12 @@ namespace pcl
           * \param[in] correspondences the vector of correspondences between source and target point cloud
           * \param[out] transformation_matrix the resultant transformation matrix
           */
-          inline void
+          virtual void
           estimateNonRigidTransformation (
               const pcl::PointCloud<PointSource> &cloud_src,
               const pcl::PointCloud<PointTarget> &cloud_tgt,
               const pcl::Correspondences &correspondences,
-              Matrix4 &transformation_matrix) const;
+              Matrix4 &transformation_matrix) const = 0;
 
 
           inline void

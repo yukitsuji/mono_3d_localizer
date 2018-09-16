@@ -44,7 +44,12 @@ set(incs
         include/icp_7dof/icp_7dof_transform_lm.h
         )
 
-add_library(icp_7dof ${incs} ${srcs})
+set(impl_incs
+        include/icp_7dof/impl/icp_7dof.hpp
+        include/icp_7dof/impl/icp_7dof_transform_lm.hpp
+        )
+
+add_library(icp_7dof ${incs} ${srcs} ${impl_incs})
 
 target_link_libraries(icp_7dof
         ${PCL_LIBRARIES}

@@ -2,7 +2,7 @@
 #define ICP_7DOF_TRANSFORM_LM_H_
 
 #include "icp_7dof_transform.h"
-#include <pcl/registration/transformation_estimation.h>
+//#include <pcl/registration/transformation_estimation.h>
 #include <pcl/registration/warp_point_rigid.h>
 #include <pcl/registration/distances.h>
 #include <boost/shared_ptr.hpp>
@@ -123,8 +123,8 @@ namespace pcl
             const pcl::Correspondences &correspondences,
             Matrix4 &transformation_matrix) const;
 
-        void setSigma (float sigma) {sigma_ = sigma};
-        void setSigma (double sigma) {sigma_ = sigma};
+        void setSigma (float sigma) {sigma_ = sigma;}
+        void setSigma (double sigma) {sigma_ = sigma;}
 
         /** \brief Set the function we use to warp points. Defaults to rigid 6D warp.
           * \param[in] warp_fcn a shared pointer to an object that warps points
@@ -336,5 +336,7 @@ namespace pcl
     };
   }
 }
+
+#include "impl/icp_7dof_transform_lm.hpp"
 
 #endif /* ICP_7DOF_TRANSFORM_LM_H_ */
