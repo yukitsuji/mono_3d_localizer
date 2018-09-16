@@ -38,6 +38,7 @@ set(srcs
         )
 
 set(incs
+        include/icp_7dof/registration_7dof.h
         include/icp_7dof/icp_7dof.h
         include/icp_7dof/icp_7dof_transform.h
         include/icp_7dof/warp_point_nonrigid_7d.h

@@ -4,10 +4,8 @@
 // PCL includes
 #include <pcl/sample_consensus/ransac.h>
 #include <pcl/sample_consensus/sac_model_registration.h>
-// #include <pcl/registration/registration.h>
 #include "registration_7dof.h"
 #include "icp_7dof_transform_lm.h"
-// #include <pcl/registration/transformation_estimation_point_to_plane_lls.h>
 #include <pcl/registration/correspondence_estimation.h>
 #include <pcl/registration/default_convergence_criteria.h>
 
@@ -69,10 +67,6 @@ namespace pcl
       typedef boost::shared_ptr<IterativeClosestPoint7dof<PointSource, PointTarget, Scalar> > Ptr;
       typedef boost::shared_ptr<const IterativeClosestPoint7dof<PointSource, PointTarget, Scalar> > ConstPtr;
 
-      typedef typename pcl::registration::TransformationEstimation7dof<PointSource, PointTarget, Scalar> TransformationEstimation7dof;
-      typedef typename TransformationEstimation7dof::Ptr TransformationEstimation7dofPtr;
-      typedef typename TransformationEstimation7dof::ConstPtr TransformationEstimationConst7dofPtr;
-
       using Registration7dof<PointSource, PointTarget, Scalar>::reg_name_;
       using Registration7dof<PointSource, PointTarget, Scalar>::getClassName;
       using Registration7dof<PointSource, PointTarget, Scalar>::input_;
@@ -92,7 +86,7 @@ namespace pcl
       using Registration7dof<PointSource, PointTarget, Scalar>::update_visualizer_;
       using Registration7dof<PointSource, PointTarget, Scalar>::euclidean_fitness_epsilon_;
       using Registration7dof<PointSource, PointTarget, Scalar>::correspondences_;
-      // using Registration7dof<PointSource, PointTarget, Scalar>::transformation_estimation_;
+      using Registration7dof<PointSource, PointTarget, Scalar>::transformation_estimation_;
       using Registration7dof<PointSource, PointTarget, Scalar>::correspondence_estimation_;
       using Registration7dof<PointSource, PointTarget, Scalar>::correspondence_rejectors_;
 
@@ -120,8 +114,8 @@ namespace pcl
       /** \brief Empty destructor */
       virtual ~IterativeClosestPoint7dof () {}
 
-      void
-      setTransformationEstimation (const TransformationEstimation7dofPtr &te) { transformation_estimation_ = te; }
+      //void
+      //setTransformationEstimation (const TransformationEstimationPtr &te) { transformation_estimation_ = te; }
 
       /** \brief Returns a pointer to the DefaultConvergenceCriteria used by the IterativeClosestPoint7dof class.
         * This allows to check the convergence state after the align() method as well as to configure
@@ -252,8 +246,6 @@ namespace pcl
 
       /** \brief Checks for whether estimators and rejectors need various data */
       bool need_source_blob_, need_target_blob_;
-
-      TransformationEstimation7dofPtr transformation_estimation_;
   };
 
   /** \brief @b IterativeClosestPoint7dofWithNormals is a special case of
@@ -272,10 +264,7 @@ namespace pcl
       typedef typename IterativeClosestPoint7dof<PointSource, PointTarget, Scalar>::Matrix4 Matrix4;
 
       using IterativeClosestPoint7dof<PointSource, PointTarget, Scalar>::reg_name_;
-      typedef typename pcl::registration::TransformationEstimation7dof<PointSource, PointTarget, Scalar> TransformationEstimation7dof;
-      typedef typename TransformationEstimation7dof::Ptr TransformationEstimation7dofPtr;
-      typedef typename TransformationEstimation7dof::ConstPtr TransformationEstimationConst7dofPtr;
-      // using IterativeClosestPoint7dof<PointSource, PointTarget, Scalar>::transformation_estimation_;
+      using IterativeClosestPoint7dof<PointSource, PointTarget, Scalar>::transformation_estimation_;
       using IterativeClosestPoint7dof<PointSource, PointTarget, Scalar>::correspondence_rejectors_;
 
       typedef boost::shared_ptr<IterativeClosestPoint7dof<PointSource, PointTarget, Scalar> > Ptr;
@@ -304,8 +293,6 @@ namespace pcl
       transformCloud (const PointCloudSource &input,
                       PointCloudSource &output,
                       const Matrix4 &transform);
-
-      TransformationEstimation7dofPtr transformation_estimation_;
   };
 }
 

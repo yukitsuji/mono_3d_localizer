@@ -7,7 +7,6 @@
 #include <pcl/search/kdtree.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/registration/boost.h>
-// #include <pcl/registration/transformation_estimation.h>
 #include "icp_7dof_transform.h"
 #include <pcl/registration/correspondence_estimation.h>
 #include <pcl/registration/correspondence_rejection.h>
@@ -49,7 +48,7 @@ namespace pcl
 
       typedef typename KdTree::PointRepresentationConstPtr PointRepresentationConstPtr;
 
-      typedef typename pcl::registration::TransformationEstimation<PointSource, PointTarget, Scalar> TransformationEstimation;
+      typedef typename pcl::registration::TransformationEstimation7dof<PointSource, PointTarget, Scalar> TransformationEstimation;
       typedef typename TransformationEstimation::Ptr TransformationEstimationPtr;
       typedef typename TransformationEstimation::ConstPtr TransformationEstimationConstPtr;
 
@@ -569,6 +568,6 @@ namespace pcl
    };
 }
 
-#include "impl/registration.hpp"
+#include "impl/registration_7dof.hpp"
 
 #endif  //#ifndef ICP_REGISTRATION_H_
