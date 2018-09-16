@@ -25,8 +25,8 @@ namespace pcl
       public:
         typedef Eigen::Matrix<Scalar, 4, 4> Matrix4;
 
-        TransformationEstimation () {};
-        virtual ~TransformationEstimation () {};
+        TransformationEstimation7dof () {};
+        virtual ~TransformationEstimation7dof () {};
 
         /** \brief Estimate a rigid rotation transformation between a source and a target point cloud.
           * \param[in] cloud_src the source point cloud dataset
@@ -132,8 +132,8 @@ namespace pcl
               const pcl::Correspondences &correspondences,
               Matrix4 &transformation_matrix) const = 0;
 
-        typedef boost::shared_ptr<TransformationEstimation<PointSource, PointTarget, Scalar> > Ptr;
-        typedef boost::shared_ptr<const TransformationEstimation<PointSource, PointTarget, Scalar> > ConstPtr;
+        typedef boost::shared_ptr<TransformationEstimation7dof<PointSource, PointTarget, Scalar> > Ptr;
+        typedef boost::shared_ptr<const TransformationEstimation7dof<PointSource, PointTarget, Scalar> > ConstPtr;
     };
   }
 }

@@ -14,7 +14,7 @@
 #include <pcl/registration/correspondence_rejection_sample_consensus.h>
 #include <pcl/registration/correspondence_rejection_trimmed.h>
 #include <pcl/registration/correspondence_rejection_var_trimmed.h>
-// #include <icp_7dof/icp_7dof.h>
+#include <icp_7dof/icp_7dof.h>
 #include <icp_7dof/icp_7dof_transform_lm.h>
 
 
@@ -70,7 +70,7 @@ compute (const pcl::PCLPointCloud2::ConstPtr &source,
     // CorrespondenceRejectorTrimmed::Ptr cor_rej_tri (new CorrespondenceRejectorTrimmed);
     //icp.addCorrespondenceRejector (cor_rej_tri);
 
-    IterativeClosestPoint<PointXYZ, PointXYZ, double> icp;
+    IterativeClosestPoint7dof<PointXYZ, PointXYZ, double> icp;
     icp.setCorrespondenceEstimation (cens);
     icp.setTransformationEstimation (te);
     icp.addCorrespondenceRejector (cor_rej_o2o);
