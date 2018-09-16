@@ -13,7 +13,7 @@ pcl::registration::TransformationEstimation7dofLM<PointSource, PointTarget, MatS
   , tmp_idx_src_ ()
   , tmp_idx_tgt_ ()
   , warp_point_ (new WarpPointRigid7D<PointSource, PointTarget, MatScalar>)
-  , sigma_ ()
+  , sigma_ (1.0)
 {
 };
 
@@ -44,6 +44,7 @@ pcl::registration::TransformationEstimation7dofLM<PointSource, PointTarget, MatS
   int n_unknowns = warp_point_->getDimension ();
   VectorX x (n_unknowns);
   x.setZero ();
+  x[6] = 1.0;
 
   // Set temporary pointers
   tmp_src_ = &cloud_src;
@@ -123,6 +124,7 @@ pcl::registration::TransformationEstimation7dofLM<PointSource, PointTarget, MatS
   int n_unknowns = warp_point_->getDimension ();  // get dimension of unknown space
   VectorX x (n_unknowns);
   x.setConstant (n_unknowns, 0);
+  x[6] = 1.0;
 
   // Set temporary pointers
   tmp_src_ = &cloud_src;

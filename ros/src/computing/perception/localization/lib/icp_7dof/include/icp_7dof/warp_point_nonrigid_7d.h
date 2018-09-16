@@ -52,6 +52,7 @@ namespace pcl
           Eigen::Quaternion<Scalar> q (0, p[3], p[4], p[5]);
           q.w () = static_cast<Scalar> (sqrt (1 - q.dot (q)));
           q.normalize ();
+          Scalar scale = p[6] ? p[6] : 1;
           transform_matrix_.topLeftCorner (3, 3) = q.toRotationMatrix () * p[6];
         }
     };

@@ -107,7 +107,7 @@ compute ()
     // CorrespondenceRejectorTrimmed::Ptr cor_rej_tri (new CorrespondenceRejectorTrimmed);
     //icp.addCorrespondenceRejector (cor_rej_tri);
 
-    IterativeClosestPoint<PointXYZ, PointXYZ, double> icp;
+    IterativeClosestPoint7dof<PointXYZ, PointXYZ, double> icp;
     // icp.setCorrespondenceEstimation (cens);
     // icp.setTransformationEstimation (te);
     // icp.addCorrespondenceRejector (cor_rej_o2o);

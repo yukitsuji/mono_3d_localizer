@@ -45,7 +45,7 @@ int main (int argc, char** argv){
     double y_offset=0.5f;
 
     //点群cloud_inにデータを入力
-    cloud_in->width    = 5;
+    cloud_in->width    = 10;
     cloud_in->height   = 1;
     cloud_in->is_dense = false;
     cloud_in->points.resize (cloud_in->width * cloud_in->height);
