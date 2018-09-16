@@ -172,7 +172,7 @@ pcl::IterativeClosestPoint7dof<PointSource, PointTarget, Scalar>::computeTransfo
     // Check whether we have enough correspondences
     if (static_cast<int> (cnt) < min_number_correspondences_)
     {
-      PCL_ERROR ("[pcl::%s::computeTransformation] Not enough correspondences found. Relax your threshold parameters.\n", getClassName ().c_str ());
+      PCL_ERROR ("[pcl::%s::computeTransformation] Not enough correspondences found. Relax your threshold parameters. %d \n", getClassName ().c_str (), corr_dist_threshold_);
       convergence_criteria_->setConvergenceState(pcl::registration::DefaultConvergenceCriteria<Scalar>::CONVERGENCE_CRITERIA_NO_CORRESPONDENCES);
       converged_ = false;
       break;

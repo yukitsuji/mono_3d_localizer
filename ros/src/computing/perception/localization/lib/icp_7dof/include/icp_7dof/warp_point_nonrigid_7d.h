@@ -1,7 +1,7 @@
 #ifndef PCL_WARP_POINT_NONRIGID_7D_H_
 #define PCL_WARP_POINT_NONRIGID_7D_H_
 
-#include <boost/shared_ptr.hpp>
+//#include <boost/shared_ptr.hpp>
 #include <pcl/registration/warp_point_rigid.h>
 
 namespace pcl
@@ -58,8 +58,8 @@ namespace pcl
   }
 }
 
-template class pcl::registration::WarpPointRigid7D<pcl::PointXYZI, pcl::PointXYZI, double>;
-template class pcl::registration::WarpPointRigid7D<pcl::PointXYZI, pcl::PointXYZI, float>;
+//template class pcl::registration::WarpPointRigid7D<pcl::PointXYZI, pcl::PointXYZI, double>;
+//template class pcl::registration::WarpPointRigid7D<pcl::PointXYZI, pcl::PointXYZI, float>;
 template class pcl::registration::WarpPointRigid7D<pcl::PointXYZ, pcl::PointXYZ, double>;
 template class pcl::registration::WarpPointRigid7D<pcl::PointXYZ, pcl::PointXYZ, float>;
 #endif

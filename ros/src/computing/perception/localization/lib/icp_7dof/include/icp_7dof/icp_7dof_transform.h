@@ -138,8 +138,8 @@ namespace pcl
   }
 }
 
-template class pcl::registration::TransformationEstimation7dof<pcl::PointXYZI, pcl::PointXYZI, double>;
-template class pcl::registration::TransformationEstimation7dof<pcl::PointXYZI, pcl::PointXYZI, float>;
+//template class pcl::registration::TransformationEstimation7dof<pcl::PointXYZI, pcl::PointXYZI, double>;
+//template class pcl::registration::TransformationEstimation7dof<pcl::PointXYZI, pcl::PointXYZI, float>;
 template class pcl::registration::TransformationEstimation7dof<pcl::PointXYZ, pcl::PointXYZ, double>;
 template class pcl::registration::TransformationEstimation7dof<pcl::PointXYZ, pcl::PointXYZ, float>;
 #endif
