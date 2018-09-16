@@ -4,7 +4,6 @@
 #include "icp_7dof/warp_point_nonrigid_7d.h"
 #include <pcl/registration/distances.h>
 #include <unsupported/Eigen/NonLinearOptimization>
-// #include "icp_7dof/icp_7dof_transform_lm.h"
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointSource, typename PointTarget, typename MatScalar>
@@ -228,6 +227,11 @@ pcl::registration::TransformationEstimation7dofLM<PointSource, PointTarget, MatS
   }
   return (0);
 }
+
+template class pcl::registration::TransformationEstimation7dofLM<pcl::PointXYZI, pcl::PointXYZI, double>;
+template class pcl::registration::TransformationEstimation7dofLM<pcl::PointXYZI, pcl::PointXYZI, float>;
+template class pcl::registration::TransformationEstimation7dofLM<pcl::PointXYZ, pcl::PointXYZ, double>;
+template class pcl::registration::TransformationEstimation7dofLM<pcl::PointXYZ, pcl::PointXYZ, float>;
 
 //#define PCL_INSTANTIATE_TransformationEstimation7dofLM(T,U) template class PCL_EXPORTS pcl::registration::TransformationEstimation7dofLM<T,U>;
 #endif //IPC_7DOF_TRANSFORM_LM_HPP_

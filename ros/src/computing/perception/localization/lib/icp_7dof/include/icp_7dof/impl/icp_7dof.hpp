@@ -4,8 +4,6 @@
 #include <pcl/registration/boost.h>
 #include <pcl/correspondence.h>
 
-#include "icp_7dof/icp_7dof.h"
-
 ///////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointSource, typename PointTarget, typename Scalar> void
 pcl::IterativeClosestPoint7dof<PointSource, PointTarget, Scalar>::transformCloud (
@@ -257,6 +255,11 @@ pcl::IterativeClosestPoint7dofWithNormals<PointSource, PointTarget, Scalar>::tra
 {
   pcl::transformPointCloudWithNormals (input, output, transform);
 }
+
+template class pcl::IterativeClosestPoint7dof<pcl::PointXYZ, pcl::PointXYZ, double>;
+template class pcl::IterativeClosestPoint7dof<pcl::PointXYZ, pcl::PointXYZ, float>;
+template class pcl::IterativeClosestPoint7dof<pcl::PointXYZI, pcl::PointXYZI, double>;
+template class pcl::IterativeClosestPoint7dof<pcl::PointXYZI, pcl::PointXYZI, float>;
 
 #endif
 
