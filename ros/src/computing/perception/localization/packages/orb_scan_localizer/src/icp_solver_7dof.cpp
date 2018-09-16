@@ -4,17 +4,17 @@
 #include <pcl/console/print.h>
 #include <pcl/console/time.h>
 #include <pcl/console/parse.h>
-#include <pcl/registration/icp.h>
+// #include <pcl/registration/icp.h>
 #include <pcl/registration/correspondence_estimation.h>
 #include <pcl/registration/correspondence_estimation_normal_shooting.h>
-#include <pcl/registration/transformation_estimation_lm.h>
+//#include <pcl/registration/transformation_estimation_lm.h>
 
 #include <pcl/registration/correspondence_rejection_one_to_one.h>
 #include <pcl/registration/correspondence_rejection_median_distance.h>
 #include <pcl/registration/correspondence_rejection_sample_consensus.h>
 #include <pcl/registration/correspondence_rejection_trimmed.h>
 #include <pcl/registration/correspondence_rejection_var_trimmed.h>
-#include <icp_7dof/icp_7dof.h>
+//#include <icp_7dof/icp_7dof.h>
 #include <icp_7dof/icp_7dof_transform_lm.h>
 
 
@@ -70,6 +70,7 @@ compute (const pcl::PCLPointCloud2::ConstPtr &source,
     // CorrespondenceRejectorTrimmed::Ptr cor_rej_tri (new CorrespondenceRejectorTrimmed);
     //icp.addCorrespondenceRejector (cor_rej_tri);
 
+    /*
     IterativeClosestPoint7dof<PointXYZ, PointXYZ, double> icp;
     icp.setCorrespondenceEstimation (cens);
     icp.setTransformationEstimation (te);
@@ -80,10 +81,10 @@ compute (const pcl::PCLPointCloud2::ConstPtr &source,
     icp.setTransformationEpsilon (1e-10);
     PointCloud<PointXYZ> output;
     icp.align (output);
-
+    */
     // print_info ("[done, "); print_value ("%g", tt.toc ()); print_info (" ms : "); print_value ("%d", output.width * output.height); print_info (" points], has converged: ");
     // print_value ("%d", icp.hasConverged ()); print_info (" with score: %f\n",  icp.getFitnessScore ());
-    Eigen::Matrix4d transformation = icp.getFinalTransformation ();
+    //Eigen::Matrix4d transformation = icp.getFinalTransformation ();
     // //Eigen::Matrix4f transformation = icp.getFinalTransformation ();
     // PCL_DEBUG ("Transformation is:\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n",
     //     transformation (0, 0), transformation (0, 1), transformation (0, 2), transformation (0, 3),

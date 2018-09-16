@@ -5,7 +5,7 @@ find_package(catkin REQUIRED)
 find_package(PCL REQUIRED)
 
 find_package(Eigen3 QUIET)
-find_package(Boost)
+#find_package(Boost)
 
 if (NOT EIGEN3_FOUND)
     # Fallback to cmake_modules
@@ -29,7 +29,7 @@ include_directories(
         ${catkin_INCLUDE_DIRS}
         include
         ${EIGEN3_INCLUDE_DIRS}
-        ${Boost_INCLUDE_DIRS}
+        #${Boost_INCLUDE_DIRS}
 )
 
 set(srcs
@@ -38,7 +38,7 @@ set(srcs
         )
 
 set(incs
-        include/icp_7dof/registration_7dof.h
+        # include/icp_7dof/registration_7dof.h
         include/icp_7dof/icp_7dof.h
         include/icp_7dof/icp_7dof_transform.h
         include/icp_7dof/warp_point_nonrigid_7d.h
@@ -48,7 +48,7 @@ set(incs
 set(impl_incs
         include/icp_7dof/impl/icp_7dof.hpp
         include/icp_7dof/impl/icp_7dof_transform_lm.hpp
-        include/icp_7dof/impl/registration_7dof.hpp
+        #include/icp_7dof/impl/registration_7dof.hpp
         )
 
 add_library(icp_7dof ${incs} ${srcs} ${impl_incs})

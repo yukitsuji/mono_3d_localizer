@@ -166,9 +166,9 @@ pcl::Registration7dof<PointSource, PointTarget, Scalar>::align (PointCloudSource
   deinitCompute ();
 }
 
-template class pcl::Registration7dof<pcl::PointXYZ, pcl::PointXYZ, double>;
-template class pcl::Registration7dof<pcl::PointXYZ, pcl::PointXYZ, float>;
-template class pcl::Registration7dof<pcl::PointXYZI, pcl::PointXYZI, double>;
-template class pcl::Registration7dof<pcl::PointXYZI, pcl::PointXYZI, float>;
+//template class pcl::Registration7dof<pcl::PointXYZ, pcl::PointXYZ, double>;
+//template class pcl::Registration7dof<pcl::PointXYZ, pcl::PointXYZ, float>;
+//template class pcl::Registration7dof<pcl::PointXYZI, pcl::PointXYZI, double>;
+//template class pcl::Registration7dof<pcl::PointXYZI, pcl::PointXYZI, float>;
 
 #endif

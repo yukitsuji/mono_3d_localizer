@@ -1,7 +1,7 @@
 #ifndef ICP_7DOF_HPP_
 #define ICP_7DOF_HPP_
 
-#include <pcl/registration/boost.h>
+//#include <pcl/registration/boost.h>
 #include <pcl/correspondence.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -256,14 +256,11 @@ pcl::IterativeClosestPoint7dofWithNormals<PointSource, PointTarget, Scalar>::tra
   pcl::transformPointCloudWithNormals (input, output, transform);
 }
 
-template class pcl::IterativeClosestPoint7dof<pcl::PointXYZ, pcl::PointXYZ, double>;
-template class pcl::IterativeClosestPoint7dof<pcl::PointXYZ, pcl::PointXYZ, float>;
-template class pcl::IterativeClosestPoint7dof<pcl::PointXYZI, pcl::PointXYZI, double>;
-template class pcl::IterativeClosestPoint7dof<pcl::PointXYZI, pcl::PointXYZI, float>;
-
-#endif
-
 //template class pcl::IterativeClosestPoint7dof<pcl::PointXYZ, pcl::PointXYZ, double>;
 //template class pcl::IterativeClosestPoint7dof<pcl::PointXYZ, pcl::PointXYZ, float>;
 //template class pcl::IterativeClosestPoint7dof<pcl::PointXYZI, pcl::PointXYZI, double>;
 //template class pcl::IterativeClosestPoint7dof<pcl::PointXYZI, pcl::PointXYZI, float>;
+
+//template class pcl::IterativeClosestPoint7dofWithNormals<pcl::PointNormal, pcl::PointNormal, double>;
+//template class pcl::IterativeClosestPoint7dofWithNormals<pcl::PointNormal, pcl::PointNormal, double>;
+#endif

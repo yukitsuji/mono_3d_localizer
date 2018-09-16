@@ -58,4 +58,8 @@ namespace pcl
   }
 }
 
+template class pcl::registration::WarpPointRigid7D<pcl::PointXYZI, pcl::PointXYZI, double>;
+template class pcl::registration::WarpPointRigid7D<pcl::PointXYZI, pcl::PointXYZI, float>;
+template class pcl::registration::WarpPointRigid7D<pcl::PointXYZ, pcl::PointXYZ, double>;
+template class pcl::registration::WarpPointRigid7D<pcl::PointXYZ, pcl::PointXYZ, float>;
 #endif
