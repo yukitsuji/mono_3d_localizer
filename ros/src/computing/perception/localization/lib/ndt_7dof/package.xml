@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package>
+    <name>ndt_7dof</name>
+    <version>1.7.0</version>
+    <description>The ndt_7dof package</description>
+    <maintainer email="yuki.tsuji@pf.is.s.u-tokyo.ac.jp">Yuki Tsuji</maintainer>
+    <license>BSD</license>
+    <buildtool_depend>catkin</buildtool_depend>
+
+    <build_depend>libpcl-all-dev</build_depend>
+
+    <run_depend>libpcl-all</run_depend>
+
+</package>
