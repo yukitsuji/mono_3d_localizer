@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(orb_scan_localizer)
 
-find_package(catkin REQUIRED
+find_package(catkin REQUIRED COMPONENTS
         COMPONENTS
         roscpp
         tf
@@ -12,6 +12,7 @@ find_package(catkin REQUIRED
         std_msgs
         pcl_ros
         pcl_conversions
+        icp_7dof
 )
 
 LIST(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules)
@@ -57,29 +58,25 @@ generate_messages(
 
 catkin_package(
         INCLUDE_DIRS include ${EIGEN3_INCLUDE_DIRS}
-        CATKIN_DEPENDS message_runtime
+        CATKIN_DEPENDS message_runtime icp_7dof
         DEPENDS OpenCV GLEW PCL
 )
 
 # Vocabulary file
 set(orb_slam_vocabulary_file ${CATKIN_DEVEL_PREFIX}/share/${PROJECT_NAME}/ORBvoc.txt)
-#add_custom_target(orb_vocabulary ALL
-#        [ ! -e ${orb_slam_vocabulary_file} ] && tar -zxf ${PROJECT_SOURCE_DIR}/Vocabulary/ORBvoc.txt.tar.gz --directory ${CATKIN_DEVEL_PREFIX}/share/${PROJECT_NAME} || return 0
-#        DEPENDS Vocabulary/ORBvoc.txt.tar.gz
-#        )
 add_definitions(
         -DORB_SLAM_VOCABULARY="${orb_slam_vocabulary_file}"
 )
 
 # For building Pangolin
 #if (NOT TARGET pangolin)
-    add_subdirectory(Thirdparty/Pangolin)
+add_subdirectory(Thirdparty/Pangolin)
 
-    # For building DBoW2
-    add_subdirectory(Thirdparty/DBoW2)
+# For building DBoW2
+add_subdirectory(Thirdparty/DBoW2)
 
-    # For building g2o
-    add_subdirectory(Thirdparty/g2o)
+# For building g2o
+add_subdirectory(Thirdparty/g2o)
 #endif()
 
 include_directories(
@@ -238,3 +235,24 @@ target_link_libraries(
         ${ORIG_ORB_BIN_LINKS}
         ${LINK_LIBRARIES}
 )
+
+add_executable(
+        icp_solver_7dof
+        src/icp_solver_7dof.cpp
+)
+
+target_link_libraries(
+        icp_solver_7dof
+        ${ORIG_ORB_BIN_LINKS}
+        ${LINK_LIBRARIES}
+        ${catkin_INCLUDE_DIRS}
+)
+
+add_dependencies(icp_solver_7dof ${catkin_EXPORTED_TARGETS})
+
+
+install(TARGETS icp_solver_7dof
+        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+        )

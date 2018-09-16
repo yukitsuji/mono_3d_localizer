@@ -1,12 +1,11 @@
-#ifndef ICP_7DOF_HPP_
-#define ICP_7DOF_HPP_
-
 #include <pcl/registration/boost.h>
 #include <pcl/correspondence.h>
 
+#include "icp_7dof/icp_7dof.h"
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointSource, typename PointTarget, typename Scalar> void
-pcl::IterativeClosestPoint<PointSource, PointTarget, Scalar>::transformCloud (
+pcl::IterativeClosestPoint7dof<PointSource, PointTarget, Scalar>::transformCloud (
     const PointCloudSource &input,
     PointCloudSource &output,
     const Matrix4 &transform)
@@ -76,7 +75,7 @@ pcl::IterativeClosestPoint<PointSource, PointTarget, Scalar>::transformCloud (
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointSource, typename PointTarget, typename Scalar> void
-pcl::IterativeClosestPoint<PointSource, PointTarget, Scalar>::computeTransformation (
+pcl::IterativeClosestPoint7dof<PointSource, PointTarget, Scalar>::computeTransformation (
     PointCloudSource &output, const Matrix4 &guess)
 {
   // Point cloud containing the correspondences of each point in <input, indices>
@@ -123,10 +122,10 @@ pcl::IterativeClosestPoint<PointSource, PointTarget, Scalar>::computeTransformat
   convergence_criteria_->setMaximumIterations (max_iterations_);
   convergence_criteria_->setRelativeMSE (euclidean_fitness_epsilon_);
   convergence_criteria_->setTranslationThreshold (transformation_epsilon_);
-  if (transformation_rotation_epsilon_ > 0)
-    convergence_criteria_->setRotationThreshold (transformation_rotation_epsilon_);
-  else
-    convergence_criteria_->setRotationThreshold (1.0 - transformation_epsilon_);
+  // if (transformation_rotation_epsilon_ > 0)
+  //   convergence_criteria_->setRotationThreshold (transformation_rotation_epsilon_);
+  // else
+  convergence_criteria_->setRotationThreshold (1.0 - transformation_epsilon_);
 
   // Repeat until convergence
   do
@@ -211,7 +210,7 @@ pcl::IterativeClosestPoint<PointSource, PointTarget, Scalar>::computeTransformat
 }
 
 template <typename PointSource, typename PointTarget, typename Scalar> void
-pcl::IterativeClosestPoint<PointSource, PointTarget, Scalar>::determineRequiredBlobData ()
+pcl::IterativeClosestPoint7dof<PointSource, PointTarget, Scalar>::determineRequiredBlobData ()
 {
   need_source_blob_ = false;
   need_target_blob_ = false;
@@ -248,13 +247,10 @@ pcl::IterativeClosestPoint<PointSource, PointTarget, Scalar>::determineRequiredB
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointSource, typename PointTarget, typename Scalar> void
-pcl::IterativeClosestPointWithNormals<PointSource, PointTarget, Scalar>::transformCloud (
+pcl::IterativeClosestPoint7dofWithNormals<PointSource, PointTarget, Scalar>::transformCloud (
     const PointCloudSource &input,
     PointCloudSource &output,
     const Matrix4 &transform)
 {
   pcl::transformPointCloudWithNormals (input, output, transform);
 }
-
-
-#endif /* ICP_7DOF_HPP_ */

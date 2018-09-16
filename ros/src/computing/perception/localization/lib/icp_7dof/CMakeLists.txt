@@ -5,6 +5,7 @@ find_package(catkin REQUIRED)
 find_package(PCL REQUIRED)
 
 find_package(Eigen3 QUIET)
+find_package(Boost)
 
 if (NOT EIGEN3_FOUND)
     # Fallback to cmake_modules
@@ -26,24 +27,21 @@ catkin_package(
 include_directories(
         ${PCL_INCLUDE_DIRS}
         ${catkin_INCLUDE_DIRS}
-        "include"
+        include
         ${EIGEN3_INCLUDE_DIRS}
+        ${Boost_INCLUDE_DIRS}
 )
 
 set(srcs
-        src/NormalDistributionsTransform.cpp
-        src/Registration.cpp
-        src/VoxelGrid.cpp
-        src/Octree.cpp
+        src/icp_7dof.cpp
+        src/icp_7dof_transform_lm.cpp
         )
 
 set(incs
-        include/icp_7dof/debug.h
-        include/icp_7dof/NormalDistributionsTransform.h
-        include/icp_7dof/Registration.h
-        include/icp_7dof/SymmetricEigenSolver.h
-        include/icp_7dof/VoxelGrid.h
-        include/icp_7dof/Octree.h
+        include/icp_7dof/icp_7dof.h
+        include/icp_7dof/icp_7dof_transform.h
+        include/icp_7dof/warp_point_nonrigid_7d.h
+        include/icp_7dof/icp_7dof_transform_lm.h
         )
 
 add_library(icp_7dof ${incs} ${srcs})
