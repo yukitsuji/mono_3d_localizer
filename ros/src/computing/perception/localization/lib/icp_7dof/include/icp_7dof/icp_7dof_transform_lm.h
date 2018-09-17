@@ -2,7 +2,6 @@
 #define ICP_7DOF_TRANSFORM_LM_H_
 
 #include "icp_7dof_transform.h"
-//#include <pcl/registration/transformation_estimation.h>
 #include <pcl/registration/warp_point_rigid.h>
 #include <pcl/registration/distances.h>
 #include <boost/shared_ptr.hpp>

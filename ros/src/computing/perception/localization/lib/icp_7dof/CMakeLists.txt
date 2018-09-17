@@ -48,6 +48,7 @@ set(incs
 set(impl_incs
         include/icp_7dof/impl/icp_7dof.hpp
         include/icp_7dof/impl/icp_7dof_transform_lm.hpp
+        include/icp_7dof/impl/registration_7dof.hpp
         )
 
 add_library(icp_7dof ${incs} ${srcs} ${impl_incs})
