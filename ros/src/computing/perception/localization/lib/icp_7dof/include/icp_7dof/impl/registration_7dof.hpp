@@ -1,3 +1,6 @@
+#ifndef REGISTRATION_7DOF_HPP_
+#define REGISTRATION_7DOF_HPP_
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointSource, typename PointTarget, typename Scalar> inline void
 pcl::Registration7dof<PointSource, PointTarget, Scalar>::setInputTarget (const PointCloudTargetConstPtr &cloud)
@@ -162,3 +165,5 @@ pcl::Registration7dof<PointSource, PointTarget, Scalar>::align (PointCloudSource
 
   deinitCompute ();
 }
+
+#endif
