@@ -7,13 +7,14 @@
 #include <pcl/search/kdtree.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/registration/boost.h>
-#include <pcl/registration/transformation_estimation.h>
+// #include <pcl/registration/transformation_estimation.h>
+#include "icp_7dof_transform.h"
 #include <pcl/registration/correspondence_estimation.h>
 #include <pcl/registration/correspondence_rejection.h>
 
 namespace pcl
 {
-  /** \brief @b Registration7dof represents the base registration class for general purpose, ICP-like methods.
+  /** \brief @b Registration7dof7dof represents the base registration class for general purpose, ICP-like methods.
     * \author Radu B. Rusu, Michael Dixon
     * \ingroup registration
     */
@@ -28,8 +29,8 @@ namespace pcl
       using PCLBase<PointSource>::input_;
       using PCLBase<PointSource>::indices_;
 
-      typedef boost::shared_ptr< Registration<PointSource, PointTarget, Scalar> > Ptr;
-      typedef boost::shared_ptr< const Registration<PointSource, PointTarget, Scalar> > ConstPtr;
+      typedef boost::shared_ptr< Registration7dof<PointSource, PointTarget, Scalar> > Ptr;
+      typedef boost::shared_ptr< const Registration7dof<PointSource, PointTarget, Scalar> > ConstPtr;
 
       typedef typename pcl::registration::CorrespondenceRejector::Ptr CorrespondenceRejectorPtr;
       typedef pcl::search::KdTree<PointTarget> KdTree;
@@ -37,7 +38,7 @@ namespace pcl
 
       typedef pcl::search::KdTree<PointSource> KdTreeReciprocal;
       typedef typename KdTreeReciprocal::Ptr KdTreeReciprocalPtr;
-     
+
       typedef pcl::PointCloud<PointSource> PointCloudSource;
       typedef typename PointCloudSource::Ptr PointCloudSourcePtr;
       typedef typename PointCloudSource::ConstPtr PointCloudSourceConstPtr;
@@ -47,7 +48,7 @@ namespace pcl
       typedef typename PointCloudTarget::ConstPtr PointCloudTargetConstPtr;
 
       typedef typename KdTree::PointRepresentationConstPtr PointRepresentationConstPtr;
-      
+
       typedef typename pcl::registration::TransformationEstimation<PointSource, PointTarget, Scalar> TransformationEstimation;
       typedef typename TransformationEstimation::Ptr TransformationEstimationPtr;
       typedef typename TransformationEstimation::ConstPtr TransformationEstimationConstPtr;
@@ -57,7 +58,7 @@ namespace pcl
       typedef typename CorrespondenceEstimation::ConstPtr CorrespondenceEstimationConstPtr;
 
       /** \brief Empty constructor. */
-      Registration () 
+      Registration7dof ()
         : reg_name_ ()
         , tree_ (new KdTree)
         , tree_reciprocal_ (new KdTreeReciprocal)
@@ -88,11 +89,11 @@ namespace pcl
       }
 
       /** \brief destructor. */
-      virtual ~Registration () {}
+      virtual ~Registration7dof () {}
 
       /** \brief Provide a pointer to the transformation estimation object.
-        * (e.g., SVD, point to plane etc.) 
-        * 
+        * (e.g., SVD, point to plane etc.)
+        *
         * \param[in] te is the pointer to the corresponding transformation estimation object
         *
         * Code example:
@@ -109,8 +110,8 @@ namespace pcl
       setTransformationEstimation (const TransformationEstimationPtr &te) { transformation_estimation_ = te; }
 
       /** \brief Provide a pointer to the correspondence estimation object.
-        * (e.g., regular, reciprocal, normal shooting etc.) 
-        * 
+        * (e.g., regular, reciprocal, normal shooting etc.)
+        *
         * \param[in] ce is the pointer to the corresponding correspondence estimation object
         *
         * Code example:
@@ -132,7 +133,7 @@ namespace pcl
       void
       setCorrespondenceEstimation (const CorrespondenceEstimationPtr &ce) { correspondence_estimation_ = ce; }
 
-      /** \brief Provide a pointer to the input source 
+      /** \brief Provide a pointer to the input source
         * (e.g., the point cloud that we want to align to the target)
         *
         * \param[in] cloud the input point cloud source
@@ -151,26 +152,26 @@ namespace pcl
       /** \brief Provide a pointer to the input target (e.g., the point cloud that we want to align the input source to)
         * \param[in] cloud the input point cloud target
         */
-      virtual inline void 
-      setInputTarget (const PointCloudTargetConstPtr &cloud); 
+      virtual inline void
+      setInputTarget (const PointCloudTargetConstPtr &cloud);
 
       /** \brief Get a pointer to the input point cloud dataset target. */
-      inline PointCloudTargetConstPtr const 
+      inline PointCloudTargetConstPtr const
       getInputTarget () { return (target_ ); }
 
 
       /** \brief Provide a pointer to the search object used to find correspondences in
         * the target cloud.
         * \param[in] tree a pointer to the spatial search object.
-        * \param[in] force_no_recompute If set to true, this tree will NEVER be 
-        * recomputed, regardless of calls to setInputTarget. Only use if you are 
+        * \param[in] force_no_recompute If set to true, this tree will NEVER be
+        * recomputed, regardless of calls to setInputTarget. Only use if you are
         * confident that the tree will be set correctly.
         */
       inline void
-      setSearchMethodTarget (const KdTreePtr &tree, 
-                             bool force_no_recompute = false) 
-      { 
-        tree_ = tree; 
+      setSearchMethodTarget (const KdTreePtr &tree,
+                             bool force_no_recompute = false)
+      {
+        tree_ = tree;
         if (force_no_recompute)
         {
           force_no_recompute_ = true;
@@ -190,15 +191,15 @@ namespace pcl
       /** \brief Provide a pointer to the search object used to find correspondences in
         * the source cloud (usually used by reciprocal correspondence finding).
         * \param[in] tree a pointer to the spatial search object.
-        * \param[in] force_no_recompute If set to true, this tree will NEVER be 
-        * recomputed, regardless of calls to setInputSource. Only use if you are 
+        * \param[in] force_no_recompute If set to true, this tree will NEVER be
+        * recomputed, regardless of calls to setInputSource. Only use if you are
         * extremely confident that the tree will be set correctly.
         */
       inline void
-      setSearchMethodSource (const KdTreeReciprocalPtr &tree, 
-                             bool force_no_recompute = false) 
-      { 
-        tree_reciprocal_ = tree; 
+      setSearchMethodSource (const KdTreeReciprocalPtr &tree,
+                             bool force_no_recompute = false)
+      {
+        tree_reciprocal_ = tree;
         if ( force_no_recompute )
         {
           force_no_recompute_reciprocal_ = true;
@@ -226,64 +227,64 @@ namespace pcl
       /** \brief Set the maximum number of iterations the internal optimization should run for.
         * \param[in] nr_iterations the maximum number of iterations the internal optimization should run for
         */
-      inline void 
+      inline void
       setMaximumIterations (int nr_iterations) { max_iterations_ = nr_iterations; }
 
       /** \brief Get the maximum number of iterations the internal optimization should run for, as set by the user. */
-      inline int 
+      inline int
       getMaximumIterations () { return (max_iterations_); }
 
       /** \brief Set the number of iterations RANSAC should run for.
         * \param[in] ransac_iterations is the number of iterations RANSAC should run for
         */
-      inline void 
+      inline void
       setRANSACIterations (int ransac_iterations) { ransac_iterations_ = ransac_iterations; }
 
       /** \brief Get the number of iterations RANSAC should run for, as set by the user. */
-      inline double 
+      inline double
       getRANSACIterations () { return (ransac_iterations_); }
 
       /** \brief Set the inlier distance threshold for the internal RANSAC outlier rejection loop.
-        * 
-        * The method considers a point to be an inlier, if the distance between the target data index and the transformed 
-        * source index is smaller than the given inlier distance threshold. 
+        *
+        * The method considers a point to be an inlier, if the distance between the target data index and the transformed
+        * source index is smaller than the given inlier distance threshold.
         * The value is set by default to 0.05m.
         * \param[in] inlier_threshold the inlier distance threshold for the internal RANSAC outlier rejection loop
         */
-      inline void 
+      inline void
       setRANSACOutlierRejectionThreshold (double inlier_threshold) { inlier_threshold_ = inlier_threshold; }
 
       /** \brief Get the inlier distance threshold for the internal outlier rejection loop as set by the user. */
-      inline double 
+      inline double
       getRANSACOutlierRejectionThreshold () { return (inlier_threshold_); }
 
-      /** \brief Set the maximum distance threshold between two correspondent points in source <-> target. If the 
+      /** \brief Set the maximum distance threshold between two correspondent points in source <-> target. If the
         * distance is larger than this threshold, the points will be ignored in the alignment process.
-        * \param[in] distance_threshold the maximum distance threshold between a point and its nearest neighbor 
+        * \param[in] distance_threshold the maximum distance threshold between a point and its nearest neighbor
         * correspondent in order to be considered in the alignment process
         */
-      inline void 
+      inline void
       setMaxCorrespondenceDistance (double distance_threshold) { corr_dist_threshold_ = distance_threshold; }
 
-      /** \brief Get the maximum distance threshold between two correspondent points in source <-> target. If the 
+      /** \brief Get the maximum distance threshold between two correspondent points in source <-> target. If the
         * distance is larger than this threshold, the points will be ignored in the alignment process.
         */
-      inline double 
+      inline double
       getMaxCorrespondenceDistance () { return (corr_dist_threshold_); }
 
       /** \brief Set the transformation epsilon (maximum allowable translation squared difference between two consecutive
-        * transformations) in order for an optimization to be considered as having converged to the final 
+        * transformations) in order for an optimization to be considered as having converged to the final
         * solution.
-        * \param[in] epsilon the transformation epsilon in order for an optimization to be considered as having 
+        * \param[in] epsilon the transformation epsilon in order for an optimization to be considered as having
         * converged to the final solution.
         */
-      inline void 
+      inline void
       setTransformationEpsilon (double epsilon) { transformation_epsilon_ = epsilon; }
 
       /** \brief Get the transformation epsilon (maximum allowable translation squared difference between two consecutive
         * transformations) as set by the user.
         */
-      inline double 
+      inline double
       getTransformationEpsilon () { return (transformation_epsilon_); }
 
       /** \brief Set the transformation rotation epsilon (maximum allowable rotation difference between two consecutive
@@ -301,20 +302,20 @@ namespace pcl
       inline double
       getTransformationRotationEpsilon () { return (transformation_rotation_epsilon_); }
 
-      /** \brief Set the maximum allowed Euclidean error between two consecutive steps in the ICP loop, before 
-        * the algorithm is considered to have converged. 
-        * The error is estimated as the sum of the differences between correspondences in an Euclidean sense, 
+      /** \brief Set the maximum allowed Euclidean error between two consecutive steps in the ICP loop, before
+        * the algorithm is considered to have converged.
+        * The error is estimated as the sum of the differences between correspondences in an Euclidean sense,
         * divided by the number of correspondences.
         * \param[in] epsilon the maximum allowed distance error before the algorithm will be considered to have
         * converged
         */
-      inline void 
+      inline void
       setEuclideanFitnessEpsilon (double epsilon) { euclidean_fitness_epsilon_ = epsilon; }
 
       /** \brief Get the maximum allowed distance error before the algorithm will be considered to have converged,
         * as set by the user. See \ref setEuclideanFitnessEpsilon
         */
-      inline double 
+      inline double
       getEuclideanFitnessEpsilon () { return (euclidean_fitness_epsilon_); }
 
       /** \brief Provide a boost shared pointer to the PointRepresentation to be used when comparing points
@@ -343,10 +344,10 @@ namespace pcl
       }
 
       /** \brief Obtain the Euclidean fitness score (e.g., sum of squared distances from the source to the target)
-        * \param[in] max_range maximum allowable distance between a point and its correspondence in the target 
+        * \param[in] max_range maximum allowable distance between a point and its correspondence in the target
         * (default: double::max)
         */
-      inline double 
+      inline double
       getFitnessScore (double max_range = std::numeric_limits<double>::max ());
 
       /** \brief Obtain the Euclidean fitness score (e.g., sum of squared distances from the source to the target)
@@ -354,32 +355,32 @@ namespace pcl
         * \param[in] distances_a the first set of distances between correspondences
         * \param[in] distances_b the second set of distances between correspondences
         */
-      inline double 
+      inline double
       getFitnessScore (const std::vector<float> &distances_a, const std::vector<float> &distances_b);
 
       /** \brief Return the state of convergence after the last align run */
-      inline bool 
+      inline bool
       hasConverged () { return (converged_); }
 
-      /** \brief Call the registration algorithm which estimates the transformation and returns the transformed source 
+      /** \brief Call the registration algorithm which estimates the transformation and returns the transformed source
         * (input) as \a output.
         * \param[out] output the resultant input transfomed point cloud dataset
         */
       inline void
       align (PointCloudSource &output);
 
-      /** \brief Call the registration algorithm which estimates the transformation and returns the transformed source 
+      /** \brief Call the registration algorithm which estimates the transformation and returns the transformed source
         * (input) as \a output.
         * \param[out] output the resultant input transfomed point cloud dataset
         * \param[in] guess the initial gross estimation of the transformation
         */
-      inline void 
+      inline void
       align (PointCloudSource &output, const Matrix4& guess);
 
       /** \brief Abstract class get name method. */
       inline const std::string&
       getClassName () const { return (reg_name_); }
-        
+
       /** \brief Internal computation initialization. */
       bool
       initCompute ();
@@ -399,7 +400,7 @@ namespace pcl
         * rej.setInputTarget<PointXYZ> (keypoints_tgt);
         * rej.setMaximumDistance (1);
         * rej.setInputCorrespondences (all_correspondences);
-        * 
+        *
         * // or...
         *
         * \endcode
@@ -442,7 +443,7 @@ namespace pcl
 
       /** \brief A pointer to the spatial search object. */
       KdTreePtr tree_;
-      
+
       /** \brief A pointer to the spatial search object of the source. */
       KdTreeReciprocalPtr tree_reciprocal_;
 
@@ -469,8 +470,8 @@ namespace pcl
       /** \brief The previous transformation matrix estimated by the registration method (used internally). */
       Matrix4 previous_transformation_;
 
-      /** \brief The maximum difference between two consecutive transformations in order to consider convergence 
-        * (user defined). 
+      /** \brief The maximum difference between two consecutive transformations in order to consider convergence
+        * (user defined).
         */
       double transformation_epsilon_;
 
@@ -479,27 +480,27 @@ namespace pcl
         */
       double transformation_rotation_epsilon_;
 
-      /** \brief The maximum allowed Euclidean error between two consecutive steps in the ICP loop, before the 
-        * algorithm is considered to have converged. The error is estimated as the sum of the differences between 
+      /** \brief The maximum allowed Euclidean error between two consecutive steps in the ICP loop, before the
+        * algorithm is considered to have converged. The error is estimated as the sum of the differences between
         * correspondences in an Euclidean sense, divided by the number of correspondences.
         */
       double euclidean_fitness_epsilon_;
 
-      /** \brief The maximum distance threshold between two correspondent points in source <-> target. If the 
+      /** \brief The maximum distance threshold between two correspondent points in source <-> target. If the
         * distance is larger than this threshold, the points will be ignored in the alignment process.
         */
       double corr_dist_threshold_;
 
       /** \brief The inlier distance threshold for the internal RANSAC outlier rejection loop.
-        * The method considers a point to be an inlier, if the distance between the target data index and the transformed 
-        * source index is smaller than the given inlier distance threshold. The default value is 0.05. 
+        * The method considers a point to be an inlier, if the distance between the target data index and the transformed
+        * source index is smaller than the given inlier distance threshold. The default value is 0.05.
         */
       double inlier_threshold_;
 
       /** \brief Holds internal convergence state, given user parameters. */
       bool converged_;
 
-      /** \brief The minimum number of correspondences that the algorithm needs before attempting to estimate the 
+      /** \brief The minimum number of correspondences that the algorithm needs before attempting to estimate the
         * transformation. The default value is 3.
         */
       int min_number_correspondences_;
@@ -524,11 +525,11 @@ namespace pcl
        * This way, we avoid rebuilding the reciprocal kd-tree for the source cloud every time the determineCorrespondences () method
        * is called. */
       bool source_cloud_updated_;
-      /** \brief A flag which, if set, means the tree operating on the target cloud 
+      /** \brief A flag which, if set, means the tree operating on the target cloud
        * will never be recomputed*/
       bool force_no_recompute_;
-      
-      /** \brief A flag which, if set, means the tree operating on the source cloud 
+
+      /** \brief A flag which, if set, means the tree operating on the source cloud
        * will never be recomputed*/
       bool force_no_recompute_reciprocal_;
 
@@ -547,7 +548,7 @@ namespace pcl
         * \param distances the resultant distances from the query point to the k-nearest neighbors
         */
       inline bool
-      searchForNeighbors (const PointCloudSource &cloud, int index, 
+      searchForNeighbors (const PointCloudSource &cloud, int index,
                           std::vector<int> &indices, std::vector<float> &distances)
       {
         int k = tree_->nearestKSearch (cloud, index, 1, indices, distances);
@@ -557,7 +558,7 @@ namespace pcl
       }
 
       /** \brief Abstract transformation computation method with initial guess */
-      virtual void 
+      virtual void
       computeTransformation (PointCloudSource &output, const Matrix4& guess) = 0;
 
     private:
@@ -571,4 +572,3 @@ namespace pcl
 #include "impl/registration.hpp"
 
 #endif  //#ifndef ICP_REGISTRATION_H_
-
