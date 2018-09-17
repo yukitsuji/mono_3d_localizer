@@ -32,8 +32,8 @@ compute (const pcl::PCLPointCloud2::ConstPtr &source,
          pcl::PCLPointCloud2 &transformed_source)
 {
     // Convert data to PointCloud<T>
-    PointCloud<PointNormal>::Ptr src (new PointCloud<PointNormal>);
-    PointCloud<PointNormal>::Ptr tgt (new PointCloud<PointNormal>);
+    PointCloud<PointXYZ>::Ptr src (new PointCloud<PointXYZ>);
+    PointCloud<PointXYZ>::Ptr tgt (new PointCloud<PointXYZ>);
     fromPCLPointCloud2 (*source, *src);
     fromPCLPointCloud2 (*target, *tgt);
 
@@ -41,9 +41,9 @@ compute (const pcl::PCLPointCloud2::ConstPtr &source,
     TicToc tt;
     tt.tic ();
 
-    TransformationEstimation7dofLM<PointNormal, PointNormal, double>::Ptr te (new TransformationEstimation7dofLM<PointNormal, PointNormal, double>);
-    // TransformationEstimationLM<PointNormal, PointNormal, double>::Ptr te (new TransformationEstimationLM<PointNormal, PointNormal, double>);
-    CorrespondenceEstimation<PointNormal, PointNormal, double>::Ptr cens (new CorrespondenceEstimation<PointNormal, PointNormal, double>);
+    TransformationEstimation7dofLM<PointXYZ, PointXYZ, double>::Ptr te (new TransformationEstimation7dofLM<PointXYZ, PointXYZ, double>);
+    // TransformationEstimationLM<PointXYZ, PointXYZ, double>::Ptr te (new TransformationEstimationLM<PointXYZ, PointXYZ, double>);
+    CorrespondenceEstimation<PointXYZ, PointXYZ, double>::Ptr cens (new CorrespondenceEstimation<PointXYZ, PointXYZ, double>);
     cens->setInputSource (src);
     cens->setInputTarget (tgt);
     //cens->setSourceNormals (src);
@@ -51,11 +51,11 @@ compute (const pcl::PCLPointCloud2::ConstPtr &source,
     CorrespondenceRejectorOneToOne::Ptr cor_rej_o2o (new CorrespondenceRejectorOneToOne);
 
     // CorrespondenceRejectorMedianDistance::Ptr cor_rej_med (new CorrespondenceRejectorMedianDistance);
-    // cor_rej_med->setInputSource<PointNormal> (src);
-    // cor_rej_med->setInputTarget<PointNormal> (tgt);
+    // cor_rej_med->setInputSource<PointXYZ> (src);
+    // cor_rej_med->setInputTarget<PointXYZ> (tgt);
     //icp.addCorrespondenceRejector (cor_rej_med);
 
-    // CorrespondenceRejectorSampleConsensus<PointNormal>::Ptr cor_rej_sac (new CorrespondenceRejectorSampleConsensus<PointNormal>);
+    // CorrespondenceRejectorSampleConsensus<PointXYZ>::Ptr cor_rej_sac (new CorrespondenceRejectorSampleConsensus<PointXYZ>);
     // cor_rej_sac->setInputSource (src);
     // cor_rej_sac->setInputTarget (tgt);
     // cor_rej_sac->setInlierThreshold (0.005);
@@ -63,14 +63,14 @@ compute (const pcl::PCLPointCloud2::ConstPtr &source,
     //icp.addCorrespondenceRejector (cor_rej_sac);
 
     // CorrespondenceRejectorVarTrimmed::Ptr cor_rej_var (new CorrespondenceRejectorVarTrimmed);
-    // cor_rej_var->setInputSource<PointNormal> (src);
-    // cor_rej_var->setInputTarget<PointNormal> (tgt);
+    // cor_rej_var->setInputSource<PointXYZ> (src);
+    // cor_rej_var->setInputTarget<PointXYZ> (tgt);
     //icp.addCorrespondenceRejector (cor_rej_var);
 
     // CorrespondenceRejectorTrimmed::Ptr cor_rej_tri (new CorrespondenceRejectorTrimmed);
     //icp.addCorrespondenceRejector (cor_rej_tri);
 
-    IterativeClosestPoint<PointNormal, PointNormal, double> icp;
+    IterativeClosestPoint<PointXYZ, PointXYZ, double> icp;
     icp.setCorrespondenceEstimation (cens);
     icp.setTransformationEstimation (te);
     icp.addCorrespondenceRejector (cor_rej_o2o);
@@ -78,7 +78,7 @@ compute (const pcl::PCLPointCloud2::ConstPtr &source,
     icp.setInputTarget (tgt);
     icp.setMaximumIterations (1000);
     icp.setTransformationEpsilon (1e-10);
-    PointCloud<PointNormal> output;
+    PointCloud<PointXYZ> output;
     icp.align (output);
 
     // print_info ("[done, "); print_value ("%g", tt.toc ()); print_info (" ms : "); print_value ("%d", output.width * output.height); print_info (" points], has converged: ");

@@ -123,6 +123,9 @@ namespace pcl
             const pcl::Correspondences &correspondences,
             Matrix4 &transformation_matrix) const;
 
+        void setSigma (float sigma) {sigma_ = sigma};
+        void setSigma (double sigma) {sigma_ = sigma};
+
         /** \brief Set the function we use to warp points. Defaults to rigid 6D warp.
           * \param[in] warp_fcn a shared pointer to an object that warps points
           */

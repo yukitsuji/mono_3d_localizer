@@ -254,3 +254,8 @@ pcl::IterativeClosestPoint7dofWithNormals<PointSource, PointTarget, Scalar>::tra
 {
   pcl::transformPointCloudWithNormals (input, output, transform);
 }
+
+template class pcl::IterativeClosestPoint7dof<pcl::PointXYZ, pcl::PointXYZ, double>;
+template class pcl::IterativeClosestPoint7dof<pcl::PointXYZ, pcl::PointXYZ, float>;
+template class pcl::IterativeClosestPoint7dof<pcl::PointXYZI, pcl::PointXYZI, double>;
+template class pcl::IterativeClosestPoint7dof<pcl::PointXYZI, pcl::PointXYZI, double>;
