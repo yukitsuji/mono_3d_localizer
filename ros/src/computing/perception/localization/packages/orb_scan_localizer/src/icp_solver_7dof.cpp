@@ -46,12 +46,12 @@ compute ()
     src->points.resize (src->width * src->height);
 
     for (size_t i = 0; i < src->points.size (); ++i)   {
-        src->points[i].x = 1024 * rand () / (RAND_MAX + 1.0f);
-        src->points[i].y = 1024 * rand () / (RAND_MAX + 1.0f);
-        src->points[i].z = 1024 * rand () / (RAND_MAX + 1.0f);
+        src->points[i].x = 1024 * rand () / (RAND_MAX + 1.0f) * 10;
+        src->points[i].y = 1024 * rand () / (RAND_MAX + 1.0f) * 10;
+        src->points[i].z = 1024 * rand () / (RAND_MAX + 1.0f) * 10;
     }
 
-    std::cout << "Saved " << src->points.size () << " data points to input:"<< std::endl;
+    // std::cout << "Saved " << src->points.size () << " data points to input:"<< std::endl;
     for (size_t i = 0; i < src->points.size (); ++i) std::cout << "    " <<
     src->points[i].x << " " <<
     src->points[i].y << " " <<
@@ -61,11 +61,11 @@ compute ()
 
     //点群を移動させtgtを作る。
     for (size_t i = 0; i < src->points.size (); ++i){
-        tgt->points[i].x = src->points[i].x + x_offset + 102 * rand () / (RAND_MAX + 1.0f);
-        tgt->points[i].y = src->points[i].y + y_offset + 102 * rand () / (RAND_MAX + 1.0f);
-
+        tgt->points[i].x = 2.1 * (src->points[i].x + 1);// + x_offset; //+ 102 * rand () / (RAND_MAX + 1.0f);
+        tgt->points[i].y = 2.1 * (src->points[i].y + 2);// + y_offset; //+ 102 * rand () / (RAND_MAX + 1.0f);
+        tgt->points[i].z = 2.1 * (src->points[i].z + 2);// + y_offset; //+ 102 * rand () / (RAND_MAX + 1.0f);
     }
-    std::cout << "Transformed " << src->points.size () << " data points:"  << std::endl;
+    // std::cout << "Transformed " << src->points.size () << " data points:"  << std::endl;
 
     for (size_t i = 0; i < tgt->points.size (); ++i)
     std::cout << "    " <<
@@ -77,60 +77,68 @@ compute ()
     TicToc tt;
     tt.tic ();
 
-    //TransformationEstimation7dofLM<PointXYZ, PointXYZ, double>::Ptr te (new TransformationEstimation7dofLM<PointXYZ, PointXYZ, double>);
-    // TransformationEstimationLM<PointXYZ, PointXYZ, double>::Ptr te (new TransformationEstimationLM<PointXYZ, PointXYZ, double>);
+    // TransformationEstimation7dofLM<PointXYZ, PointXYZ, double>::Ptr te (new TransformationEstimation7dofLM<PointXYZ, PointXYZ, double>);
     // CorrespondenceEstimation<PointXYZ, PointXYZ, double>::Ptr cens (new CorrespondenceEstimation<PointXYZ, PointXYZ, double>);
     // cens->setInputSource (src);
     // cens->setInputTarget (tgt);
     //cens->setSourceNormals (src);
 
     // CorrespondenceRejectorDistance::Ptr cor_rej_o2o (new CorrespondenceRejectorDistance);
-    // CorrespondenceRejectorOneToOne::Ptr cor_rej_o2o (new CorrespondenceRejectorOneToOne);
+    CorrespondenceRejectorOneToOne::Ptr cor_rej_o2o (new CorrespondenceRejectorOneToOne);
 
     // CorrespondenceRejectorMedianDistance::Ptr cor_rej_med (new CorrespondenceRejectorMedianDistance);
     // cor_rej_med->setInputSource<PointXYZ> (src);
     // cor_rej_med->setInputTarget<PointXYZ> (tgt);
     //icp.addCorrespondenceRejector (cor_rej_med);
 
-    // CorrespondenceRejectorSampleConsensus<PointXYZ>::Ptr cor_rej_sac (new CorrespondenceRejectorSampleConsensus<PointXYZ>);
-    // cor_rej_sac->setInputSource (src);
-    // cor_rej_sac->setInputTarget (tgt);
-    // cor_rej_sac->setInlierThreshold (0.005);
-    // cor_rej_sac->setMaximumIterations (10000);
-    //icp.addCorrespondenceRejector (cor_rej_sac);
-
-    // CorrespondenceRejectorVarTrimmed::Ptr cor_rej_var (new CorrespondenceRejectorVarTrimmed);
-    // cor_rej_var->setInputSource<PointXYZ> (src);
-    // cor_rej_var->setInputTarget<PointXYZ> (tgt);
-    //icp.addCorrespondenceRejector (cor_rej_var);
-
-    // CorrespondenceRejectorTrimmed::Ptr cor_rej_tri (new CorrespondenceRejectorTrimmed);
-    //icp.addCorrespondenceRejector (cor_rej_tri);
-
     IterativeClosestPoint7dof<PointXYZ, PointXYZ, double> icp;
     // icp.setCorrespondenceEstimation (cens);
     // icp.setTransformationEstimation (te);
-    // icp.addCorrespondenceRejector (cor_rej_o2o);
+    icp.addCorrespondenceRejector (cor_rej_o2o);
     icp.setInputSource (src);
     icp.setInputTarget (tgt);
     icp.setMaximumIterations (1000);
-    // icp.setTransformationEpsilon (1e-10);
+    icp.setTransformationEpsilon (1e-10);
+    //icp.convergence_criteria_->setMaximumIterationsSimilarTransforms(2);
     PointCloud<PointXYZ> output;
     icp.align (output);
     print_info ("[done, "); print_value ("%g", tt.toc ()); print_info (" ms : "); print_value ("%d", output.width * output.height); print_info (" points], has converged: ");
     print_value ("%d", icp.hasConverged ()); print_info (" with score: %f\n",  icp.getFitnessScore ());
     Eigen::Matrix4d transformation = icp.getFinalTransformation ();
-    // //Eigen::Matrix4f transformation = icp.getFinalTransformation ();
     PCL_ERROR ("Transformation is:\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n",
         transformation (0, 0), transformation (0, 1), transformation (0, 2), transformation (0, 3),
         transformation (1, 0), transformation (1, 1), transformation (1, 2), transformation (1, 3),
         transformation (2, 0), transformation (2, 1), transformation (2, 2), transformation (2, 3),
         transformation (3, 0), transformation (3, 1), transformation (3, 2), transformation (3, 3));
 
-    // Convert data back
-    // pcl::PCLPointCloud2 output_source;
-    // toPCLPointCloud2 (output, output_source);
-    // concatenateFields (*source, output_source, transformed_source);
+    for (size_t i = 0; i < output.points.size (); ++i) std::cout << "    " <<
+    output.points[i].x << " " <<
+    output.points[i].y << " " <<
+    output.points[i].z << std::endl;
+    std::cout << "size:" << tgt->points.size() << std::endl;
+
+    for (size_t i = 0; i < tgt->points.size (); ++i)
+    std::cout << "    " <<
+    tgt->points[i].x << " " <<
+    tgt->points[i].y << " " <<
+    tgt->points[i].z << std::endl;
+    /*
+    icp.setInputSource (src);
+    icp.setInputTarget (tgt);
+    icp.setMaximumIterations (1000);
+    icp.setTransformationEpsilon (1e-10);
+    //icp.convergence_criteria_->setMaximumIterationsSimilarTransforms(2);
+    PointCloud<PointXYZ> output2;
+    icp.align (output2, transformation);
+    print_info ("[done, "); print_value ("%g", tt.toc ()); print_info (" ms : "); print_value ("%d", output2.width * output2.height); print_info (" points], has converged: ");
+    print_value ("%d", icp.hasConverged ()); print_info (" with score: %f\n",  icp.getFitnessScore ());
+    transformation = icp.getFinalTransformation ();
+    PCL_ERROR ("Transformation is:\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n",
+        transformation (0, 0), transformation (0, 1), transformation (0, 2), transformation (0, 3),
+        transformation (1, 0), transformation (1, 1), transformation (1, 2), transformation (1, 3),
+        transformation (2, 0), transformation (2, 1), transformation (2, 2), transformation (2, 3),
+        transformation (3, 0), transformation (3, 1), transformation (3, 2), transformation (3, 3));
+    */
 }
 
 
