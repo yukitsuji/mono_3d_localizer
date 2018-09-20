@@ -144,10 +144,12 @@ void NormalDistributionsTransform<PointSourceType, PointTargetType>::computeTran
 	while (!converged_) {
 		previous_transformation_ = transformation_;
 
+		// Solve for decent direction using newton method, line 23 in Algorithm 2 [Magnusson 2009]
 		Eigen::JacobiSVD<Eigen::Matrix<double, 6, 6> > sv(hessian, Eigen::ComputeFullU | Eigen::ComputeFullV);
-
+		// Negative for maximization as opposed to minimization
 		delta_p = sv.solve(-score_gradient);
 
+		//Calculate step length with guarnteed sufficient decrease [More, Thuente 1994]
 		delta_p_norm = delta_p.norm();
 
 		if (delta_p_norm == 0 || delta_p_norm != delta_p_norm) {
