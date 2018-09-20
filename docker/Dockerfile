@@ -31,7 +31,7 @@ RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main"
 RUN apt-key adv --keyserver hkp://ha.pool.sks-keyservers.net:80 --recv-key 421C365BD9FF1F717815A3895523BAEEB01FA116
 RUN apt-get update && apt-get install -y ros-kinetic-desktop-full ros-kinetic-nmea-msgs ros-kinetic-nmea-navsat-driver ros-kinetic-sound-play ros-kinetic-jsk-visualization ros-kinetic-grid-map ros-kinetic-gps-common
 RUN apt-get update && apt-get install -y ros-kinetic-controller-manager ros-kinetic-ros-control ros-kinetic-ros-controllers ros-kinetic-gazebo-ros-control ros-kinetic-joystick-drivers
-RUN apt-get update && apt-get install -y libnlopt-dev freeglut3-dev qtbase5-dev libqt5opengl5-dev libssh2-1-dev libarmadillo-dev libpcap-dev gksu libgl1-mesa-dev libglew-dev python-wxgtk3.0 software-properties-common libmosquitto-dev libyaml-cpp-dev python-flask python-requests
+RUN apt-get update && apt-get install -y libnlopt-dev freeglut3-dev qtbase5-dev libqt5opengl5-dev libssh2-1-dev libarmadillo-dev libpcap-dev gksu libgl1-mesa-dev libglew-dev python-wxgtk3.0 software-properties-common libmosquitto-dev libyaml-cpp-dev python-flask python-requests libsuitesparse-dev
 
 # Add basic user
 ENV USERNAME autoware
@@ -72,8 +72,7 @@ RUN /bin/bash -c 'cd /home/$USERNAME/Pangolin; mkdir build; cd build; cmake ..; 
 
 # ORB SLAM
 RUN cd && git clone https://github.com/yukitsuji/ORB_SLAM2.git /home/$USERNAME/ORB_SLAM2
-#RUN echo "export ROS_PACKAGE_PATH=${ROS_PACKAGE_PATH}:/home/$USERNAME/ORB_SLAM2/Examples/ROS" >> /home/$USERNAME/.bashrc
-#RUN /bin/bash -c 'cd /home/$USERNAME/ORB_SLAM2; ./build.sh'
+#RUN /bin/bash -c 'cd /home/$USERNAME/ORB_SLAM2; sh ./build.sh'
 
 # Setting
 ENV LANG="en_US.UTF-8"
