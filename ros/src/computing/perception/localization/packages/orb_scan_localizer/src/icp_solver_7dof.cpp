@@ -61,9 +61,9 @@ compute ()
 
     //点群を移動させtgtを作る。
     for (size_t i = 0; i < src->points.size (); ++i){
-        tgt->points[i].x = 2.1 * (src->points[i].x + 1);// + x_offset; //+ 102 * rand () / (RAND_MAX + 1.0f);
-        tgt->points[i].y = 2.1 * (src->points[i].y + 2);// + y_offset; //+ 102 * rand () / (RAND_MAX + 1.0f);
-        tgt->points[i].z = 2.1 * (src->points[i].z + 2);// + y_offset; //+ 102 * rand () / (RAND_MAX + 1.0f);
+        tgt->points[i].x = 1.1 * (src->points[i].x + 1);// + x_offset; //+ 102 * rand () / (RAND_MAX + 1.0f);
+        tgt->points[i].y = 1.1 * (src->points[i].y + 2);// + y_offset; //+ 102 * rand () / (RAND_MAX + 1.0f);
+        tgt->points[i].z = 1.1 * (src->points[i].z + 2);// + y_offset; //+ 102 * rand () / (RAND_MAX + 1.0f);
     }
     // std::cout << "Transformed " << src->points.size () << " data points:"  << std::endl;
 
@@ -84,7 +84,7 @@ compute ()
     //cens->setSourceNormals (src);
 
     // CorrespondenceRejectorDistance::Ptr cor_rej_o2o (new CorrespondenceRejectorDistance);
-    CorrespondenceRejectorOneToOne::Ptr cor_rej_o2o (new CorrespondenceRejectorOneToOne);
+    // CorrespondenceRejectorOneToOne::Ptr cor_rej_o2o (new CorrespondenceRejectorOneToOne);
 
     // CorrespondenceRejectorMedianDistance::Ptr cor_rej_med (new CorrespondenceRejectorMedianDistance);
     // cor_rej_med->setInputSource<PointXYZ> (src);
@@ -94,7 +94,7 @@ compute ()
     IterativeClosestPoint7dof icp;
     // icp.setCorrespondenceEstimation (cens);
     // icp.setTransformationEstimation (te);
-    icp.addCorrespondenceRejector (cor_rej_o2o);
+    // icp.addCorrespondenceRejector (cor_rej_o2o);
     icp.setInputSource (src);
     icp.setInputTarget (tgt);
     icp.setMaximumIterations (1000);
