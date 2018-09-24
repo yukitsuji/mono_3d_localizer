@@ -255,52 +255,6 @@ namespace pcl
       TransformationEstimationPtr transformation_estimation_;
 
   };
-
-  /** \brief @b IterativeClosestPoint7dofWithNormals is a special case of
-    * IterativeClosestPoint7dof, that uses a transformation estimated based on
-    * Point to Plane distances by default.
-    *
-    * \author Radu B. Rusu
-    * \ingroup registration
-    */
-  class IterativeClosestPoint7dofWithNormals : public IterativeClosestPoint7dof
-  {
-    public:
-      typedef typename IterativeClosestPoint7dof::PointCloudSource PointCloudSource;
-      typedef typename IterativeClosestPoint7dof::PointCloudTarget PointCloudTarget;
-      typedef typename IterativeClosestPoint7dof::Matrix4 Matrix4;
-
-      using IterativeClosestPoint7dof::reg_name_;
-      using IterativeClosestPoint7dof::transformation_estimation_;
-      using IterativeClosestPoint7dof::correspondence_rejectors_;
-
-      typedef boost::shared_ptr<IterativeClosestPoint7dof > Ptr;
-      typedef boost::shared_ptr<const IterativeClosestPoint7dof > ConstPtr;
-
-      /** \brief Empty constructor. */
-      IterativeClosestPoint7dofWithNormals ()
-      {
-        reg_name_ = "IterativeClosestPoint7dofWithNormals";
-        transformation_estimation_.reset (new pcl::registration::TransformationEstimation7dofLM());
-        //correspondence_rejectors_.add
-      };
-
-      /** \brief Empty destructor */
-      virtual ~IterativeClosestPoint7dofWithNormals () {}
-
-    protected:
-
-      /** \brief Apply a rigid transform to a given dataset
-        * \param[in] input the input point cloud
-        * \param[out] output the resultant output point cloud
-        * \param[in] transform a 4x4 rigid transformation
-        * \note Can be used with cloud_in equal to cloud_out
-        */
-      virtual void
-      transformCloud (const PointCloudSource &input,
-                      PointCloudSource &output,
-                      const Matrix4 &transform);
-  };
 }
 
 #include "impl/icp_7dof.hpp"

@@ -4,7 +4,7 @@
 #include <pcl/console/print.h>
 #include <pcl/console/time.h>
 #include <pcl/console/parse.h>
-#include <pcl/registration/icp.h>
+//#include <pcl/registration/icp.h>
 #include <pcl/registration/correspondence_estimation.h>
 #include <pcl/registration/correspondence_estimation_normal_shooting.h>
 //#include <pcl/registration/transformation_estimation_lm.h>
@@ -91,7 +91,7 @@ compute ()
     // cor_rej_med->setInputTarget<PointXYZ> (tgt);
     //icp.addCorrespondenceRejector (cor_rej_med);
 
-    IterativeClosestPoint7dof<PointXYZ, PointXYZ, double> icp;
+    IterativeClosestPoint7dof icp;
     // icp.setCorrespondenceEstimation (cens);
     // icp.setTransformationEstimation (te);
     icp.addCorrespondenceRejector (cor_rej_o2o);

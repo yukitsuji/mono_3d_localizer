@@ -247,14 +247,6 @@ pcl::IterativeClosestPoint7dof::determineRequiredBlobData ()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl::IterativeClosestPoint7dofWithNormals::transformCloud (
-    const PointCloudSource &input,
-    PointCloudSource &output,
-    const Matrix4 &transform)
-{
-  pcl::transformPointCloudWithNormals (input, output, transform);
-}
 
 //template class pcl::IterativeClosestPoint7dof;
 //template class pcl::IterativeClosestPoint7dof<pcl::PointXYZ, pcl::PointXYZ, float>;
