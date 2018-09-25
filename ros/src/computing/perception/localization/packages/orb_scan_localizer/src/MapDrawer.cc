@@ -135,8 +135,9 @@ void MapDrawer::DrawMapPoints()
     pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap = mpMap->GetPriorMapPoints();
     if (priorMap) {
         for (const auto& point : priorMap->points) {
-            glVertex3f(-point.y, -point.z, point.x);
-        }  
+            // glVertex3f(-point.y, -point.z, point.x);
+            glVertex3f(point.x, point.y, point.z);
+        }
     }
 
     glEnd();
