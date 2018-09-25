@@ -19,10 +19,11 @@ namespace pcl
       * \author Dirk Holz, Radu B. Rusu
       * \ingroup registration
       */
+    template <typename PointSource, typename PointTarget, typename Scalar = float>
     class TransformationEstimation7dof
     {
       public:
-        typedef Eigen::Matrix<double, 4, 4> Matrix4;
+        typedef Eigen::Matrix<Scalar, 4, 4> Matrix4;
 
         TransformationEstimation7dof () {};
         virtual ~TransformationEstimation7dof () {};
@@ -34,8 +35,8 @@ namespace pcl
           */
         virtual void
         estimateRigidTransformation (
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_src,
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_tgt,
+            const pcl::PointCloud<PointSource> &cloud_src,
+            const pcl::PointCloud<PointTarget> &cloud_tgt,
             Matrix4 &transformation_matrix) const = 0;
 
         /** \brief Estimate a rigid rotation transformation between a source and a target point cloud.
@@ -46,9 +47,9 @@ namespace pcl
           */
         virtual void
         estimateRigidTransformation (
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_src,
+            const pcl::PointCloud<PointSource> &cloud_src,
             const std::vector<int> &indices_src,
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_tgt,
+            const pcl::PointCloud<PointTarget> &cloud_tgt,
             Matrix4 &transformation_matrix) const = 0;
 
         /** \brief Estimate a rigid rotation transformation between a source and a target point cloud.
@@ -60,9 +61,9 @@ namespace pcl
           */
         virtual void
         estimateRigidTransformation (
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_src,
+            const pcl::PointCloud<PointSource> &cloud_src,
             const std::vector<int> &indices_src,
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_tgt,
+            const pcl::PointCloud<PointTarget> &cloud_tgt,
             const std::vector<int> &indices_tgt,
             Matrix4 &transformation_matrix) const = 0;
 
@@ -74,7 +75,7 @@ namespace pcl
           */
         virtual void
         estimateRigidTransformation (
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_src, const pcl::PointCloud<pcl::PointXYZ> &cloud_tgt,
+            const pcl::PointCloud<PointSource> &cloud_src, const pcl::PointCloud<PointTarget> &cloud_tgt,
             const pcl::Correspondences &correspondences,
             Matrix4 &transformation_matrix) const = 0;
 
@@ -85,8 +86,8 @@ namespace pcl
           */
         virtual void
         estimateNonRigidTransformation (
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_src,
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_tgt,
+            const pcl::PointCloud<PointSource> &cloud_src,
+            const pcl::PointCloud<PointTarget> &cloud_tgt,
             Matrix4 &transformation_matrix) const = 0;
 
         /** \brief Estimate a non-rigid rotation transformation between a source and a target point cloud using LM.
@@ -97,9 +98,9 @@ namespace pcl
           */
         virtual void
         estimateNonRigidTransformation (
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_src,
+            const pcl::PointCloud<PointSource> &cloud_src,
             const std::vector<int> &indices_src,
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_tgt,
+            const pcl::PointCloud<PointTarget> &cloud_tgt,
             Matrix4 &transformation_matrix) const = 0;
 
         /** \brief Estimate a non-rigid rotation transformation between a source and a target point cloud using LM.
@@ -112,9 +113,9 @@ namespace pcl
           */
         virtual void
         estimateNonRigidTransformation (
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_src,
+            const pcl::PointCloud<PointSource> &cloud_src,
             const std::vector<int> &indices_src,
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_tgt,
+            const pcl::PointCloud<PointTarget> &cloud_tgt,
             const std::vector<int> &indices_tgt,
             Matrix4 &transformation_matrix) const = 0;
 
@@ -126,17 +127,19 @@ namespace pcl
           */
           virtual void
           estimateNonRigidTransformation (
-              const pcl::PointCloud<pcl::PointXYZ> &cloud_src,
-              const pcl::PointCloud<pcl::PointXYZ> &cloud_tgt,
+              const pcl::PointCloud<PointSource> &cloud_src,
+              const pcl::PointCloud<PointTarget> &cloud_tgt,
               const pcl::Correspondences &correspondences,
               Matrix4 &transformation_matrix) const = 0;
 
-        typedef boost::shared_ptr<TransformationEstimation7dof> Ptr;
-        typedef boost::shared_ptr<const TransformationEstimation7dof> ConstPtr;
+        typedef boost::shared_ptr<TransformationEstimation7dof<PointSource, PointTarget, Scalar> > Ptr;
+        typedef boost::shared_ptr<const TransformationEstimation7dof<PointSource, PointTarget, Scalar> > ConstPtr;
     };
   }
 }
 
-// template class pcl::registration::TransformationEstimation7dof<pcl::PointXYZ, pcl::PointXYZ, double>;
-// template class pcl::registration::TransformationEstimation7dof<pcl::PointXYZ, pcl::PointXYZ, float>;
+//template class pcl::registration::TransformationEstimation7dof<pcl::PointXYZI, pcl::PointXYZI, double>;
+//template class pcl::registration::TransformationEstimation7dof<pcl::PointXYZI, pcl::PointXYZI, float>;
+template class pcl::registration::TransformationEstimation7dof<pcl::PointXYZ, pcl::PointXYZ, double>;
+template class pcl::registration::TransformationEstimation7dof<pcl::PointXYZ, pcl::PointXYZ, float>;
 #endif

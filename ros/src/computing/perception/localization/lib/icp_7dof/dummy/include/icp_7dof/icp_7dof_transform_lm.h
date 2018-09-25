@@ -17,25 +17,26 @@ namespace pcl
       * \author Yuki Tsuji
       * \ingroup registration
       */
-    class TransformationEstimation7dofLM : public TransformationEstimation7dof
+    template <typename PointSource, typename PointTarget, typename MatScalar = float>
+    class TransformationEstimation7dofLM : public TransformationEstimation7dof<PointSource, PointTarget, MatScalar>
     {
-      typedef pcl::PointCloud<pcl::PointXYZ> PointCloudSource;
+      typedef pcl::PointCloud<PointSource> PointCloudSource;
       typedef typename PointCloudSource::Ptr PointCloudSourcePtr;
       typedef typename PointCloudSource::ConstPtr PointCloudSourceConstPtr;
 
-      typedef pcl::PointCloud<pcl::PointXYZ> PointCloudTarget;
+      typedef pcl::PointCloud<PointTarget> PointCloudTarget;
 
       typedef PointIndices::Ptr PointIndicesPtr;
       typedef PointIndices::ConstPtr PointIndicesConstPtr;
 
       public:
-        typedef boost::shared_ptr<TransformationEstimation7dofLM> Ptr;
-        typedef boost::shared_ptr<const TransformationEstimation7dofLM> ConstPtr;
+        typedef boost::shared_ptr<TransformationEstimation7dofLM<PointSource, PointTarget, MatScalar> > Ptr;
+        typedef boost::shared_ptr<const TransformationEstimation7dofLM<PointSource, PointTarget, MatScalar> > ConstPtr;
 
-        typedef Eigen::Matrix<double, Eigen::Dynamic, 1> VectorX;
-        typedef Eigen::Matrix<double, 4, 1> Vector4;
-        typedef Eigen::Array<double, 4, 1> Array4;
-        typedef typename TransformationEstimation7dof::Matrix4 Matrix4;
+        typedef Eigen::Matrix<MatScalar, Eigen::Dynamic, 1> VectorX;
+        typedef Eigen::Matrix<MatScalar, 4, 1> Vector4;
+        typedef Eigen::Array<MatScalar, 4, 1> Array4;
+        typedef typename TransformationEstimation7dof<PointSource, PointTarget, MatScalar>::Matrix4 Matrix4;
 
         /** \brief Constructor. */
         TransformationEstimation7dofLM ();
@@ -75,8 +76,8 @@ namespace pcl
           */
         inline void
         estimateNonRigidTransformation (
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_src,
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_tgt,
+            const pcl::PointCloud<PointSource> &cloud_src,
+            const pcl::PointCloud<PointTarget> &cloud_tgt,
             Matrix4 &transformation_matrix) const;
 
         /** \brief Estimate a non-rigid rotation transformation between a source and a target point cloud using LM.
@@ -87,9 +88,9 @@ namespace pcl
           */
         inline void
         estimateNonRigidTransformation (
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_src,
+            const pcl::PointCloud<PointSource> &cloud_src,
             const std::vector<int> &indices_src,
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_tgt,
+            const pcl::PointCloud<PointTarget> &cloud_tgt,
             Matrix4 &transformation_matrix) const;
 
         /** \brief Estimate a non-rigid rotation transformation between a source and a target point cloud using LM.
@@ -102,9 +103,9 @@ namespace pcl
           */
         inline void
         estimateNonRigidTransformation (
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_src,
+            const pcl::PointCloud<PointSource> &cloud_src,
             const std::vector<int> &indices_src,
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_tgt,
+            const pcl::PointCloud<PointTarget> &cloud_tgt,
             const std::vector<int> &indices_tgt,
             Matrix4 &transformation_matrix) const;
 
@@ -116,15 +117,15 @@ namespace pcl
           */
         inline void
         estimateNonRigidTransformation (
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_src,
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_tgt,
+            const pcl::PointCloud<PointSource> &cloud_src,
+            const pcl::PointCloud<PointTarget> &cloud_tgt,
             const pcl::Correspondences &correspondences,
             Matrix4 &transformation_matrix) const;
 
         inline void
         estimateRigidTransformation (
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_src,
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_tgt,
+            const pcl::PointCloud<PointSource> &cloud_src,
+            const pcl::PointCloud<PointTarget> &cloud_tgt,
             Matrix4 &transformation_matrix) const {};
 
         /** \brief Estimate a rigid rotation transformation between a source and a target point cloud.
@@ -135,9 +136,9 @@ namespace pcl
           */
         inline void
         estimateRigidTransformation (
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_src,
+            const pcl::PointCloud<PointSource> &cloud_src,
             const std::vector<int> &indices_src,
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_tgt,
+            const pcl::PointCloud<PointTarget> &cloud_tgt,
             Matrix4 &transformation_matrix) const {};
 
         /** \brief Estimate a rigid rotation transformation between a source and a target point cloud.
@@ -149,9 +150,9 @@ namespace pcl
           */
         inline void
         estimateRigidTransformation (
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_src,
+            const pcl::PointCloud<PointSource> &cloud_src,
             const std::vector<int> &indices_src,
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_tgt,
+            const pcl::PointCloud<PointTarget> &cloud_tgt,
             const std::vector<int> &indices_tgt,
             Matrix4 &transformation_matrix) const {};
 
@@ -163,8 +164,8 @@ namespace pcl
           */
         inline void
         estimateRigidTransformation (
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_src,
-            const pcl::PointCloud<pcl::PointXYZ> &cloud_tgt,
+            const pcl::PointCloud<PointSource> &cloud_src,
+            const pcl::PointCloud<PointTarget> &cloud_tgt,
             const pcl::Correspondences &correspondences,
             Matrix4 &transformation_matrix) const {};
 
@@ -175,17 +176,17 @@ namespace pcl
           * \param[in] warp_fcn a shared pointer to an object that warps points
           */
         void
-        setWarpFunction (const boost::shared_ptr<WarpPointRigid<pcl::PointXYZ, pcl::PointXYZ, double> > &warp_fcn)
+        setWarpFunction (const boost::shared_ptr<WarpPointRigid<PointSource, PointTarget, MatScalar> > &warp_fcn)
         {
           warp_point_ = warp_fcn;
         }
 
       protected:
-        inline double
-        huber_func (const Vector4 &p_src, const Vector4 &p_tgt, const double sigma) const
+        inline MatScalar
+        huber_func (const Vector4 &p_src, const Vector4 &p_tgt, const MatScalar sigma) const
         {
           Array4 diff = (p_tgt.array () - p_src.array ()).abs ();
-          double norm = 0.0;
+          MatScalar norm = 0.0;
           for (int i = 0; i < 3; ++i)
           {
             if (diff[i] < sigma)
@@ -207,8 +208,8 @@ namespace pcl
           * kept for API compatibility reasons.
           */
           // TODO
-        virtual double
-        computeDistance (const pcl::PointXYZ &p_src, const pcl::PointXYZ &p_tgt) const
+        virtual MatScalar
+        computeDistance (const PointSource &p_src, const PointTarget &p_tgt) const
         {
           const Vector4 s (p_src.x, p_src.y, p_src.z, 0);
           const Vector4 t (p_tgt.x, p_tgt.y, p_tgt.z, 0);
@@ -225,14 +226,14 @@ namespace pcl
           * (See \a TransformationEstimationPointToPlane)
           */
         // TODO
-        virtual double
-        computeDistance (const Vector4 &p_src, const pcl::PointXYZ &p_tgt) const
+        virtual MatScalar
+        computeDistance (const Vector4 &p_src, const PointTarget &p_tgt) const
         {
           const Vector4 t (p_tgt.x, p_tgt.y, p_tgt.z, 0);
           return huber_func(p_src, t, sigma_);
         }
 
-        double sigma_;
+        MatScalar sigma_;
 
         /** \brief Temporary pointer to the source dataset. */
         mutable const PointCloudSource *tmp_src_;
@@ -247,23 +248,24 @@ namespace pcl
         mutable const std::vector<int> *tmp_idx_tgt_;
 
         /** \brief The parameterized function used to warp the source to the target. */
-        boost::shared_ptr<pcl::registration::WarpPointRigid<pcl::PointXYZ, pcl::PointXYZ, double> > warp_point_;
+        boost::shared_ptr<pcl::registration::WarpPointRigid<PointSource, PointTarget, MatScalar> > warp_point_;
 
         /** Base functor all the models that need non linear optimization must
           * define their own one and implement operator() (const Eigen::VectorXd& x, Eigen::VectorXd& fvec)
-          * or operator() (const Eigen::VectorXf& x, Eigen::VectorXf& fvec) depending on the chosen double
+          * or operator() (const Eigen::VectorXf& x, Eigen::VectorXf& fvec) depending on the chosen _Scalar
           */
+        template<typename _Scalar, int NX=Eigen::Dynamic, int NY=Eigen::Dynamic>
         struct Functor
         {
-          typedef double Scalar;
+          typedef _Scalar Scalar;
           enum
           {
-            InputsAtCompileTime = Eigen::Dynamic,
-            ValuesAtCompileTime = Eigen::Dynamic
+            InputsAtCompileTime = NX,
+            ValuesAtCompileTime = NY
           };
-          typedef Eigen::Matrix<double,InputsAtCompileTime,1> InputType;
-          typedef Eigen::Matrix<double,ValuesAtCompileTime,1> ValueType;
-          typedef Eigen::Matrix<double,ValuesAtCompileTime,InputsAtCompileTime> JacobianType;
+          typedef Eigen::Matrix<_Scalar,InputsAtCompileTime,1> InputType;
+          typedef Eigen::Matrix<_Scalar,ValuesAtCompileTime,1> ValueType;
+          typedef Eigen::Matrix<_Scalar,ValuesAtCompileTime,InputsAtCompileTime> JacobianType;
 
           /** \brief Empty Constructor. */
           Functor () : m_data_points_ (ValuesAtCompileTime) {}
@@ -284,9 +286,9 @@ namespace pcl
             int m_data_points_;
         };
 
-        struct OptimizationFunctor : public Functor
+        struct OptimizationFunctor : public Functor<MatScalar>
         {
-          using Functor::values;
+          using Functor<MatScalar>::values;
 
           /** Functor constructor
             * \param[in] m_data_points the number of data points to evaluate
@@ -294,14 +296,14 @@ namespace pcl
             */
           OptimizationFunctor (int m_data_points,
                                const TransformationEstimation7dofLM *estimator)
-            :  Functor (m_data_points), estimator_ (estimator)
+            :  Functor<MatScalar> (m_data_points), estimator_ (estimator)
           {}
 
           /** Copy constructor
             * \param[in] src the optimization functor to copy into this
             */
           inline OptimizationFunctor (const OptimizationFunctor &src) :
-            Functor (src.m_data_points_), estimator_ ()
+            Functor<MatScalar> (src.m_data_points_), estimator_ ()
           {
             *this = src;
           }
@@ -312,7 +314,7 @@ namespace pcl
           inline OptimizationFunctor&
           operator = (const OptimizationFunctor &src)
           {
-            Functor::operator=(src);
+            Functor<MatScalar>::operator=(src);
             estimator_ = src.estimator_;
             return (*this);
           }
@@ -327,12 +329,12 @@ namespace pcl
           int
           operator () (const VectorX &x, VectorX &fvec) const;
 
-          const TransformationEstimation7dofLM *estimator_;
+          const TransformationEstimation7dofLM<PointSource, PointTarget, MatScalar> *estimator_;
         };
 
-        struct OptimizationFunctorWithIndices : public Functor
+        struct OptimizationFunctorWithIndices : public Functor<MatScalar>
         {
-          using Functor::values;
+          using Functor<MatScalar>::values;
 
           /** Functor constructor
             * \param[in] m_data_points the number of data points to evaluate
@@ -340,14 +342,14 @@ namespace pcl
             */
           OptimizationFunctorWithIndices (int m_data_points,
                                           const TransformationEstimation7dofLM *estimator)
-            : Functor (m_data_points), estimator_ (estimator)
+            : Functor<MatScalar> (m_data_points), estimator_ (estimator)
           {}
 
           /** Copy constructor
             * \param[in] src the optimization functor to copy into this
             */
           inline OptimizationFunctorWithIndices (const OptimizationFunctorWithIndices &src)
-            : Functor (src.m_data_points_), estimator_ ()
+            : Functor<MatScalar> (src.m_data_points_), estimator_ ()
           {
             *this = src;
           }
@@ -358,7 +360,7 @@ namespace pcl
           inline OptimizationFunctorWithIndices&
           operator = (const OptimizationFunctorWithIndices &src)
           {
-            Functor::operator=(src);
+            Functor<MatScalar>::operator=(src);
             estimator_ = src.estimator_;
             return (*this);
           }
@@ -373,7 +375,7 @@ namespace pcl
           int
           operator () (const VectorX &x, VectorX &fvec) const;
 
-          const TransformationEstimation7dofLM *estimator_;
+          const TransformationEstimation7dofLM<PointSource, PointTarget, MatScalar> *estimator_;
         };
       public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW

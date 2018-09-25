@@ -15,18 +15,19 @@ namespace pcl
       * \author Yuki Tsuji
       * \ingroup registration
       */
-    class WarpPointRigid7D : public WarpPointRigid<pcl::PointXYZ, pcl::PointXYZ, double>
+    template <typename PointSourceT, typename PointTargetT, typename Scalar = float>
+    class WarpPointRigid7D : public WarpPointRigid<PointSourceT, PointTargetT, Scalar>
     {
       public:
-        using WarpPointRigid<pcl::PointXYZ, pcl::PointXYZ, double>::transform_matrix_;
+        using WarpPointRigid<PointSourceT, PointTargetT, Scalar>::transform_matrix_;
 
-        typedef typename WarpPointRigid<pcl::PointXYZ, pcl::PointXYZ, double>::Matrix4 Matrix4;
-        typedef typename WarpPointRigid<pcl::PointXYZ, pcl::PointXYZ, double>::VectorX VectorX;
+        typedef typename WarpPointRigid<PointSourceT, PointTargetT, Scalar>::Matrix4 Matrix4;
+        typedef typename WarpPointRigid<PointSourceT, PointTargetT, Scalar>::VectorX VectorX;
 
-        typedef boost::shared_ptr<WarpPointRigid7D> Ptr;
-        typedef boost::shared_ptr<const WarpPointRigid7D> ConstPtr;
+        typedef boost::shared_ptr<WarpPointRigid7D<PointSourceT, PointTargetT, Scalar> > Ptr;
+        typedef boost::shared_ptr<const WarpPointRigid7D<PointSourceT, PointTargetT, Scalar> > ConstPtr;
 
-        WarpPointRigid7D () : WarpPointRigid<pcl::PointXYZ, pcl::PointXYZ, double> (7) {}
+        WarpPointRigid7D () : WarpPointRigid<PointSourceT, PointTargetT, Scalar> (7) {}
 
         /** \brief Empty destructor */
         virtual ~WarpPointRigid7D () {}
@@ -48,10 +49,10 @@ namespace pcl
           transform_matrix_ (3, 3) = 1;
 
           // Compute w from the unit quaternion
-          Eigen::Quaternion<double> q (0, p[3], p[4], p[5]);
-          q.w () = static_cast<double> (sqrt (1 - q.dot (q)));
+          Eigen::Quaternion<Scalar> q (0, p[3], p[4], p[5]);
+          q.w () = static_cast<Scalar> (sqrt (1 - q.dot (q)));
           q.normalize ();
-          double scale = p[6] ? p[6] : 1;
+          Scalar scale = p[6] ? p[6] : 1;
           transform_matrix_.topLeftCorner (3, 3) = q.toRotationMatrix () * p[6];
         }
     };
@@ -60,6 +61,6 @@ namespace pcl
 
 //template class pcl::registration::WarpPointRigid7D<pcl::PointXYZI, pcl::PointXYZI, double>;
 //template class pcl::registration::WarpPointRigid7D<pcl::PointXYZI, pcl::PointXYZI, float>;
-// template class pcl::registration::WarpPointRigid7D<pcl::PointXYZ, pcl::PointXYZ, double>;
-// template class pcl::registration::WarpPointRigid7D<pcl::PointXYZ, pcl::PointXYZ, float>;
+template class pcl::registration::WarpPointRigid7D<pcl::PointXYZ, pcl::PointXYZ, double>;
+template class pcl::registration::WarpPointRigid7D<pcl::PointXYZ, pcl::PointXYZ, float>;
 #endif

@@ -5,8 +5,8 @@
 #include <pcl/correspondence.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl::IterativeClosestPoint7dof::transformCloud (
+template <typename PointSource, typename PointTarget, typename Scalar> void
+pcl::IterativeClosestPoint7dof<PointSource, PointTarget, Scalar>::transformCloud (
     const PointCloudSource &input,
     PointCloudSource &output,
     const Matrix4 &transform)
@@ -75,8 +75,8 @@ pcl::IterativeClosestPoint7dof::transformCloud (
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl::IterativeClosestPoint7dof::computeTransformation (
+template <typename PointSource, typename PointTarget, typename Scalar> void
+pcl::IterativeClosestPoint7dof<PointSource, PointTarget, Scalar>::computeTransformation (
     PointCloudSource &output, const Matrix4 &guess)
 {
   // Point cloud containing the correspondences of each point in <input, indices>
@@ -173,7 +173,7 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
     if (static_cast<int> (cnt) < min_number_correspondences_)
     {
       PCL_ERROR ("[pcl::%s::computeTransformation] Not enough correspondences found. Relax your threshold parameters. %d \n", getClassName ().c_str (), corr_dist_threshold_);
-      convergence_criteria_->setConvergenceState(pcl::registration::DefaultConvergenceCriteria<double>::CONVERGENCE_CRITERIA_NO_CORRESPONDENCES);
+      convergence_criteria_->setConvergenceState(pcl::registration::DefaultConvergenceCriteria<Scalar>::CONVERGENCE_CRITERIA_NO_CORRESPONDENCES);
       converged_ = false;
       break;
     }
@@ -210,8 +210,8 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
   transformCloud (*input_, output, final_transformation_);
 }
 
-void
-pcl::IterativeClosestPoint7dof::determineRequiredBlobData ()
+template <typename PointSource, typename PointTarget, typename Scalar> void
+pcl::IterativeClosestPoint7dof<PointSource, PointTarget, Scalar>::determineRequiredBlobData ()
 {
   need_source_blob_ = false;
   need_target_blob_ = false;
@@ -247,8 +247,8 @@ pcl::IterativeClosestPoint7dof::determineRequiredBlobData ()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl::IterativeClosestPoint7dofWithNormals::transformCloud (
+template <typename PointSource, typename PointTarget, typename Scalar> void
+pcl::IterativeClosestPoint7dofWithNormals<PointSource, PointTarget, Scalar>::transformCloud (
     const PointCloudSource &input,
     PointCloudSource &output,
     const Matrix4 &transform)
@@ -256,7 +256,7 @@ pcl::IterativeClosestPoint7dofWithNormals::transformCloud (
   pcl::transformPointCloudWithNormals (input, output, transform);
 }
 
-//template class pcl::IterativeClosestPoint7dof;
+//template class pcl::IterativeClosestPoint7dof<pcl::PointXYZ, pcl::PointXYZ, double>;
 //template class pcl::IterativeClosestPoint7dof<pcl::PointXYZ, pcl::PointXYZ, float>;
 //template class pcl::IterativeClosestPoint7dof<pcl::PointXYZI, pcl::PointXYZI, double>;
 //template class pcl::IterativeClosestPoint7dof<pcl::PointXYZI, pcl::PointXYZI, float>;

@@ -6,21 +6,22 @@
 #include <unsupported/Eigen/NonLinearOptimization>
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-pcl::registration::TransformationEstimation7dofLM::TransformationEstimation7dofLM ()
+template <typename PointSource, typename PointTarget, typename MatScalar>
+pcl::registration::TransformationEstimation7dofLM<PointSource, PointTarget, MatScalar>::TransformationEstimation7dofLM ()
   : tmp_src_ ()
   , tmp_tgt_ ()
   , tmp_idx_src_ ()
   , tmp_idx_tgt_ ()
-  , warp_point_ (new WarpPointRigid7D)
+  , warp_point_ (new WarpPointRigid7D<PointSource, PointTarget, MatScalar>)
   , sigma_ (1.0)
 {
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl::registration::TransformationEstimation7dofLM::estimateNonRigidTransformation (
-    const pcl::PointCloud<pcl::PointXYZ> &cloud_src,
-    const pcl::PointCloud<pcl::PointXYZ> &cloud_tgt,
+template <typename PointSource, typename PointTarget, typename MatScalar> void
+pcl::registration::TransformationEstimation7dofLM<PointSource, PointTarget, MatScalar>::estimateNonRigidTransformation (
+    const pcl::PointCloud<PointSource> &cloud_src,
+    const pcl::PointCloud<PointTarget> &cloud_tgt,
     Matrix4 &transformation_matrix) const
 {
 
@@ -52,7 +53,7 @@ pcl::registration::TransformationEstimation7dofLM::estimateNonRigidTransformatio
   OptimizationFunctor functor (static_cast<int> (cloud_src.points.size ()), this);
   Eigen::NumericalDiff<OptimizationFunctor> num_diff (functor);
   //Eigen::LevenbergMarquardt<Eigen::NumericalDiff<OptimizationFunctor>, double> lm (num_diff);
-  Eigen::LevenbergMarquardt<Eigen::NumericalDiff<OptimizationFunctor>, double> lm (num_diff);
+  Eigen::LevenbergMarquardt<Eigen::NumericalDiff<OptimizationFunctor>, MatScalar> lm (num_diff);
   int info = lm.minimize (x);
 
   // Compute the norm of the residuals
@@ -72,11 +73,11 @@ pcl::registration::TransformationEstimation7dofLM::estimateNonRigidTransformatio
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl::registration::TransformationEstimation7dofLM::estimateNonRigidTransformation (
-    const pcl::PointCloud<pcl::PointXYZ> &cloud_src,
+template <typename PointSource, typename PointTarget, typename MatScalar> void
+pcl::registration::TransformationEstimation7dofLM<PointSource, PointTarget, MatScalar>::estimateNonRigidTransformation (
+    const pcl::PointCloud<PointSource> &cloud_src,
     const std::vector<int> &indices_src,
-    const pcl::PointCloud<pcl::PointXYZ> &cloud_tgt,
+    const pcl::PointCloud<PointTarget> &cloud_tgt,
     Matrix4 &transformation_matrix) const
 {
   if (indices_src.size () != cloud_tgt.points.size ())
@@ -98,11 +99,11 @@ pcl::registration::TransformationEstimation7dofLM::estimateNonRigidTransformatio
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-inline void
-pcl::registration::TransformationEstimation7dofLM::estimateNonRigidTransformation (
-    const pcl::PointCloud<pcl::PointXYZ> &cloud_src,
+template <typename PointSource, typename PointTarget, typename MatScalar> inline void
+pcl::registration::TransformationEstimation7dofLM<PointSource, PointTarget, MatScalar>::estimateNonRigidTransformation (
+    const pcl::PointCloud<PointSource> &cloud_src,
     const std::vector<int> &indices_src,
-    const pcl::PointCloud<pcl::PointXYZ> &cloud_tgt,
+    const pcl::PointCloud<PointTarget> &cloud_tgt,
     const std::vector<int> &indices_tgt,
     Matrix4 &transformation_matrix) const
 {
@@ -134,7 +135,7 @@ pcl::registration::TransformationEstimation7dofLM::estimateNonRigidTransformatio
   OptimizationFunctorWithIndices functor (static_cast<int> (indices_src.size ()), this);
   Eigen::NumericalDiff<OptimizationFunctorWithIndices> num_diff (functor);
   //Eigen::LevenbergMarquardt<Eigen::NumericalDiff<OptimizationFunctorWithIndices> > lm (num_diff);
-  Eigen::LevenbergMarquardt<Eigen::NumericalDiff<OptimizationFunctorWithIndices>, double> lm (num_diff);
+  Eigen::LevenbergMarquardt<Eigen::NumericalDiff<OptimizationFunctorWithIndices>, MatScalar> lm (num_diff);
   int info = lm.minimize (x);
 
   // Compute the norm of the residuals
@@ -154,10 +155,10 @@ pcl::registration::TransformationEstimation7dofLM::estimateNonRigidTransformatio
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-inline void
-pcl::registration::TransformationEstimation7dofLM::estimateNonRigidTransformation (
-    const pcl::PointCloud<pcl::PointXYZ> &cloud_src,
-    const pcl::PointCloud<pcl::PointXYZ> &cloud_tgt,
+template <typename PointSource, typename PointTarget, typename MatScalar> inline void
+pcl::registration::TransformationEstimation7dofLM<PointSource, PointTarget, MatScalar>::estimateNonRigidTransformation (
+    const pcl::PointCloud<PointSource> &cloud_src,
+    const pcl::PointCloud<PointTarget> &cloud_tgt,
     const pcl::Correspondences &correspondences,
     Matrix4 &transformation_matrix) const
 {
@@ -174,12 +175,12 @@ pcl::registration::TransformationEstimation7dofLM::estimateNonRigidTransformatio
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-int
-pcl::registration::TransformationEstimation7dofLM::OptimizationFunctor::operator () (
+template <typename PointSource, typename PointTarget, typename MatScalar> int
+pcl::registration::TransformationEstimation7dofLM<PointSource, PointTarget, MatScalar>::OptimizationFunctor::operator () (
     const VectorX &x, VectorX &fvec) const
 {
-  const PointCloud<pcl::PointXYZ> & src_points = *estimator_->tmp_src_;
-  const PointCloud<pcl::PointXYZ> & tgt_points = *estimator_->tmp_tgt_;
+  const PointCloud<PointSource> & src_points = *estimator_->tmp_src_;
+  const PointCloud<PointTarget> & tgt_points = *estimator_->tmp_tgt_;
 
   // Initialize the warp function with the given parameters
   estimator_->warp_point_->setParam (x);
@@ -187,8 +188,8 @@ pcl::registration::TransformationEstimation7dofLM::OptimizationFunctor::operator
   // Transform each source point and compute its distance to the corresponding target point
   for (int i = 0; i < values (); ++i)
   {
-    const pcl::PointXYZ & p_src = src_points.points[i];
-    const pcl::PointXYZ & p_tgt = tgt_points.points[i];
+    const PointSource & p_src = src_points.points[i];
+    const PointTarget & p_tgt = tgt_points.points[i];
 
     // Transform the source point based on the current warp parameters
     Vector4 p_src_warped;
@@ -201,12 +202,12 @@ pcl::registration::TransformationEstimation7dofLM::OptimizationFunctor::operator
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-int
-pcl::registration::TransformationEstimation7dofLM::OptimizationFunctorWithIndices::operator() (
+template <typename PointSource, typename PointTarget, typename MatScalar> int
+pcl::registration::TransformationEstimation7dofLM<PointSource, PointTarget, MatScalar>::OptimizationFunctorWithIndices::operator() (
     const VectorX &x, VectorX &fvec) const
 {
-  const PointCloud<pcl::PointXYZ> & src_points = *estimator_->tmp_src_;
-  const PointCloud<pcl::PointXYZ> & tgt_points = *estimator_->tmp_tgt_;
+  const PointCloud<PointSource> & src_points = *estimator_->tmp_src_;
+  const PointCloud<PointTarget> & tgt_points = *estimator_->tmp_tgt_;
   const std::vector<int> & src_indices = *estimator_->tmp_idx_src_;
   const std::vector<int> & tgt_indices = *estimator_->tmp_idx_tgt_;
 
@@ -216,8 +217,8 @@ pcl::registration::TransformationEstimation7dofLM::OptimizationFunctorWithIndice
   // Transform each source point and compute its distance to the corresponding target point
   for (int i = 0; i < values (); ++i)
   {
-    const pcl::PointXYZ & p_src = src_points.points[src_indices[i]];
-    const pcl::PointXYZ & p_tgt = tgt_points.points[tgt_indices[i]];
+    const PointSource & p_src = src_points.points[src_indices[i]];
+    const PointTarget & p_tgt = tgt_points.points[tgt_indices[i]];
 
     // Transform the source point based on the current warp parameters
     Vector4 p_src_warped;
@@ -231,7 +232,7 @@ pcl::registration::TransformationEstimation7dofLM::OptimizationFunctorWithIndice
 
 //template class pcl::registration::TransformationEstimation7dofLM<pcl::PointXYZI, pcl::PointXYZI, double>;
 //template class pcl::registration::TransformationEstimation7dofLM<pcl::PointXYZI, pcl::PointXYZI, float>;
-//template class pcl::registration::TransformationEstimation7dofLM;
+//template class pcl::registration::TransformationEstimation7dofLM<pcl::PointXYZ, pcl::PointXYZ, double>;
 //template class pcl::registration::TransformationEstimation7dofLM<pcl::PointXYZ, pcl::PointXYZ, float>;
 
 //#define PCL_INSTANTIATE_TransformationEstimation7dofLM(T,U) template class PCL_EXPORTS pcl::registration::TransformationEstimation7dofLM<T,U>;
