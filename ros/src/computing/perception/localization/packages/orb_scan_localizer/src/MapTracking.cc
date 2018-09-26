@@ -359,7 +359,7 @@ void MapTracking::Track()
 }
 
 void MapTracking::SetSourceMap(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap) {
-	icp_.setInputTarget(priorMap)
+	icp_.setInputTarget(priorMap);
 	return;
 }
 
@@ -367,9 +367,9 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
 {
     std::cout << "ScanWithNDT\n";
     const vector<MapPoint*> &vpRefMPs = mpMap->GetReferenceMapPoints();
-
+    set<MapPoint*> spRefMPs(vpRefMPs.begin(), vpRefMPs.end());
 		// Local Map
-		pcl::PointCloud<pcl::PointXYZ>::Ptr l_points (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr l_points (new pcl::PointCloud<pcl::PointXYZ>);
 
     for (auto&& p: spRefMPs) {
       if (p == NULL || p->isBad())
@@ -382,19 +382,19 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
       l_points->push_back(point);
     }
 
-		icp_.setInputSource(l_points);
-		icp_.setMaximumIterations(1000);
-		PointCloud<PointXYZ> output;
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+
+    icp_.setInputSource(l_points);
+    icp_.setMaximumIterations(1000);
+    pcl::PointCloud<pcl::PointXYZ> output;
     icp_.align (output);
-    print_info ("[done, "); print_value ("%g", tt.toc ()); print_info (" ms : "); print_value ("%d", output.width * output.height); print_info (" points], has converged: ");
-    print_value ("%d", icp.hasConverged ()); print_info (" with score: %f\n",  icp.getFitnessScore ());
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+    double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    std::cout << "[done, " << ttrack <<  " ms : " << output.width * output.height << " points], has converged: ";
+    std::cout << icp_.hasConverged() << " with score: " << icp_.getFitnessScore () << "\n";
     Eigen::Matrix4d transformation = icp_.getFinalTransformation ();
-    // //Eigen::Matrix4f transformation = icp.getFinalTransformation ();
-    PCL_ERROR ("Transformation is:\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n",
-        transformation (0, 0), transformation (0, 1), transformation (0, 2), transformation (0, 3),
-        transformation (1, 0), transformation (1, 1), transformation (1, 2), transformation (1, 3),
-        transformation (2, 0), transformation (2, 1), transformation (2, 2), transformation (2, 3),
-        transformation (3, 0), transformation (3, 1), transformation (3, 2), transformation (3, 3));
+    std::cout << "Transformation\n";
+    std::cout << transformation << "\n";
 }
 
 

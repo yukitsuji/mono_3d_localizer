@@ -22,8 +22,23 @@
 #ifndef MAPTRACKING_H
 #define MAPTRACKING_H
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/features2d/features2d.hpp>
+//#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+//#include <pcl/console/print.h>
+//#include <pcl/console/time.h>
+//#include <pcl/console/parse.h>
+//#include <pcl/registration/icp.h>
+//#include <pcl/registration/correspondence_estimation.h>
+//#include <pcl/registration/correspondence_estimation_normal_shooting.h>
+//#include <pcl/registration/transformation_estimation_lm.h>
+//#include <pcl/registration/correspondence_rejection_distance.h>
+//#include <pcl/registration/correspondence_rejection_one_to_one.h>
+//#include <pcl/registration/correspondence_rejection_median_distance.h>
+//#include <pcl/registration/correspondence_rejection_sample_consensus.h>
+//#include <pcl/registration/correspondence_rejection_trimmed.h>
+//#include <pcl/registration/correspondence_rejection_var_trimmed.h>
+#include <icp_7dof/icp_7dof.h>
+//#include <icp_7dof/icp_7dof_transform_lm.h>
 
 #include <Eigen/Geometry>
 
@@ -53,23 +68,8 @@
 #include <geometry_msgs/TwistStamped.h>
 
 #include <iostream>
-#include <pcl/io/pcd_io.h>
-#include <pcl/point_types.h>
-#include <pcl/console/print.h>
-#include <pcl/console/time.h>
-#include <pcl/console/parse.h>
-//#include <pcl/registration/icp.h>
-#include <pcl/registration/correspondence_estimation.h>
-#include <pcl/registration/correspondence_estimation_normal_shooting.h>
-//#include <pcl/registration/transformation_estimation_lm.h>
-#include <pcl/registration/correspondence_rejection_distance.h>
-#include <pcl/registration/correspondence_rejection_one_to_one.h>
-#include <pcl/registration/correspondence_rejection_median_distance.h>
-#include <pcl/registration/correspondence_rejection_sample_consensus.h>
-#include <pcl/registration/correspondence_rejection_trimmed.h>
-#include <pcl/registration/correspondence_rejection_var_trimmed.h>
-#include <icp_7dof/icp_7dof.h>
-#include <icp_7dof/icp_7dof_transform_lm.h>
+#include <opencv2/core/core.hpp>
+#include <opencv2/features2d/features2d.hpp>
 
 typedef Eigen::Transform<float,3,Eigen::Affine> Transform3;
 
@@ -84,10 +84,10 @@ class Map;
 class LocalMapping;
 class System;
 
-using namespace pcl;
-using namespace pcl::io;
-using namespace pcl::console;
-using namespace pcl::registration;
+//using namespace pcl;
+//using namespace pcl::io;
+//using namespace pcl::console;
+//using namespace pcl::registration;
 
 class MapTracking
 {
@@ -191,7 +191,7 @@ public:
     ros::Publisher orb_pose_pub;
     geometry_msgs::PoseStamped orb_pose_msg;
 
-    IterativeClosestPoint7dof icp_;
+    pcl::IterativeClosestPoint7dof icp_;
 
 
 protected:

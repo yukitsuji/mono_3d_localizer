@@ -106,7 +106,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
                                    mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
 
     if (!mapFileName.empty()) {
-        mpMapTracker->SetSourceMap(mpMap->GetPriorMapPoints();)
+        mpMapTracker->SetSourceMap(mpMap->GetPriorMapPoints());
     }
 
     std::cout << "Launched tracker\n";

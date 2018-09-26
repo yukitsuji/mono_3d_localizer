@@ -18,10 +18,10 @@
 #include <icp_7dof/icp_7dof_transform_lm.h>
 
 
-using namespace pcl;
-using namespace pcl::io;
-using namespace pcl::console;
-using namespace pcl::registration;
+//using namespace pcl;
+//using namespace pcl::io;
+//using namespace pcl::console;
+//using namespace pcl::registration;
 
 Eigen::Vector4f    translation;
 Eigen::Quaternionf orientation;

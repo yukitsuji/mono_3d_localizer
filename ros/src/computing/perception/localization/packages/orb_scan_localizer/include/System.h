@@ -22,10 +22,10 @@
 #ifndef SYSTEM_H
 #define SYSTEM_H
 
-#include<string>
-#include<thread>
+#include <string>
+#include <thread>
 #include <mutex>
-#include<opencv2/core/core.hpp>
+#include <opencv2/core/core.hpp>
 
 #include "Tracking.h"
 #include "MapTracking.h"
