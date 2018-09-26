@@ -95,7 +95,6 @@ include_directories(
         Thirdparty
         Thirdparty/g2o
         Thirdparty/Pangolin/include
-
 )
 
 
@@ -182,39 +181,39 @@ list(APPEND ORIG_ORB_BIN_LINKS
 #        ${catkin_INCLUDE_DIRS}
 #)
 
-#add_executable(
-#        scan_mono_orb_slam2
-#        nodes/mono_orb_slam2/scan_mono_orb_slam2.cpp
-#)
+add_executable(
+        scan_mono_orb_slam2
+        nodes/mono_orb_slam2/scan_mono_orb_slam2.cpp
+)
 
-#target_link_libraries(
-#        scan_mono_orb_slam2
-#        ${ORIG_ORB_BIN_LINKS}
-#        ${LINK_LIBRARIES}
-#)
+target_link_libraries(
+        scan_mono_orb_slam2
+        ${ORIG_ORB_BIN_LINKS}
+        ${LINK_LIBRARIES}
+)
 
-#add_executable(
-#        scan_mono_orb_slam2_pub
-#        nodes/mono_orb_slam2/scan_mono_orb_slam2_pub.cpp
-#)
+add_executable(
+        scan_mono_orb_slam2_pub
+        nodes/mono_orb_slam2/scan_mono_orb_slam2_pub.cpp
+)
 
-#target_link_libraries(
-#        scan_mono_orb_slam2_pub
-#        ${ORIG_ORB_BIN_LINKS}
-#        ${LINK_LIBRARIES}
-#)
+target_link_libraries(
+        scan_mono_orb_slam2_pub
+        ${ORIG_ORB_BIN_LINKS}
+        ${LINK_LIBRARIES}
+)
 
-#add_executable(
-#        scan_mono_orb_slam2_no
-#        nodes/mono_orb_slam2/scan_mono_orb_slam2_no.cpp
-#)
+add_executable(
+        scan_mono_orb_slam2_no
+        nodes/mono_orb_slam2/scan_mono_orb_slam2_no.cpp
+)
 
-#target_link_libraries(
-#        scan_mono_orb_slam2_no
-#        ${ORIG_ORB_BIN_LINKS}
-#        ${LINK_LIBRARIES}
-#        ${catkin_INCLUDE_DIRS}
-#)
+target_link_libraries(
+        scan_mono_orb_slam2_no
+        ${ORIG_ORB_BIN_LINKS}
+        ${LINK_LIBRARIES}
+       ${catkin_INCLUDE_DIRS}
+)
 
 add_executable(
         scan_mono_orb_slam2_odom
@@ -259,19 +258,19 @@ install(TARGETS scan_mono_orb_slam2_odom
 #        ${LINK_LIBRARIES}
 #)
 
-#add_executable(
-#        icp_solver_7dof
-#        src/icp_solver_7dof.cpp
-#)
+add_executable(
+        icp_solver_7dof
+        src/icp_solver_7dof.cpp
+)
 
-#target_link_libraries(
-#        icp_solver_7dof
-#        ${ORIG_ORB_BIN_LINKS}
-#        ${LINK_LIBRARIES}
-#        ${catkin_INCLUDE_DIRS}
-#)
+target_link_libraries(
+        icp_solver_7dof
+        ${ORIG_ORB_BIN_LINKS}
+        ${LINK_LIBRARIES}
+        ${catkin_INCLUDE_DIRS}
+)
 
-#add_dependencies(icp_solver_7dof ${catkin_EXPORTED_TARGETS})
+add_dependencies(icp_solver_7dof ${catkin_EXPORTED_TARGETS})
 
 
 #install(TARGETS icp_solver_7dof
