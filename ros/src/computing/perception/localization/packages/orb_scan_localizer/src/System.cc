@@ -105,6 +105,10 @@ System::System(const string &strVocFile, const string &strSettingsFile,
     mpMapTracker = new MapTracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
                                    mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
 
+    if (!mapFileName.empty()) {
+        mpMapTracker->SetSourceMap(mpMap->GetPriorMapPoints();)
+    }
+
     std::cout << "Launched tracker\n";
     //Initialize the Local Mapping thread and launch
     mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR);

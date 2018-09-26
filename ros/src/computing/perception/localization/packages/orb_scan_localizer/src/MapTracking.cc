@@ -358,103 +358,143 @@ void MapTracking::Track()
     }
 }
 
+void MapTracking::SetSourceMap(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap) {
+	icp_.setInputTarget(priorMap)
+	return;
+}
+
 void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
 {
     std::cout << "ScanWithNDT\n";
-    const vector<MapPoint*> &vpMPs = mpMap->GetAllMapPoints();
     const vector<MapPoint*> &vpRefMPs = mpMap->GetReferenceMapPoints();
 
-    set<MapPoint*> spRefMPs(vpRefMPs.begin(), vpRefMPs.end());
-		ros::Time current_scan_time = ros::Time::now();
-
-    if(vpMPs.empty())
-        return;
-
-    pcl::PointCloud<pcl::PointXYZ>::Ptr g_points (new pcl::PointCloud<pcl::PointXYZ>);
-
-    for (auto&& p: vpMPs) {
-      if (p == NULL || p->isBad() || spRefMPs.count(p))
-        continue;
-      cv::Mat pos = p->GetWorldPos();
-      pcl::PointXYZ point;
-      point.x = pos.at<float>(2) + 0.27;
-      point.y = -pos.at<float>(0) + 0.06;
-      point.z = -pos.at<float>(1) - 0.05;
-      g_points->push_back(point);
-    }
-    sensor_msgs::PointCloud2 pc2_g;
-
-    pc2_g.header.frame_id = "velodyne";
-    pc2_g.header.stamp = current_scan_time; //header->stamp;
-    // pc2_g.header.seq=header->seq;
-    g_points->header = pcl_conversions::toPCL(pc2_g.header);
-    global_pub.publish(g_points);
-
-    pcl::PointCloud<pcl::PointXYZ>::Ptr l_points (new pcl::PointCloud<pcl::PointXYZ>);
+		// Local Map
+		pcl::PointCloud<pcl::PointXYZ>::Ptr l_points (new pcl::PointCloud<pcl::PointXYZ>);
 
     for (auto&& p: spRefMPs) {
       if (p == NULL || p->isBad())
         continue;
       cv::Mat pos = p->GetWorldPos();
       pcl::PointXYZ point;
-      point.x = pos.at<float>(2) + 0.27;
-      point.y = -pos.at<float>(0) + 0.06;
-      point.z = -pos.at<float>(1) - 0.05;
+      point.x = pos.at<float>(0);
+      point.y = pos.at<float>(1);
+      point.z = pos.at<float>(2);
       l_points->push_back(point);
     }
-    sensor_msgs::PointCloud2 pc2_l;
-    pc2_l.header.frame_id= "velodyne";
-		pc2_l.header.stamp = current_scan_time; //header->stamp;
-    l_points->header = pcl_conversions::toPCL(pc2_l.header);
-    local_pub.publish(l_points);
 
-		// currAbsolutePos.copyTo(Tcw);
-		cv::Mat Rcw = currAbsolutePos.rowRange(0,3).colRange(0,3);
-		cv::Mat tcw = currAbsolutePos.rowRange(0,3).col(3);
-		cv::Mat Rwc = Rcw.t();
-		cv::Mat Ow = -Rwc*tcw;
-
-		cv::Mat Twc = cv::Mat::eye(4,4,currAbsolutePos.type());
-		Rwc.copyTo(Twc.rowRange(0,3).colRange(0,3));
-		Ow.copyTo(Twc.rowRange(0,3).col(3));
-
-		static tf::TransformBroadcaster br;
-		tf::Quaternion current_q;
-		tf::Transform transform;
-
-		Eigen::Quaterniond q = Converter::toQuaternion(Twc);
-
-		orb_pose_msg.header.frame_id = "/orb_pose";
-		orb_pose_msg.header.stamp = current_scan_time; //ros::Time::now();
-		orb_pose_msg.pose.position.x = 0;
-		orb_pose_msg.pose.position.y = 0;
-		orb_pose_msg.pose.position.z = 0;
-		orb_pose_msg.pose.orientation.x = q.z();
-		orb_pose_msg.pose.orientation.y = -q.x();
-		orb_pose_msg.pose.orientation.z = -q.y();
-		orb_pose_msg.pose.orientation.w = q.w();
-		orb_pose_pub.publish(orb_pose_msg);
-
-		// current_q.setRPY(x, y, z);
-		current_q.setRPY(0, 0, 0);
-		transform.setOrigin(tf::Vector3(Twc.at<float>(2, 3) + 0.27,
-		                                -Twc.at<float>(0, 3) + 0.06,
-																		-Twc.at<float>(1, 3) - 0.05));
-		transform.setRotation(current_q);
-		// br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "velodyne", "orb_pose"));
-		br.sendTransform(tf::StampedTransform(transform, current_scan_time, "velodyne", "orb_pose"));
-		current_q.setRPY(0, 0, 0);
-		transform.setOrigin(tf::Vector3(0.81, 0, 1.73));
-		transform.setRotation(current_q);
-		br.sendTransform(tf::StampedTransform(transform, current_scan_time, "map", "velodyne"));
-
-		// static tf::TransformBroadcaster br;
-		// tf::Quaternion current_q;
-		// tf::Transform transform;
-		// current_q.setRPY(0, 0, 0);
-		// transform.setOrigin(tf::Vector3(1, 1, 1));
-    // transform.setRotation(current_q);
+		icp_.setInputSource(l_points);
+		icp_.setMaximumIterations(1000);
+		PointCloud<PointXYZ> output;
+    icp_.align (output);
+    print_info ("[done, "); print_value ("%g", tt.toc ()); print_info (" ms : "); print_value ("%d", output.width * output.height); print_info (" points], has converged: ");
+    print_value ("%d", icp.hasConverged ()); print_info (" with score: %f\n",  icp.getFitnessScore ());
+    Eigen::Matrix4d transformation = icp_.getFinalTransformation ();
+    // //Eigen::Matrix4f transformation = icp.getFinalTransformation ();
+    PCL_ERROR ("Transformation is:\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n",
+        transformation (0, 0), transformation (0, 1), transformation (0, 2), transformation (0, 3),
+        transformation (1, 0), transformation (1, 1), transformation (1, 2), transformation (1, 3),
+        transformation (2, 0), transformation (2, 1), transformation (2, 2), transformation (2, 3),
+        transformation (3, 0), transformation (3, 1), transformation (3, 2), transformation (3, 3));
 }
+
+
+// void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
+// {
+//     std::cout << "ScanWithNDT\n";
+//     const vector<MapPoint*> &vpMPs = mpMap->GetAllMapPoints();
+//     const vector<MapPoint*> &vpRefMPs = mpMap->GetReferenceMapPoints();
+//
+//     set<MapPoint*> spRefMPs(vpRefMPs.begin(), vpRefMPs.end());
+// 		ros::Time current_scan_time = ros::Time::now();
+//
+//     if(vpMPs.empty())
+//         return;
+//
+//     pcl::PointCloud<pcl::PointXYZ>::Ptr g_points (new pcl::PointCloud<pcl::PointXYZ>);
+//
+//     for (auto&& p: vpMPs) {
+//       if (p == NULL || p->isBad() || spRefMPs.count(p))
+//         continue;
+//       cv::Mat pos = p->GetWorldPos();
+//       pcl::PointXYZ point;
+//       point.x = pos.at<float>(2) + 0.27;
+//       point.y = -pos.at<float>(0) + 0.06;
+//       point.z = -pos.at<float>(1) - 0.05;
+//       g_points->push_back(point);
+//     }
+//     sensor_msgs::PointCloud2 pc2_g;
+//
+//     pc2_g.header.frame_id = "velodyne";
+//     pc2_g.header.stamp = current_scan_time; //header->stamp;
+//     // pc2_g.header.seq=header->seq;
+//     g_points->header = pcl_conversions::toPCL(pc2_g.header);
+//     global_pub.publish(g_points);
+//
+//     pcl::PointCloud<pcl::PointXYZ>::Ptr l_points (new pcl::PointCloud<pcl::PointXYZ>);
+//
+//     for (auto&& p: spRefMPs) {
+//       if (p == NULL || p->isBad())
+//         continue;
+//       cv::Mat pos = p->GetWorldPos();
+//       pcl::PointXYZ point;
+//       point.x = pos.at<float>(2) + 0.27;
+//       point.y = -pos.at<float>(0) + 0.06;
+//       point.z = -pos.at<float>(1) - 0.05;
+//       l_points->push_back(point);
+//     }
+//     sensor_msgs::PointCloud2 pc2_l;
+//     pc2_l.header.frame_id= "velodyne";
+// 		pc2_l.header.stamp = current_scan_time; //header->stamp;
+//     l_points->header = pcl_conversions::toPCL(pc2_l.header);
+//     local_pub.publish(l_points);
+//
+// 		// currAbsolutePos.copyTo(Tcw);
+// 		cv::Mat Rcw = currAbsolutePos.rowRange(0,3).colRange(0,3);
+// 		cv::Mat tcw = currAbsolutePos.rowRange(0,3).col(3);
+// 		cv::Mat Rwc = Rcw.t();
+// 		cv::Mat Ow = -Rwc*tcw;
+//
+// 		cv::Mat Twc = cv::Mat::eye(4,4,currAbsolutePos.type());
+// 		Rwc.copyTo(Twc.rowRange(0,3).colRange(0,3));
+// 		Ow.copyTo(Twc.rowRange(0,3).col(3));
+//
+// 		static tf::TransformBroadcaster br;
+// 		tf::Quaternion current_q;
+// 		tf::Transform transform;
+//
+// 		Eigen::Quaterniond q = Converter::toQuaternion(Twc);
+//
+// 		orb_pose_msg.header.frame_id = "/orb_pose";
+// 		orb_pose_msg.header.stamp = current_scan_time; //ros::Time::now();
+// 		orb_pose_msg.pose.position.x = 0;
+// 		orb_pose_msg.pose.position.y = 0;
+// 		orb_pose_msg.pose.position.z = 0;
+// 		orb_pose_msg.pose.orientation.x = q.z();
+// 		orb_pose_msg.pose.orientation.y = -q.x();
+// 		orb_pose_msg.pose.orientation.z = -q.y();
+// 		orb_pose_msg.pose.orientation.w = q.w();
+// 		orb_pose_pub.publish(orb_pose_msg);
+//
+// 		// current_q.setRPY(x, y, z);
+// 		current_q.setRPY(0, 0, 0);
+// 		transform.setOrigin(tf::Vector3(Twc.at<float>(2, 3) + 0.27,
+// 		                                -Twc.at<float>(0, 3) + 0.06,
+// 																		-Twc.at<float>(1, 3) - 0.05));
+// 		transform.setRotation(current_q);
+// 		// br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "velodyne", "orb_pose"));
+// 		br.sendTransform(tf::StampedTransform(transform, current_scan_time, "velodyne", "orb_pose"));
+// 		current_q.setRPY(0, 0, 0);
+// 		transform.setOrigin(tf::Vector3(0.81, 0, 1.73));
+// 		transform.setRotation(current_q);
+// 		br.sendTransform(tf::StampedTransform(transform, current_scan_time, "map", "velodyne"));
+//
+// 		// static tf::TransformBroadcaster br;
+// 		// tf::Quaternion current_q;
+// 		// tf::Transform transform;
+// 		// current_q.setRPY(0, 0, 0);
+// 		// transform.setOrigin(tf::Vector3(1, 1, 1));
+//     // transform.setRotation(current_q);
+// }
 
 void MapTracking::MapOpenMonocularInitialization ()
 {
@@ -536,6 +576,7 @@ void MapTracking::MonocularInitialization()
 
             cerr << Tcw << endl;
 
+						// TODO Set initial pose value
             CreateInitialMapMonocular();
 						std::cout << "##### Initialization Success #####\n";
         }
