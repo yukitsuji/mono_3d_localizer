@@ -579,7 +579,7 @@ void MapTracking::MonocularInitialization()
             cerr << Tcw << endl;
 
             CreateInitialMapMonocular();
-						std::cout << "##### Initialization Success #####\n";
+	    std::cout << "##### Initialization Success #####\n";
         }
         else {
         	cerr << "##### Initialization failed #####\n";
@@ -635,7 +635,7 @@ void MapTracking::CreateInitialMapMonocular()
     // Bundle Adjustment
     cout << "New Map created with " << mpMap->MapPointsInMap() << " points" << endl;
 
-		// # TODO: Update temporary transformation value
+    // # TODO: Update temporary transformation value
 
     Optimizer::GlobalBundleAdjustemnt(mpMap,20);
 
@@ -643,9 +643,9 @@ void MapTracking::CreateInitialMapMonocular()
     float medianDepth = pKFini->ComputeSceneMedianDepth(2);
     float invMedianDepth = 1.0f/medianDepth;
 
-		// TODO: Scale alignment
-		std::cout << "invMedianDepth: " << invMedianDepth << "\n";
-		invMedianDepth = 0.72;
+    // TODO: Scale alignment
+    std::cout << "invMedianDepth: " << invMedianDepth << "\n";
+    invMedianDepth = 0.72;
 
     if(medianDepth<0 || pKFcur->TrackedMapPoints(1)<100)
     {
@@ -685,10 +685,11 @@ void MapTracking::CreateInitialMapMonocular()
 
     mLastFrame = Frame(mCurrentFrame);
 
+    std::cout << "A\n";
     mpMap->SetReferenceMapPoints(mvpLocalMapPoints);
-
+    std::cout << "B\n";
     mpMapDrawer->SetCurrentCameraPose(pKFcur->GetPose());
-
+    std::cout << "C\n";
     mpMap->mvpKeyFrameOrigins.push_back(pKFini);
 
     mState = OK;

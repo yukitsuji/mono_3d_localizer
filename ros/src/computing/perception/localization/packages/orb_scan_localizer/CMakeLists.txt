@@ -229,11 +229,23 @@ target_link_libraries(
 
 #add_dependencies(scan_mono_orb_slam2_odom ${catkin_EXPORTED_TARGETS})
 
-install(TARGETS scan_mono_orb_slam2_odom
-        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-        )
+add_executable(
+        scan_mono_orb_slam2_odom_no
+        nodes/mono_orb_slam2/scan_mono_orb_slam2_odom_no.cpp
+)
+
+target_link_libraries(
+        scan_mono_orb_slam2_odom_no
+        ${ORIG_ORB_BIN_LINKS}
+        ${LINK_LIBRARIES}
+#        ${catkin_INCLUDE_DIRS}
+)
+
+#install(TARGETS scan_mono_orb_slam2_odom
+#        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+#        )
 
 #add_executable(
 #        icp_sample
