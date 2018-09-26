@@ -257,6 +257,6 @@ namespace pcl
   };
 }
 
-#include "impl/icp_7dof.hpp"
+//#include "impl/icp_7dof.hpp"
 
 #endif  //#ifndef ICP_7DOF_H_

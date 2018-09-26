@@ -381,6 +381,6 @@ namespace pcl
   }
 }
 
-#include "impl/icp_7dof_transform_lm.hpp"
+//#include "impl/icp_7dof_transform_lm.hpp"
 
 #endif /* ICP_7DOF_TRANSFORM_LM_H_ */

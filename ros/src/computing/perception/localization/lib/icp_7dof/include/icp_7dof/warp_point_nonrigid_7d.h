@@ -1,7 +1,8 @@
 #ifndef PCL_WARP_POINT_NONRIGID_7D_H_
 #define PCL_WARP_POINT_NONRIGID_7D_H_
 
-//#include <boost/shared_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#include <pcl/point_types.h>
 #include <pcl/registration/warp_point_rigid.h>
 
 namespace pcl

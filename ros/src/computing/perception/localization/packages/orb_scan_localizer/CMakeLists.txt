@@ -225,10 +225,10 @@ target_link_libraries(
         scan_mono_orb_slam2_odom
         ${ORIG_ORB_BIN_LINKS}
         ${LINK_LIBRARIES}
-        ${catkin_INCLUDE_DIRS}
+#        ${catkin_INCLUDE_DIRS}
 )
 
-add_dependencies(scan_mono_orb_slam2_odom ${catkin_EXPORTED_TARGETS})
+#add_dependencies(scan_mono_orb_slam2_odom ${catkin_EXPORTED_TARGETS})
 
 install(TARGETS scan_mono_orb_slam2_odom
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
