@@ -264,11 +264,21 @@ void MapTracking::Track()
         if(bOK)
             bOK = TrackLocalMap();
 
+				// mCurrentFrame.mTcwを使って位置調整？
+				std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+				ScanWithNDT(mCurrentFrame.mTcw);
+				// ScanWithNDT(mCurrentFrame.mpReferenceKF->GetPoseInverse());
+				// mCurrentFrame.mpReferenceKF->GetPoseInverse().t();
+				std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+				double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+				std::cout << "ScanWithNDT " << ttrack << "\n";
+
         if(bOK){
             mState = OK;
         }else{
             mState = LOST;
             std::cout << "Lost tracking\n";
+						exit(0);
         }
 
         // Update drawer
@@ -276,54 +286,45 @@ void MapTracking::Track()
         	mpFrameDrawer->Update(this);
 
         // If tracking were good, check if we insert a keyframe
-        if(bOK)
+        // Update motion model
+        if(!mLastFrame.mTcw.empty())
         {
-            // Update motion model
-            if(!mLastFrame.mTcw.empty())
-            {
-                cv::Mat LastTwc = cv::Mat::eye(4,4,CV_32F);
-                mLastFrame.GetRotationInverse().copyTo(LastTwc.rowRange(0,3).colRange(0,3));
-                mLastFrame.GetCameraCenter().copyTo(LastTwc.rowRange(0,3).col(3));
-                mVelocity = mCurrentFrame.mTcw*LastTwc;
-            }
-            else
-                mVelocity = cv::Mat();
+            cv::Mat LastTwc = cv::Mat::eye(4,4,CV_32F);
+            mLastFrame.GetRotationInverse().copyTo(LastTwc.rowRange(0,3).colRange(0,3));
+            mLastFrame.GetCameraCenter().copyTo(LastTwc.rowRange(0,3).col(3));
+            mVelocity = mCurrentFrame.mTcw*LastTwc;
+        }
+        else
+            mVelocity = cv::Mat();
 
-            if (mpMapDrawer != NULL)
-            	mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);
+        if (mpMapDrawer != NULL)
+        	mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);
 
-            // Clean temporal point matches
-            for(int i=0; i<mCurrentFrame.N; ++i)
-            {
-                MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
-                if(pMP)
-                    if(pMP->Observations() < 1)
-                    {
-                        mCurrentFrame.mvbOutlier[i] = false;
-                        mCurrentFrame.mvpMapPoints[i] = static_cast<MapPoint*>(NULL);
-                    }
-            }
-
-            // Check if we need to insert a new keyframe
-            if(NeedNewKeyFrame()) {
-                CreateNewKeyFrame();
-            }
-
-            // We allow points with high innovation (considered outliers by the Huber Function)
-            // pass to the new keyframe, so that bundle adjustment will finally decide
-            // if they are outliers or not. We don't want next frame to estimate its position
-            // with those points so we discard them in the frame.
-            for(int i=0; i<mCurrentFrame.N;++i)
-            {
-                if(mCurrentFrame.mvpMapPoints[i] && mCurrentFrame.mvbOutlier[i])
+        // Clean temporal point matches
+        for(int i=0; i<mCurrentFrame.N; ++i)
+        {
+            MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
+            if(pMP)
+                if(pMP->Observations() < 1)
+                {
+                    mCurrentFrame.mvbOutlier[i] = false;
                     mCurrentFrame.mvpMapPoints[i] = static_cast<MapPoint*>(NULL);
-            }
+                }
         }
 
-        // Reset if the camera get lost soon after initialization
-        if(mState == LOST)
+        // Check if we need to insert a new keyframe
+        if(NeedNewKeyFrame()) {
+            CreateNewKeyFrame();
+        }
+
+        // We allow points with high innovation (considered outliers by the Huber Function)
+        // pass to the new keyframe, so that bundle adjustment will finally decide
+        // if they are outliers or not. We don't want next frame to estimate its position
+        // with those points so we discard them in the frame.
+        for(int i=0; i<mCurrentFrame.N;++i)
         {
-					  exit(0); //TODO
+            if(mCurrentFrame.mvpMapPoints[i] && mCurrentFrame.mvbOutlier[i])
+                mCurrentFrame.mvpMapPoints[i] = static_cast<MapPoint*>(NULL);
         }
 
         if(!mCurrentFrame.mpReferenceKF)
@@ -345,16 +346,6 @@ void MapTracking::Track()
         mlRelativeFramePoses.push_back(Tcr);
         mlAbsoluteFramePoses.push_back(mCurrentFrame.mTcw);
         mlpReferences.push_back(mpReferenceKF);
-        // TODO: NDT Matching caller
-        // if (mpSystem->isUseMapPublisher){
-        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-        ScanWithNDT(mCurrentFrame.mTcw);
-        // ScanWithNDT(mCurrentFrame.mpReferenceKF->GetPoseInverse());
-        // mCurrentFrame.mpReferenceKF->GetPoseInverse().t();
-        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-        double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-        std::cout << "NDT Matching " << ttrack << "\n";
-        // }
     }
 }
 
@@ -390,11 +381,22 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
     icp_.align (output);
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-    std::cout << "[done, " << ttrack <<  " ms : " << output.width * output.height << " points], has converged: ";
+    std::cout << "[done, " << ttrack <<  " s : " << output.width * output.height << " points], has converged: ";
     std::cout << icp_.hasConverged() << " with score: " << icp_.getFitnessScore () << "\n";
     Eigen::Matrix4d transformation = icp_.getFinalTransformation ();
     std::cout << "Transformation\n";
     std::cout << transformation << "\n";
+
+		// // currAbsolutePos.copyTo(Tcw);
+		// cv::Mat Rcw = currAbsolutePos.rowRange(0,3).colRange(0,3);
+		// cv::Mat tcw = currAbsolutePos.rowRange(0,3).col(3);
+		// cv::Mat Rwc = Rcw.t();
+		// cv::Mat Ow = -Rwc*tcw;
+		//
+		// cv::Mat Twc = cv::Mat::eye(4,4,currAbsolutePos.type());
+		// Rwc.copyTo(Twc.rowRange(0,3).colRange(0,3));
+		// Ow.copyTo(Twc.rowRange(0,3).col(3));
+
 }
 
 
