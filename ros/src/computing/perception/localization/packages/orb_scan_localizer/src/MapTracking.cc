@@ -346,21 +346,21 @@ void MapTracking::Track()
         mlAbsoluteFramePoses.push_back(mCurrentFrame.mTcw);
         mlpReferences.push_back(mpReferenceKF);
         // TODO: NDT Matching caller
-        if (mpSystem->isUseMapPublisher){
-            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-            ScanWithNDT(mCurrentFrame.mTcw);
-            // ScanWithNDT(mCurrentFrame.mpReferenceKF->GetPoseInverse());
-            // mCurrentFrame.mpReferenceKF->GetPoseInverse().t();
-            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-            double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-            std::cout << "NDT Matching " << ttrack << "\n";
-        }
+        // if (mpSystem->isUseMapPublisher){
+        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+        ScanWithNDT(mCurrentFrame.mTcw);
+        // ScanWithNDT(mCurrentFrame.mpReferenceKF->GetPoseInverse());
+        // mCurrentFrame.mpReferenceKF->GetPoseInverse().t();
+        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+        double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+        std::cout << "NDT Matching " << ttrack << "\n";
+        // }
     }
 }
 
 void MapTracking::SetSourceMap(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap) {
-	icp_.setInputTarget(priorMap);
-	return;
+		icp_.setInputTarget(priorMap);
+		return;
 }
 
 void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
@@ -372,14 +372,14 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
     pcl::PointCloud<pcl::PointXYZ>::Ptr l_points (new pcl::PointCloud<pcl::PointXYZ>);
 
     for (auto&& p: spRefMPs) {
-      if (p == NULL || p->isBad())
-        continue;
-      cv::Mat pos = p->GetWorldPos();
-      pcl::PointXYZ point;
-      point.x = pos.at<float>(0);
-      point.y = pos.at<float>(1);
-      point.z = pos.at<float>(2);
-      l_points->push_back(point);
+        if (p == NULL || p->isBad())
+            continue;
+        cv::Mat pos = p->GetWorldPos();
+        pcl::PointXYZ point;
+        point.x = pos.at<float>(0);
+	      point.y = pos.at<float>(1);
+	      point.z = pos.at<float>(2);
+	      l_points->push_back(point);
     }
 
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
@@ -576,7 +576,6 @@ void MapTracking::MonocularInitialization()
 
             cerr << Tcw << endl;
 
-						// TODO Set initial pose value
             CreateInitialMapMonocular();
 						std::cout << "##### Initialization Success #####\n";
         }
