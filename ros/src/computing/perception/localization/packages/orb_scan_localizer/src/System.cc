@@ -73,14 +73,14 @@ System::System(const string &strVocFile, const string &strSettingsFile,
     //Load ORB Vocabulary
     mpVocabulary = new ORBVocabulary();
     bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
-  	cout << endl << "Loading ORB Vocabulary..." << endl;
-		if(!bVocLoad)
-		{
-			cerr << "Wrong path to vocabulary. " << endl;
-			cerr << "Failed to open at: " << strVocFile << endl;
-			exit(-1);
-		}
-		cout << "Vocabulary loaded!" << endl << endl;
+    cout << endl << "Loading ORB Vocabulary..." << endl;
+    if(!bVocLoad)
+    {
+        cerr << "Wrong path to vocabulary. " << endl;
+        cerr << "Failed to open at: " << strVocFile << endl;
+        exit(-1);
+    }
+    cout << "Vocabulary loaded!" << endl << endl;
 
     //Create KeyFrame Database
     mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
@@ -136,10 +136,10 @@ System::System(const string &strVocFile, const string &strSettingsFile,
         if(is_visualize)
             mptViewer = new thread(&Viewer::Run, mpViewer);
         mpMapTracker->SetViewer(mpViewer);
-
-        //Set pointers between threads
-        mpMapTracker->SetLocalMapper(mpLocalMapper);
     }
+
+    //Set pointers between threads
+    mpMapTracker->SetLocalMapper(mpLocalMapper);
 
     // if (!bUseMapPublisher && !bUseViewer) {
     //     mpMapTracker->SetMapPublisher(mpMapPublisher);

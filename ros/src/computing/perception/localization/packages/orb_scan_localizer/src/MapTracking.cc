@@ -350,8 +350,8 @@ void MapTracking::Track()
 }
 
 void MapTracking::SetSourceMap(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap) {
-		icp_.setInputTarget(priorMap);
-		return;
+    icp_.setInputTarget(priorMap);
+    return;
 }
 
 void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
@@ -376,7 +376,7 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
     icp_.setInputSource(l_points);
-    icp_.setMaximumIterations(1000);
+    icp_.setMaximumIterations(10);
     pcl::PointCloud<pcl::PointXYZ> output;
     icp_.align (output);
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
@@ -387,16 +387,15 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
     std::cout << "Transformation\n";
     std::cout << transformation << "\n";
 
-		// // currAbsolutePos.copyTo(Tcw);
-		// cv::Mat Rcw = currAbsolutePos.rowRange(0,3).colRange(0,3);
-		// cv::Mat tcw = currAbsolutePos.rowRange(0,3).col(3);
-		// cv::Mat Rwc = Rcw.t();
-		// cv::Mat Ow = -Rwc*tcw;
-		//
-		// cv::Mat Twc = cv::Mat::eye(4,4,currAbsolutePos.type());
-		// Rwc.copyTo(Twc.rowRange(0,3).colRange(0,3));
-		// Ow.copyTo(Twc.rowRange(0,3).col(3));
-
+    // // currAbsolutePos.copyTo(Tcw);
+    // cv::Mat Rcw = currAbsolutePos.rowRange(0,3).colRange(0,3);
+    // cv::Mat tcw = currAbsolutePos.rowRange(0,3).col(3);
+    // cv::Mat Rwc = Rcw.t();
+    // cv::Mat Ow = -Rwc*tcw;
+    //
+    // cv::Mat Twc = cv::Mat::eye(4,4,currAbsolutePos.type());
+    // Rwc.copyTo(Twc.rowRange(0,3).colRange(0,3));
+    // Ow.copyTo(Twc.rowRange(0,3).col(3));
 }
 
 
