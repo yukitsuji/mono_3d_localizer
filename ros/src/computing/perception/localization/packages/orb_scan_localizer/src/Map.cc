@@ -160,17 +160,17 @@ KeyFrame* Map::offsetKeyframe (KeyFrame* kfSrc, int offset)
 
 
 void Map::loadPCDFile(const std::string &filename) {
-		pcl::PointCloud<pcl::PointXYZ>::Ptr pcd (new pcl::PointCloud<pcl::PointXYZ>);
-		if (pcl::io::loadPCDFile(filename.c_str(), *pcd) == -1) {
-			std::cerr << "Load 3D Prior Map Failed " << filename << "\n";
-		}
-		std::cerr << "Load 3D Prior Map " << filename << '\n';
-		_pcd = pcd;
-		return;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr pcd (new pcl::PointCloud<pcl::PointXYZ>);
+    if (pcl::io::loadPCDFile(filename.c_str(), *pcd) == -1) {
+        std::cerr << "Load 3D Prior Map Failed " << filename << "\n";
+    }
+    std::cerr << "Load 3D Prior Map " << filename << '\n';
+    _pcd = pcd;
+    return;
 }
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr Map::GetPriorMapPoints() {
-	return _pcd;
+    return _pcd;
 }
 
 // we expect direction vector has been normalized,

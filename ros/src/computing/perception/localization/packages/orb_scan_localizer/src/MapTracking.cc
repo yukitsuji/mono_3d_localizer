@@ -264,14 +264,17 @@ void MapTracking::Track()
         if(bOK)
             bOK = TrackLocalMap();
 
-				// mCurrentFrame.mTcwを使って位置調整？
-				std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-				ScanWithNDT(mCurrentFrame.mTcw);
-				// ScanWithNDT(mCurrentFrame.mpReferenceKF->GetPoseInverse());
-				// mCurrentFrame.mpReferenceKF->GetPoseInverse().t();
-				std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-				double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-				std::cout << "ScanWithNDT " << ttrack << "\n";
+        // mCurrentFrame.mTcwを使って位置調整？
+        pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap = mpMap->GetPriorMapPoints();
+        if (priorMap) {
+            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+            ScanWithNDT(mCurrentFrame.mTcw);
+            // ScanWithNDT(mCurrentFrame.mpReferenceKF->GetPoseInverse());
+            // mCurrentFrame.mpReferenceKF->GetPoseInverse().t();
+            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+            double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+            std::cout << "ScanWithNDT " << ttrack << "\n";
+        }
 
         if(bOK){
             mState = OK;
@@ -298,7 +301,7 @@ void MapTracking::Track()
             mVelocity = cv::Mat();
 
         if (mpMapDrawer != NULL)
-        	mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);
+            mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);
 
         // Clean temporal point matches
         for(int i=0; i<mCurrentFrame.N; ++i)
@@ -369,9 +372,9 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
         cv::Mat pos = p->GetWorldPos();
         pcl::PointXYZ point;
         point.x = pos.at<float>(0);
-	      point.y = pos.at<float>(1);
-	      point.z = pos.at<float>(2);
-	      l_points->push_back(point);
+        point.y = pos.at<float>(1);
+        point.z = pos.at<float>(2);
+        l_points->push_back(point);
     }
 
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
