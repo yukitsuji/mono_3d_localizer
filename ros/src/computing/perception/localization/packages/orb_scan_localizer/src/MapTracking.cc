@@ -132,9 +132,9 @@ MapTracking::MapTracking (System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrame
     cout << "- Initial Fast Threshold: " << fIniThFAST << endl;
     cout << "- Minimum Fast Threshold: " << fMinThFAST << endl;
 
-		global_pub = pSys->monoNode.advertise<pcl::PointCloud<pcl::PointXYZ>>("global_points", 1, true);
-		local_pub = pSys->monoNode.advertise<pcl::PointCloud<pcl::PointXYZ>>("local_points", 1, true);
-		orb_pose_pub = pSys->monoNode.advertise<geometry_msgs::PoseStamped>("/orb_pose", 10);
+    global_pub = pSys->monoNode.advertise<pcl::PointCloud<pcl::PointXYZ>>("global_points", 1, true);
+    local_pub = pSys->monoNode.advertise<pcl::PointCloud<pcl::PointXYZ>>("local_points", 1, true);
+    orb_pose_pub = pSys->monoNode.advertise<geometry_msgs::PoseStamped>("/orb_pose", 10);
 }
 
 
@@ -179,28 +179,28 @@ cv::Mat MapTracking::GrabImageMonocular(const cv::Mat &im, const double &timesta
             cvtColor(mImGray,mImGray,CV_BGRA2GRAY);
     }
 
-		std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-		double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-		std::cout << "Convert gray Image " << ttrack << "\n";
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+    double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    std::cout << "Convert gray Image " << ttrack << "\n";
 
-		t1 = std::chrono::steady_clock::now();
+    t1 = std::chrono::steady_clock::now();
 
     if(mState==NOT_INITIALIZED or mState==NO_IMAGES_YET or mState==LOST) // diff
         mCurrentFrame = Frame(mImGray, timestamp, mpIniORBextractor, mpORBVocabulary,
-					                    mK, mDistCoef, mbf, mThDepth);
+                              mK, mDistCoef, mbf, mThDepth);
     else
         mCurrentFrame = Frame(mImGray, timestamp, mpORBextractorLeft, mpORBVocabulary,
-					                    mK, mDistCoef, mbf, mThDepth);
+                              mK, mDistCoef, mbf, mThDepth);
 
-		t2 = std::chrono::steady_clock::now();
-		ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-		std::cout << "Orb Image " << ttrack << "\n";
+    t2 = std::chrono::steady_clock::now();
+    ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    std::cout << "Orb Image " << ttrack << "\n";
 
-		t1 = std::chrono::steady_clock::now();
-		Track();
-		t2 = std::chrono::steady_clock::now();
-		ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-		std::cout << "Tracking Image " << ttrack << "\n";
+    t1 = std::chrono::steady_clock::now();
+    Track();
+    t2 = std::chrono::steady_clock::now();
+    ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    std::cout << "Tracking Image " << ttrack << "\n";
 
     return mCurrentFrame.mTcw.clone();
 }
@@ -281,12 +281,12 @@ void MapTracking::Track()
         }else{
             mState = LOST;
             std::cout << "Lost tracking\n";
-						exit(0);
+            exit(0);
         }
 
         // Update drawer
         if (mpFrameDrawer != NULL)
-        	mpFrameDrawer->Update(this);
+            mpFrameDrawer->Update(this);
 
         // If tracking were good, check if we insert a keyframe
         // Update motion model
@@ -340,6 +340,7 @@ void MapTracking::Track()
     if(!mCurrentFrame.mTcw.empty())
     {
         std::cout << "Current Position\n" << mCurrentFrame.mTcw << "\n";
+        std::cout << "Current inverse Position\n" << mCurrentFrame.mTcw.inv() << "\n";
         // XXX: We found some occurences of empty pose from mpReferenceKF
         if (mCurrentFrame.mpReferenceKF->GetPose().empty()==true)
             cout << "XXX: KF pose is empty" << endl;
@@ -635,16 +636,42 @@ void MapTracking::CreateInitialMapMonocular()
     pKFini->UpdateConnections();
     pKFcur->UpdateConnections();
 
+    // Scale initial baseline
+    cv::Mat Tc2w = pKFcur->GetPose();
+    std::cout << "orig\n" << Tc2w << "\n";
+    cv::Mat initPose = (cv::Mat_<float>(4, 4) <<
+                           0.9999978, 5.272628/10000, -2.066935/1000, -4.690294/100,
+                           -5.296506/10000, 0.9999992, -1.154865/1000, -2.839928/100, 
+                           2.066324/1000, 1.155958/1000, 0.9999971, 0.8586941,
+                           0, 0, 0, 1);
+    cv::Mat invPose = initPose.inv();
+    double ratio =  invPose.at<float>(2, 3) / Tc2w.at<float>(2, 3);
+    Tc2w = invPose;
+    std::cout << "InitPose\n" << initPose << "\n";
+    std::cout << "invPose\n" << Tc2w << "\n";
+
+    //invMedianDepth = -0.8586941 / Tc2w.at<float>(2, 3);
+    std::cout << "ratio: " << ratio << "\n";
+    pKFcur->SetPose(Tc2w);
+
+    // Scale points
+    vector<MapPoint*> vpAllMapPoints = pKFini->GetMapPointMatches();
+    for(size_t iMP=0; iMP<vpAllMapPoints.size(); iMP++)
+    {
+        if(vpAllMapPoints[iMP])
+        {
+            MapPoint* pMP = vpAllMapPoints[iMP];
+            pMP->SetWorldPos(pMP->GetWorldPos()*ratio);
+        }
+    }
+
     // Bundle Adjustment
     cout << "New Map created with " << mpMap->MapPointsInMap() << " points" << endl;
-
-    // # TODO: Update temporary transformation value
-
-    Optimizer::GlobalBundleAdjustemnt(mpMap,20);
+    Optimizer::InitialGlobalBundleAdjustemnt(mpMap,20);
 
     // Set median depth to 1
     float medianDepth = pKFini->ComputeSceneMedianDepth(2);
-    float invMedianDepth = 1.0f/medianDepth;
+    //float invMedianDepth = 1.0f/medianDepth;
 
     if(medianDepth<0 || pKFcur->TrackedMapPoints(1)<100)
     {
@@ -654,30 +681,24 @@ void MapTracking::CreateInitialMapMonocular()
     }
 
     // Scale initial baseline
-    cv::Mat Tc2w = pKFcur->GetPose();
-
-    std::cout << "Tc2w\n" << Tc2w << "\n";
     // TODO: Scale alignment
     //invMedianDepth = 0.72;
-    invMedianDepth = -0.8586941 / Tc2w.at<float>(2, 3);
-    std::cout << "invMedianDepth: " << invMedianDepth << "\n";
+    //invMedianDepth = -0.8586941 / Tc2w.at<float>(2, 3);
+    //std::cout << "invMedianDepth: " << invMedianDepth << "\n";
 
-    Tc2w.col(3).rowRange(0,3) = Tc2w.col(3).rowRange(0,3)*invMedianDepth;
-    pKFcur->SetPose(Tc2w);
-
-    std::cout << "Initial Tc2w\n";
-    std::cout << Tc2w << "\n";
+    //Tc2w.col(3).rowRange(0,3) = Tc2w.col(3).rowRange(0,3)*invMedianDepth;
+    //pKFcur->SetPose(Tc2w);
 
     // Scale points
-    vector<MapPoint*> vpAllMapPoints = pKFini->GetMapPointMatches();
-    for(size_t iMP=0; iMP<vpAllMapPoints.size(); iMP++)
-    {
-        if(vpAllMapPoints[iMP])
-        {
-            MapPoint* pMP = vpAllMapPoints[iMP];
-            pMP->SetWorldPos(pMP->GetWorldPos()*invMedianDepth);
-        }
-    }
+    //vector<MapPoint*> vpAllMapPoints = pKFini->GetMapPointMatches();
+    //for(size_t iMP=0; iMP<vpAllMapPoints.size(); iMP++)
+    //{
+    //    if(vpAllMapPoints[iMP])
+    //    {
+    //        MapPoint* pMP = vpAllMapPoints[iMP];
+    //        pMP->SetWorldPos(pMP->GetWorldPos()*invMedianDepth);
+    //    }
+    //}
 
     mpLocalMapper->InsertKeyFrame(pKFini);
     mpLocalMapper->InsertKeyFrame(pKFcur);
