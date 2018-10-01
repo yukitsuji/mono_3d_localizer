@@ -560,7 +560,7 @@ void MapTracking::MonocularInitialization()
 
         if(mpInitializer->Initialize(mCurrentFrame, mvIniMatches, Rcw, tcw, mvIniP3D, vbTriangulated))
         {
-						std::cout << "tcw: " << tcw << "\n";
+            std::cout << "tcw: " << tcw << "\n";
             for(size_t i=0, iend=mvIniMatches.size(); i<iend;i++)
             {
                 if(mvIniMatches[i]>=0 && !vbTriangulated[i])
@@ -571,10 +571,10 @@ void MapTracking::MonocularInitialization()
             }
 
             // Set Frame Poses
-						// TODO: 仮のTransformの値
+            // TODO: 仮のTransformの値
             mInitialFrame.SetPose(cv::Mat::eye(4,4,CV_32F));
             cv::Mat Tcw = cv::Mat::eye(4,4,CV_32F);
-						// tcw *= 100;
+            // tcw *= 100;
             Rcw.copyTo(Tcw.rowRange(0,3).colRange(0,3));
             tcw.copyTo(Tcw.rowRange(0,3).col(3));
             mCurrentFrame.SetPose(Tcw);
@@ -585,7 +585,7 @@ void MapTracking::MonocularInitialization()
 	    std::cout << "##### Initialization Success #####\n";
         }
         else {
-        	cerr << "##### Initialization failed #####\n";
+            cerr << "##### Initialization failed #####\n";
         }
     }
 }
@@ -646,10 +646,6 @@ void MapTracking::CreateInitialMapMonocular()
     float medianDepth = pKFini->ComputeSceneMedianDepth(2);
     float invMedianDepth = 1.0f/medianDepth;
 
-    // TODO: Scale alignment
-    std::cout << "invMedianDepth: " << invMedianDepth << "\n";
-    invMedianDepth = 0.72;
-
     if(medianDepth<0 || pKFcur->TrackedMapPoints(1)<100)
     {
         cout << "Wrong initialization, reseting..." << endl;
@@ -659,8 +655,18 @@ void MapTracking::CreateInitialMapMonocular()
 
     // Scale initial baseline
     cv::Mat Tc2w = pKFcur->GetPose();
+
+    std::cout << "Tc2w\n" << Tc2w << "\n";
+    // TODO: Scale alignment
+    //invMedianDepth = 0.72;
+    invMedianDepth = -0.8586941 / Tc2w.at<float>(2, 3);
+    std::cout << "invMedianDepth: " << invMedianDepth << "\n";
+
     Tc2w.col(3).rowRange(0,3) = Tc2w.col(3).rowRange(0,3)*invMedianDepth;
     pKFcur->SetPose(Tc2w);
+
+    std::cout << "Initial Tc2w\n";
+    std::cout << Tc2w << "\n";
 
     // Scale points
     vector<MapPoint*> vpAllMapPoints = pKFini->GetMapPointMatches();
@@ -688,11 +694,8 @@ void MapTracking::CreateInitialMapMonocular()
 
     mLastFrame = Frame(mCurrentFrame);
 
-    std::cout << "A\n";
     mpMap->SetReferenceMapPoints(mvpLocalMapPoints);
-    std::cout << "B\n";
     mpMapDrawer->SetCurrentCameraPose(pKFcur->GetPose());
-    std::cout << "C\n";
     mpMap->mvpKeyFrameOrigins.push_back(pKFini);
 
     mState = OK;
