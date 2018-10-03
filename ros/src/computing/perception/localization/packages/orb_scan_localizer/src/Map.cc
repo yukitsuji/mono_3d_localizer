@@ -157,8 +157,6 @@ KeyFrame* Map::offsetKeyframe (KeyFrame* kfSrc, int offset)
 	} catch (...) {return NULL;}
 }
 
-
-
 void Map::loadPCDFile(const std::string &filename) {
     pcl::PointCloud<pcl::PointXYZ>::Ptr pcd (new pcl::PointCloud<pcl::PointXYZ>);
     if (pcl::io::loadPCDFile(filename.c_str(), *pcd) == -1) {
@@ -171,6 +169,10 @@ void Map::loadPCDFile(const std::string &filename) {
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr Map::GetPriorMapPoints() {
     return _pcd;
+}
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr Map::SetPriorMapPoints(pcl::PointCloud<pcl::PointXYZ>::Ptr pcd) {
+    _pcd = pcd;
 }
 
 // we expect direction vector has been normalized,

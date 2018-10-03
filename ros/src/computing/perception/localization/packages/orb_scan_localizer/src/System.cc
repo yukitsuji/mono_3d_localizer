@@ -36,12 +36,12 @@ System::System(const string &strVocFile, const string &strSettingsFile,
                const bool bUseMapPublisher, const bool is_publish,
                const bool bUseViewer, const bool is_visualize,
                const string &mpMapFileName, const operationMode mode):
-				mSensor(sensor),
-				mapFileName(mpMapFileName),
-				mbReset(false),
-				mbActivateLocalizationMode(false),
-				mbDeactivateLocalizationMode(false),
-				opMode(mode),
+        mSensor(sensor),
+        mapFileName(mpMapFileName),
+        mbReset(false),
+        mbActivateLocalizationMode(false),
+        mbDeactivateLocalizationMode(false),
+        opMode(mode),
         isUseViewer(bUseViewer),
         isUseMapPublisher(bUseMapPublisher),
         monoNode(node)
@@ -100,17 +100,18 @@ System::System(const string &strVocFile, const string &strSettingsFile,
             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
             double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
             std::cout << "VoxelGrid: " << ttrack << "\n";
+            std::cout << "Number of map points: " << mpMap->GetPriorMapPoints()->size() << "\n";
             t1 = std::chrono::steady_clock::now();
-            voxel_grid_.setPointsRaw(mpMap->GetPriorMapPoints());
+            pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_points = voxel_grid_.setPointsRaw(mpMap->GetPriorMapPoints());
+            mpMap->SetPriorMapPoints(filtered_points);
             t2 = std::chrono::steady_clock::now();
             ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
             std::cout << "SetPointsRaw: " << ttrack << "\n";
+            std::cout << "Number of map points: " << mpMap->GetPriorMapPoints()->size() << "\n";
         }
     } catch (exception &e) {
-      std::cout << e.what() << "\n";
+        std::cout << e.what() << "\n";
     }
-
-    exit(0);
 
     //Create Drawers. These are used by the MapPublisher
     mpFrameDrawer = new FrameDrawer(mpMap);

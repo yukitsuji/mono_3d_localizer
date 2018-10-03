@@ -95,10 +95,10 @@ public:
     class BadMapFile : public std::exception {};
     class MapFileException : public std::exception {};
 
-		// Load pcd file
-		void loadPCDFile(const std::string &filename);
-		pcl::PointCloud<pcl::PointXYZ>::Ptr GetPriorMapPoints();
-
+    // Load pcd file
+    void loadPCDFile(const std::string &filename);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr GetPriorMapPoints();
+    pcl::PointCloud<pcl::PointXYZ>::Ptr SetPriorMapPoints(pcl::PointCloud<pcl::PointXYZ>::Ptr pcd); 
 
 		struct MapFileHeader {
 			char signature[7];

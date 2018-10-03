@@ -23,7 +23,7 @@ public:
      * the input point are less than radius.
      * The output is a list of candidate voxel ids */
     void radiusSearch(pcl::PointXYZ query_point, float radius, std::vector<int> &voxel_ids, int max_nn = INT_MAX);
-    void setPointsRaw(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr setPointsRaw(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap);
     int getVoxelNum() const;
 
 	float getMaxX() const;

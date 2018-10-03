@@ -14,32 +14,32 @@
 namespace icp_7dof {
 
 VoxelGrid::VoxelGrid():
-	voxel_num_(0),
-	max_x_(FLT_MIN),
-	max_y_(FLT_MIN),
-	max_z_(FLT_MIN),
-	min_x_(FLT_MAX),
-	min_y_(FLT_MAX),
-	min_z_(FLT_MAX),
-	voxel_x_(0),
-	voxel_y_(0),
-	voxel_z_(0),
-	max_b_x_(0),
-	max_b_y_(0),
-	max_b_z_(0),
-	min_b_x_(0),
-	min_b_y_(0),
-	min_b_z_(0),
-	vgrid_x_(0),
-	vgrid_y_(0),
-	vgrid_z_(0),
-	min_points_per_voxel_(6),
-	real_max_bx_(INT_MIN),
-	real_max_by_(INT_MIN),
-	real_max_bz_(INT_MIN),
-	real_min_bx_(INT_MAX),
-	real_min_by_(INT_MAX),
-	real_min_bz_(INT_MAX)
+    voxel_num_(0),
+    max_x_(FLT_MIN),
+    max_y_(FLT_MIN),
+    max_z_(FLT_MIN),
+    min_x_(FLT_MAX),
+    min_y_(FLT_MAX),
+    min_z_(FLT_MAX),
+    voxel_x_(0),
+    voxel_y_(0),
+    voxel_z_(0),
+    max_b_x_(0),
+    max_b_y_(0),
+    max_b_z_(0),
+    min_b_x_(0),
+    min_b_y_(0),
+    min_b_z_(0),
+    vgrid_x_(0),
+    vgrid_y_(0),
+    vgrid_z_(0),
+    min_points_per_voxel_(6),
+    real_max_bx_(INT_MIN),
+    real_max_by_(INT_MIN),
+    real_max_bz_(INT_MIN),
+    real_min_bx_(INT_MAX),
+    real_min_by_(INT_MAX),
+    real_min_bz_(INT_MAX)
 {
     centroid_.reset();
     icovariance_.reset();
@@ -52,17 +52,17 @@ VoxelGrid::VoxelGrid():
 
 int VoxelGrid::roundUp(int input, int factor)
 {
-	return (input < 0) ? -((-input) / factor) * factor : ((input + factor - 1) / factor) * factor;
+    return (input < 0) ? -((-input) / factor) * factor : ((input + factor - 1) / factor) * factor;
 }
 
 int VoxelGrid::roundDown(int input, int factor)
 {
-	return (input < 0) ? -((-input + factor - 1) / factor) * factor : (input / factor) * factor;
+    return (input < 0) ? -((-input + factor - 1) / factor) * factor : (input / factor) * factor;
 }
 
 int VoxelGrid::div(int input, int divisor)
 {
-	return (input < 0) ? -((-input + divisor - 1) / divisor) : input / divisor;
+    return (input < 0) ? -((-input + divisor - 1) / divisor) : input / divisor;
 }
 
 void VoxelGrid::initialize()
@@ -92,142 +92,142 @@ void VoxelGrid::initialize()
 
 int VoxelGrid::getVoxelNum() const
 {
-	return voxel_num_;
+    return voxel_num_;
 }
 
 float VoxelGrid::getMaxX() const
 {
-	return max_x_;
+    return max_x_;
 }
 
 float VoxelGrid::getMaxY() const
 {
-	return max_y_;
+    return max_y_;
 }
 
 float VoxelGrid::getMaxZ() const
 {
-	return max_z_;
+    return max_z_;
 }
 
 float VoxelGrid::getMinX() const
 {
-	return min_x_;
+    return min_x_;
 }
 
 float VoxelGrid::getMinY() const
 {
-	return min_y_;
+    return min_y_;
 }
 
 float VoxelGrid::getMinZ() const
 {
-	return min_z_;
+    return min_z_;
 }
 
 float VoxelGrid::getVoxelX() const
 {
-	return voxel_x_;
+    return voxel_x_;
 }
 
 float VoxelGrid::getVoxelY() const
 {
-	return voxel_y_;
+    return voxel_y_;
 }
 
 float VoxelGrid::getVoxelZ() const
 {
-	return voxel_z_;
+    return voxel_z_;
 }
 
 int VoxelGrid::getMaxBX() const
 {
-	return max_b_x_;
+    return max_b_x_;
 }
 
 int VoxelGrid::getMaxBY() const
 {
-	return max_b_y_;
+    return max_b_y_;
 }
 
 int VoxelGrid::getMaxBZ() const
 {
-	return max_b_z_;
+    return max_b_z_;
 }
 
 int VoxelGrid::getMinBX() const
 {
-	return min_b_x_;
+    return min_b_x_;
 }
 
 int VoxelGrid::getMinBY() const
 {
-	return min_b_y_;
+    return min_b_y_;
 }
 
 int VoxelGrid::getMinBZ() const
 {
-	return min_b_z_;
+    return min_b_z_;
 }
 
 int VoxelGrid::getVgridX() const
 {
-	return vgrid_x_;
+    return vgrid_x_;
 }
 
 int VoxelGrid::getVgridY() const
 {
-	return vgrid_y_;
+    return vgrid_y_;
 }
 
 int VoxelGrid::getVgridZ() const
 {
-	return vgrid_z_;
+    return vgrid_z_;
 }
 
 Eigen::Vector3d VoxelGrid::getCentroid(int voxel_id) const
 {
-	return (*centroid_)[voxel_id];
+    return (*centroid_)[voxel_id];
 }
 
 Eigen::Matrix3d VoxelGrid::getInverseCovariance(int voxel_id) const
 {
-	return (*icovariance_)[voxel_id];
+    return (*icovariance_)[voxel_id];
 }
 
 void VoxelGrid::setLeafSize(float voxel_x, float voxel_y, float voxel_z)
 {
-	voxel_x_ = voxel_x;
-	voxel_y_ = voxel_y;
-	voxel_z_ = voxel_z;
+    voxel_x_ = voxel_x;
+    voxel_y_ = voxel_y;
+    voxel_z_ = voxel_z;
 }
 
 int VoxelGrid::voxelId(pcl::PointXYZ p)
 {
-	int idx = static_cast<int>(floor(p.x / voxel_x_)) - min_b_x_;
-	int idy = static_cast<int>(floor(p.y / voxel_y_)) - min_b_y_;
-	int idz = static_cast<int>(floor(p.z / voxel_z_)) - min_b_z_;
+    int idx = static_cast<int>(floor(p.x / voxel_x_)) - min_b_x_;
+    int idy = static_cast<int>(floor(p.y / voxel_y_)) - min_b_y_;
+    int idz = static_cast<int>(floor(p.z / voxel_z_)) - min_b_z_;
 
-	return (idx + idy * vgrid_x_ + idz * vgrid_x_ * vgrid_y_);
+    return (idx + idy * vgrid_x_ + idz * vgrid_x_ * vgrid_y_);
 }
 
 int VoxelGrid::voxelId(pcl::PointXYZ p,
-											float voxel_x, float voxel_y, float voxel_z,
-											int min_b_x, int min_b_y, int min_b_z,
-											int vgrid_x, int vgrid_y, int vgrid_z)
+                       float voxel_x, float voxel_y, float voxel_z,
+                       int min_b_x, int min_b_y, int min_b_z,
+                       int vgrid_x, int vgrid_y, int vgrid_z)
 {
-	int idx = static_cast<int>(floor(p.x / voxel_x)) - min_b_x;
-	int idy = static_cast<int>(floor(p.y / voxel_y)) - min_b_y;
-	int idz = static_cast<int>(floor(p.z / voxel_z)) - min_b_z;
+    int idx = static_cast<int>(floor(p.x / voxel_x)) - min_b_x;
+    int idy = static_cast<int>(floor(p.y / voxel_y)) - min_b_y;
+    int idz = static_cast<int>(floor(p.z / voxel_z)) - min_b_z;
 
-	return (idx + idy * vgrid_x + idz * vgrid_x * vgrid_y);
+    return (idx + idy * vgrid_x + idz * vgrid_x * vgrid_y);
 }
 
 int VoxelGrid::voxelId(int idx, int idy, int idz,
-										int min_b_x, int min_b_y, int min_b_z,
-										int size_x, int size_y, int size_z)
+                       int min_b_x, int min_b_y, int min_b_z,
+                       int size_x, int size_y, int size_z)
 {
-	return (idx - min_b_x) + (idy - min_b_y) * size_x + (idz - min_b_z) * size_x * size_y;
+    return (idx - min_b_x) + (idy - min_b_y) * size_x + (idz - min_b_z) * size_x * size_y;
 }
 
 void VoxelGrid::computeCentroidAndCovariance()
@@ -422,68 +422,23 @@ void VoxelGrid::radiusSearch(pcl::PointXYZ p, float radius, std::vector<int> &vo
     }
 }
 
-void VoxelGrid::setPointsRaw(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap)
+pcl::PointCloud<pcl::PointXYZ>::Ptr VoxelGrid::setPointsRaw(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap)
 {
+    pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_points(new pcl::PointCloud<pcl::PointXYZ>);
     for (auto&& p : priorMap->points) {
         int vid = voxelId(p);
         if ((*points_per_voxel_)[vid] >= min_points_per_voxel_)
         {
-            if (!(*points_raw_per_voxel_)[vid]) // || (*points_raw_per_voxel_)[vid]->size() == 0) {
+            if (!(*points_raw_per_voxel_)[vid])
             {
                 pcl::PointCloud<pcl::PointXYZ>::Ptr points_raw(new pcl::PointCloud<pcl::PointXYZ>);
                 (*points_raw_per_voxel_)[vid] = points_raw;
             }
             (*points_raw_per_voxel_)[vid]->push_back(p);
+            filtered_points->push_back(p);
         }
     }
-    //float t_x = p.x;
-    //float t_y = p.y;
-    //float t_z = p.z;
-
-    //int max_id_x = static_cast<int>(floor((t_x + radius) / voxel_x_));
-    //int max_id_y = static_cast<int>(floor((t_y + radius) / voxel_y_));
-    //int max_id_z = static_cast<int>(floor((t_z + radius) / voxel_z_));
-
-    //int min_id_x = static_cast<int>(floor((t_x - radius) / voxel_x_));
-    //int min_id_y = static_cast<int>(floor((t_y - radius) / voxel_y_));
-    //int min_id_z = static_cast<int>(floor((t_z - radius) / voxel_z_));
-
-    /* Find intersection of the cube containing
-     * the NN sphere of the point and the voxel grid
-     */
-    //max_id_x = (max_id_x > real_max_bx_) ? real_max_bx_ : max_id_x;
-    //max_id_y = (max_id_y > real_max_by_) ? real_max_by_ : max_id_y;
-    //max_id_z = (max_id_z > real_max_bz_) ? real_max_bz_ : max_id_z;
-
-    //min_id_x = (min_id_x < real_min_bx_) ? real_min_bx_ : min_id_x;
-    //min_id_y = (min_id_y < real_min_by_) ? real_min_by_ : min_id_y;
-    //min_id_z = (min_id_z < real_min_bz_) ? real_min_bz_ : min_id_z;
-    //int nn = 0;
-
-    /*
-    for (int idx = min_id_x; idx <= max_id_x && nn < max_nn; idx++) {
-        for (int idy = min_id_y; idy <= max_id_y && nn < max_nn; idy++) {
-            for (int idz = min_id_z; idz <= max_id_z && nn < max_nn; idz++) {
-                int vid = voxelId(idx, idy, idz,
-                                  min_b_x_, min_b_y_, min_b_z_,
-                                  vgrid_x_, vgrid_y_, vgrid_z_);
-
-                if ((*points_per_voxel_)[vid] >= min_points_per_voxel_) {
-                    double cx = (*centroid_)[vid](0) - static_cast<double>(t_x);
-                    double cy = (*centroid_)[vid](1) - static_cast<double>(t_y);
-                    double cz = (*centroid_)[vid](2) - static_cast<double>(t_z);
-
-                    double distance = sqrt(cx * cx + cy * cy + cz * cz);
-
-                    if (distance < radius) {
-                        nn++;
-                        voxel_ids.push_back(vid);
-                    }
-                }
-            }
-        }
-    }
-    */
+    return filtered_points;
 }
 
 void VoxelGrid::scatterPointsToVoxelGrid()
