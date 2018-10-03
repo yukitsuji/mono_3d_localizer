@@ -67,23 +67,27 @@ int VoxelGrid::div(int input, int divisor)
 
 void VoxelGrid::initialize()
 {
-	centroid_.reset();
-	centroid_ = boost::make_shared<std::vector<Eigen::Vector3d> >(voxel_num_);
+    centroid_.reset();
+    centroid_ = boost::make_shared<std::vector<Eigen::Vector3d> >(voxel_num_);
 
-	icovariance_.reset();
-	icovariance_ = boost::make_shared<std::vector<Eigen::Matrix3d> >(voxel_num_);
+    icovariance_.reset();
+    icovariance_ = boost::make_shared<std::vector<Eigen::Matrix3d> >(voxel_num_);
 
-	points_id_.reset();
-	points_id_ = boost::make_shared<std::vector<std::vector<int> > >(voxel_num_);
+    points_id_.reset();
+    points_id_ = boost::make_shared<std::vector<std::vector<int> > >(voxel_num_);
 
-	points_per_voxel_.reset();
-	points_per_voxel_ = boost::make_shared<std::vector<int> >(voxel_num_, 0);
+    points_per_voxel_.reset();
+    points_per_voxel_ = boost::make_shared<std::vector<int> >(voxel_num_, 0);
 
-	tmp_centroid_.reset();
-	tmp_centroid_ = boost::make_shared<std::vector<Eigen::Vector3d> >(voxel_num_);
+    tmp_centroid_.reset();
+    tmp_centroid_ = boost::make_shared<std::vector<Eigen::Vector3d> >(voxel_num_);
 
-	tmp_cov_.reset();
-	tmp_cov_ = boost::make_shared<std::vector<Eigen::Matrix3d> >(voxel_num_);
+    tmp_cov_.reset();
+    tmp_cov_ = boost::make_shared<std::vector<Eigen::Matrix3d> >(voxel_num_);
+
+    points_raw_per_voxel_.reset();
+    points_raw_per_voxel_ = boost::make_shared<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr > >(voxel_num_);
+    //points_raw_per_voxel_ = boost::shared_ptr<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr > >(voxel_num_, new pcl::PointCloud<pcl::PointXYZ>());
 }
 
 int VoxelGrid::getVoxelNum() const
@@ -424,7 +428,8 @@ void VoxelGrid::setPointsRaw(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap)
         int vid = voxelId(p);
         if ((*points_per_voxel_)[vid] >= min_points_per_voxel_)
         {
-            if ((*points_raw_per_voxel_)[vid]->size() == 0) {
+            if (!(*points_raw_per_voxel_)[vid]) // || (*points_raw_per_voxel_)[vid]->size() == 0) {
+            {
                 pcl::PointCloud<pcl::PointXYZ>::Ptr points_raw(new pcl::PointCloud<pcl::PointXYZ>);
                 (*points_raw_per_voxel_)[vid] = points_raw;
             }
