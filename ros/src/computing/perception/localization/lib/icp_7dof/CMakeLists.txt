@@ -47,7 +47,7 @@ set(incs
         include/icp_7dof/warp_point_nonrigid_7d.h
         include/icp_7dof/icp_7dof_transform_lm.h
         include/icp_7dof/voxel_grid.h
-        include/SymmetricEigenSolver.h
+        include/icp_7dof/SymmetricEigenSolver.h
         )
 
 #set(impl_incs

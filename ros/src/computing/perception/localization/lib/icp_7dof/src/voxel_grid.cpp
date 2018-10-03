@@ -1,4 +1,4 @@
-#include "voxel_grid.h"
+#include "icp_7dof/voxel_grid.h"
 #include <math.h>
 #include <limits>
 #include <inttypes.h>
@@ -9,11 +9,11 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-#include "SymmetricEigenSolver.h"
+#include "icp_7dof/SymmetricEigenSolver.h"
 
 namespace icp_7dof {
 
-VoxelGrid<pcl::PointXYZ>::VoxelGrid():
+VoxelGrid::VoxelGrid():
 	voxel_num_(0),
 	max_x_(FLT_MIN),
 	max_y_(FLT_MIN),
@@ -49,22 +49,22 @@ VoxelGrid<pcl::PointXYZ>::VoxelGrid():
 	tmp_cov_.reset();
 };
 
-int VoxelGrid<pcl::PointXYZ>::roundUp(int input, int factor)
+int VoxelGrid::roundUp(int input, int factor)
 {
 	return (input < 0) ? -((-input) / factor) * factor : ((input + factor - 1) / factor) * factor;
 }
 
-int VoxelGrid<pcl::PointXYZ>::roundDown(int input, int factor)
+int VoxelGrid::roundDown(int input, int factor)
 {
 	return (input < 0) ? -((-input + factor - 1) / factor) * factor : (input / factor) * factor;
 }
 
-int VoxelGrid<pcl::PointXYZ>::div(int input, int divisor)
+int VoxelGrid::div(int input, int divisor)
 {
 	return (input < 0) ? -((-input + divisor - 1) / divisor) : input / divisor;
 }
 
-void VoxelGrid<pcl::PointXYZ>::initialize()
+void VoxelGrid::initialize()
 {
 	centroid_.reset();
 	centroid_ = boost::make_shared<std::vector<Eigen::Vector3d> >(voxel_num_);
@@ -85,119 +85,119 @@ void VoxelGrid<pcl::PointXYZ>::initialize()
 	tmp_cov_ = boost::make_shared<std::vector<Eigen::Matrix3d> >(voxel_num_);
 }
 
-int VoxelGrid<pcl::PointXYZ>::getVoxelNum() const
+int VoxelGrid::getVoxelNum() const
 {
 	return voxel_num_;
 }
 
-float VoxelGrid<pcl::PointXYZ>::getMaxX() const
+float VoxelGrid::getMaxX() const
 {
 	return max_x_;
 }
 
-float VoxelGrid<pcl::PointXYZ>::getMaxY() const
+float VoxelGrid::getMaxY() const
 {
 	return max_y_;
 }
 
-float VoxelGrid<pcl::PointXYZ>::getMaxZ() const
+float VoxelGrid::getMaxZ() const
 {
 	return max_z_;
 }
 
-float VoxelGrid<pcl::PointXYZ>::getMinX() const
+float VoxelGrid::getMinX() const
 {
 	return min_x_;
 }
 
-float VoxelGrid<pcl::PointXYZ>::getMinY() const
+float VoxelGrid::getMinY() const
 {
 	return min_y_;
 }
 
-float VoxelGrid<pcl::PointXYZ>::getMinZ() const
+float VoxelGrid::getMinZ() const
 {
 	return min_z_;
 }
 
-float VoxelGrid<pcl::PointXYZ>::getVoxelX() const
+float VoxelGrid::getVoxelX() const
 {
 	return voxel_x_;
 }
 
-float VoxelGrid<pcl::PointXYZ>::getVoxelY() const
+float VoxelGrid::getVoxelY() const
 {
 	return voxel_y_;
 }
 
-float VoxelGrid<pcl::PointXYZ>::getVoxelZ() const
+float VoxelGrid::getVoxelZ() const
 {
 	return voxel_z_;
 }
 
-int VoxelGrid<pcl::PointXYZ>::getMaxBX() const
+int VoxelGrid::getMaxBX() const
 {
 	return max_b_x_;
 }
 
-int VoxelGrid<pcl::PointXYZ>::getMaxBY() const
+int VoxelGrid::getMaxBY() const
 {
 	return max_b_y_;
 }
 
-int VoxelGrid<pcl::PointXYZ>::getMaxBZ() const
+int VoxelGrid::getMaxBZ() const
 {
 	return max_b_z_;
 }
 
-int VoxelGrid<pcl::PointXYZ>::getMinBX() const
+int VoxelGrid::getMinBX() const
 {
 	return min_b_x_;
 }
 
-int VoxelGrid<pcl::PointXYZ>::getMinBY() const
+int VoxelGrid::getMinBY() const
 {
 	return min_b_y_;
 }
 
-int VoxelGrid<pcl::PointXYZ>::getMinBZ() const
+int VoxelGrid::getMinBZ() const
 {
 	return min_b_z_;
 }
 
-int VoxelGrid<pcl::PointXYZ>::getVgridX() const
+int VoxelGrid::getVgridX() const
 {
 	return vgrid_x_;
 }
 
-int VoxelGrid<pcl::PointXYZ>::getVgridY() const
+int VoxelGrid::getVgridY() const
 {
 	return vgrid_y_;
 }
 
-int VoxelGrid<pcl::PointXYZ>::getVgridZ() const
+int VoxelGrid::getVgridZ() const
 {
 	return vgrid_z_;
 }
 
-Eigen::Vector3d VoxelGrid<pcl::PointXYZ>::getCentroid(int voxel_id) const
+Eigen::Vector3d VoxelGrid::getCentroid(int voxel_id) const
 {
 	return (*centroid_)[voxel_id];
 }
 
-Eigen::Matrix3d VoxelGrid<pcl::PointXYZ>::getInverseCovariance(int voxel_id) const
+Eigen::Matrix3d VoxelGrid::getInverseCovariance(int voxel_id) const
 {
 	return (*icovariance_)[voxel_id];
 }
 
-void VoxelGrid<pcl::PointXYZ>::setLeafSize(float voxel_x, float voxel_y, float voxel_z)
+void VoxelGrid::setLeafSize(float voxel_x, float voxel_y, float voxel_z)
 {
 	voxel_x_ = voxel_x;
 	voxel_y_ = voxel_y;
 	voxel_z_ = voxel_z;
 }
 
-int VoxelGrid<pcl::PointXYZ>::voxelId(pcl::PointXYZ p)
+int VoxelGrid::voxelId(pcl::PointXYZ p)
 {
 	int idx = static_cast<int>(floor(p.x / voxel_x_)) - min_b_x_;
 	int idy = static_cast<int>(floor(p.y / voxel_y_)) - min_b_y_;
@@ -206,7 +206,7 @@ int VoxelGrid<pcl::PointXYZ>::voxelId(pcl::PointXYZ p)
 	return (idx + idy * vgrid_x_ + idz * vgrid_x_ * vgrid_y_);
 }
 
-int VoxelGrid<pcl::PointXYZ>::voxelId(pcl::PointXYZ p,
+int VoxelGrid::voxelId(pcl::PointXYZ p,
 											float voxel_x, float voxel_y, float voxel_z,
 											int min_b_x, int min_b_y, int min_b_z,
 											int vgrid_x, int vgrid_y, int vgrid_z)
@@ -218,14 +218,14 @@ int VoxelGrid<pcl::PointXYZ>::voxelId(pcl::PointXYZ p,
 	return (idx + idy * vgrid_x + idz * vgrid_x * vgrid_y);
 }
 
-int VoxelGrid<pcl::PointXYZ>::voxelId(int idx, int idy, int idz,
+int VoxelGrid::voxelId(int idx, int idy, int idz,
 										int min_b_x, int min_b_y, int min_b_z,
 										int size_x, int size_y, int size_z)
 {
 	return (idx - min_b_x) + (idy - min_b_y) * size_x + (idz - min_b_z) * size_x * size_y;
 }
 
-void VoxelGrid<pcl::PointXYZ>::computeCentroidAndCovariance()
+void VoxelGrid::computeCentroidAndCovariance()
 {
 	for (int idx = real_min_bx_; idx <= real_max_bx_; idx++)
 		for (int idy = real_min_by_; idy <= real_max_by_; idy++)
@@ -274,7 +274,7 @@ void VoxelGrid<pcl::PointXYZ>::computeCentroidAndCovariance()
 }
 
 //Input are supposed to be in device memory
-void VoxelGrid<pcl::PointXYZ>::setInput(pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud)
+void VoxelGrid::setInput(pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud)
 {
 	if (input_cloud->points.size() > 0) {
 		/* If no voxel grid was created, then
@@ -307,7 +307,7 @@ void VoxelGrid<pcl::PointXYZ>::setInput(pcl::PointCloud<pcl::PointXYZ>::Ptr inpu
 	}
 }
 
-void VoxelGrid<pcl::PointXYZ>::findBoundaries()
+void VoxelGrid::findBoundaries()
 {
 
 	findBoundaries(source_cloud_, max_x_, max_y_, max_z_, min_x_, min_y_, min_z_);
@@ -344,7 +344,7 @@ void VoxelGrid<pcl::PointXYZ>::findBoundaries()
 	}
 }
 
-void VoxelGrid<pcl::PointXYZ>::findBoundaries(pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud,
+void VoxelGrid::findBoundaries(pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud,
 													float &max_x, float &max_y, float &max_z,
 													float &min_x, float &min_y, float &min_z)
 {
@@ -367,7 +367,7 @@ void VoxelGrid<pcl::PointXYZ>::findBoundaries(pcl::PointCloud<pcl::PointXYZ>::Pt
 	}
 }
 
-void VoxelGrid<pcl::PointXYZ>::radiusSearch(pcl::PointXYZ p, float radius, std::vector<int> &voxel_ids, int max_nn)
+void VoxelGrid::radiusSearch(pcl::PointXYZ p, float radius, std::vector<int> &voxel_ids, int max_nn)
 {
 	float t_x = p.x;
 	float t_y = p.y;
@@ -417,7 +417,7 @@ void VoxelGrid<pcl::PointXYZ>::radiusSearch(pcl::PointXYZ p, float radius, std::
 	}
 }
 
-void VoxelGrid<pcl::PointXYZ>::scatterPointsToVoxelGrid()
+void VoxelGrid::scatterPointsToVoxelGrid()
 {
 
 	for (int pid = 0; pid < source_cloud_->points.size(); pid++) {
@@ -440,7 +440,7 @@ void VoxelGrid<pcl::PointXYZ>::scatterPointsToVoxelGrid()
 	}
 }
 
-int VoxelGrid<pcl::PointXYZ>::nearestVoxel(pcl::PointXYZ query_point, Eigen::Matrix<float, 6, 1> boundaries, float max_range)
+int VoxelGrid::nearestVoxel(pcl::PointXYZ query_point, Eigen::Matrix<float, 6, 1> boundaries, float max_range)
 {
 	// Index of the origin of the circle (query point)
 	float qx = query_point.x;
@@ -479,7 +479,7 @@ int VoxelGrid<pcl::PointXYZ>::nearestVoxel(pcl::PointXYZ query_point, Eigen::Mat
 	return nn_vid;
 }
 
-double VoxelGrid<pcl::PointXYZ>::nearestNeighborDistance(pcl::PointXYZ q, float max_range)
+double VoxelGrid::nearestNeighborDistance(pcl::PointXYZ q, float max_range)
 {
 	// Eigen::Matrix<float, 6, 1> nn_node_bounds;
   //
@@ -498,7 +498,7 @@ double VoxelGrid<pcl::PointXYZ>::nearestNeighborDistance(pcl::PointXYZ q, float 
 
 }
 
-void VoxelGrid<pcl::PointXYZ>::updateBoundaries(float max_x, float max_y, float max_z,
+void VoxelGrid::updateBoundaries(float max_x, float max_y, float max_z,
 													float min_x, float min_y, float min_z)
 {
 
@@ -633,7 +633,7 @@ void VoxelGrid<pcl::PointXYZ>::updateBoundaries(float max_x, float max_y, float 
 }
 
 
-void VoxelGrid<pcl::PointXYZ>::update(pcl::PointCloud<pcl::PointXYZ>::Ptr new_cloud)
+void VoxelGrid::update(pcl::PointCloud<pcl::PointXYZ>::Ptr new_cloud)
 {
 	if (new_cloud->points.size() <= 0) {
 		return;
@@ -674,7 +674,7 @@ void VoxelGrid<pcl::PointXYZ>::update(pcl::PointCloud<pcl::PointXYZ>::Ptr new_cl
 	*source_cloud_ += *new_cloud;
 }
 
-void VoxelGrid<pcl::PointXYZ>::updateVoxelContent(pcl::PointCloud<pcl::PointXYZ>::Ptr new_cloud)
+void VoxelGrid::updateVoxelContent(pcl::PointCloud<pcl::PointXYZ>::Ptr new_cloud)
 {
 	int total_points_num = source_cloud_->points.size();
 
