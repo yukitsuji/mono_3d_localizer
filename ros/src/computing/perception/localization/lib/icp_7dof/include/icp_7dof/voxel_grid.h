@@ -14,17 +14,17 @@ namespace icp_7dof {
 
 class VoxelGrid {
 public:
-	VoxelGrid();
+    VoxelGrid();
 
-	/* Set input points */
-	void setInput(pcl::PointCloud<pcl::PointXYZ>::Ptr input);
+    /* Set input points */
+    void setInput(pcl::PointCloud<pcl::PointXYZ>::Ptr input);
 
-	/* For each input point, search for voxels whose distance between their centroids and
-	 * the input point are less than radius.
-	 * The output is a list of candidate voxel ids */
-	void radiusSearch(pcl::PointXYZ query_point, float radius, std::vector<int> &voxel_ids, int max_nn = INT_MAX);
-
-	int getVoxelNum() const;
+    /* For each input point, search for voxels whose distance between their centroids and
+     * the input point are less than radius.
+     * The output is a list of candidate voxel ids */
+    void radiusSearch(pcl::PointXYZ query_point, float radius, std::vector<int> &voxel_ids, int max_nn = INT_MAX);
+    void setPointsRaw(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap);
+    int getVoxelNum() const;
 
 	float getMaxX() const;
 	float getMaxY() const;
@@ -133,12 +133,12 @@ private:
 										// per voxel is less than this number, then the voxel is ignored
 										// during computation (treated like it contains no point)
 
-	boost::shared_ptr<std::vector<Eigen::Vector3d> > centroid_;			// 3x1 Centroid vectors of voxels
-	boost::shared_ptr<std::vector<Eigen::Matrix3d> > icovariance_;		// Inverse covariance matrixes of voxel
-	boost::shared_ptr<std::vector<std::vector<int> > > points_id_;		// Indexes of points belong to each voxel
-	boost::shared_ptr<std::vector<int> > points_per_voxel_;				// Number of points belong to each voxel
-													// (may differ from size of each vector in points_id_
-													// because of changes made during computing covariances
+	boost::shared_ptr<std::vector<Eigen::Vector3d> > centroid_; // 3x1 Centroid vectors of voxels
+	boost::shared_ptr<std::vector<Eigen::Matrix3d> > icovariance_; // Inverse covariance matrixes of voxel
+	boost::shared_ptr<std::vector<std::vector<int> > > points_id_; // Indexes of points belong to each voxel
+	boost::shared_ptr<std::vector<int> > points_per_voxel_; // Number of points belong to each voxel
+        boost::shared_ptr<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr > > points_raw_per_voxel_; // (may differ from size of each vector in points_id_
+        // because of changes made during computing covariances
 	boost::shared_ptr<std::vector<Eigen::Vector3d> > tmp_centroid_;
 	boost::shared_ptr<std::vector<Eigen::Matrix3d> > tmp_cov_;
 

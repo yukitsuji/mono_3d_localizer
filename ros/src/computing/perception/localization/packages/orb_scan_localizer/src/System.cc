@@ -26,6 +26,7 @@
 #include <pangolin/pangolin.h>
 #include <iomanip>
 #include <exception>
+#include <chrono>
 
 namespace ORB_SLAM2
 {
@@ -88,13 +89,28 @@ System::System(const string &strVocFile, const string &strSettingsFile,
     //Create the Map
     mpMap = new Map();
     try {
-      std::cout << "Map File Name: " << mapFileName << "\n";
-      if (!mapFileName.empty()) {
-        mpMap->loadPCDFile(mapFileName);
-      }
+        std::cout << "Map File Name: " << mapFileName << "\n";
+        if (!mapFileName.empty()) {
+            mpMap->loadPCDFile(mapFileName);
+            double resolution_ = 1.0;
+            voxel_grid_.setLeafSize(resolution_, resolution_, resolution_);
+            voxel_grid_.setMinimumPoints(10);
+            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+            voxel_grid_.setInput(mpMap->GetPriorMapPoints());
+            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+            double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+            std::cout << "VoxelGrid: " << ttrack << "\n";
+            t1 = std::chrono::steady_clock::now();
+            voxel_grid_.setPointsRaw(mpMap->GetPriorMapPoints());
+            t2 = std::chrono::steady_clock::now();
+            ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+            std::cout << "SetPointsRaw: " << ttrack << "\n";
+        }
     } catch (exception &e) {
       std::cout << e.what() << "\n";
     }
+
+    exit(0);
 
     //Create Drawers. These are used by the MapPublisher
     mpFrameDrawer = new FrameDrawer(mpMap);

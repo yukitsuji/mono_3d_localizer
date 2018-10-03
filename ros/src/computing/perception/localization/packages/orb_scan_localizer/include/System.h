@@ -42,6 +42,7 @@
 #include <pcl_ros/point_cloud.h>
 #include <pcl/point_types.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <icp_7dof/voxel_grid.h>
 
 using std::string;
 
@@ -154,6 +155,8 @@ public:
 
     float fps;
     bool isUseMapPublisher;
+
+    icp_7dof::VoxelGrid voxel_grid_;
 
 private:
 

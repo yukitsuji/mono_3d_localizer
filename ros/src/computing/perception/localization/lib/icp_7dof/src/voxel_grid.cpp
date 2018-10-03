@@ -41,12 +41,13 @@ VoxelGrid::VoxelGrid():
 	real_min_by_(INT_MAX),
 	real_min_bz_(INT_MAX)
 {
-	centroid_.reset();
-	icovariance_.reset();
-	points_id_.reset();
-	points_per_voxel_.reset();
-	tmp_centroid_.reset();
-	tmp_cov_.reset();
+    centroid_.reset();
+    icovariance_.reset();
+    points_id_.reset();
+    points_per_voxel_.reset();
+    tmp_centroid_.reset();
+    tmp_cov_.reset();
+    points_raw_per_voxel_.reset();
 };
 
 int VoxelGrid::roundUp(int input, int factor)
@@ -345,8 +346,8 @@ void VoxelGrid::findBoundaries()
 }
 
 void VoxelGrid::findBoundaries(pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud,
-													float &max_x, float &max_y, float &max_z,
-													float &min_x, float &min_y, float &min_z)
+                               float &max_x, float &max_y, float &max_z,
+                               float &min_x, float &min_y, float &min_z)
 {
 
 	max_x = max_y = max_z = -FLT_MAX;
@@ -369,52 +370,115 @@ void VoxelGrid::findBoundaries(pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud,
 
 void VoxelGrid::radiusSearch(pcl::PointXYZ p, float radius, std::vector<int> &voxel_ids, int max_nn)
 {
-	float t_x = p.x;
-	float t_y = p.y;
-	float t_z = p.z;
+    float t_x = p.x;
+    float t_y = p.y;
+    float t_z = p.z;
 
-	int max_id_x = static_cast<int>(floor((t_x + radius) / voxel_x_));
-	int max_id_y = static_cast<int>(floor((t_y + radius) / voxel_y_));
-	int max_id_z = static_cast<int>(floor((t_z + radius) / voxel_z_));
+    int max_id_x = static_cast<int>(floor((t_x + radius) / voxel_x_));
+    int max_id_y = static_cast<int>(floor((t_y + radius) / voxel_y_));
+    int max_id_z = static_cast<int>(floor((t_z + radius) / voxel_z_));
 
-	int min_id_x = static_cast<int>(floor((t_x - radius) / voxel_x_));
-	int min_id_y = static_cast<int>(floor((t_y - radius) / voxel_y_));
-	int min_id_z = static_cast<int>(floor((t_z - radius) / voxel_z_));
+    int min_id_x = static_cast<int>(floor((t_x - radius) / voxel_x_));
+    int min_id_y = static_cast<int>(floor((t_y - radius) / voxel_y_));
+    int min_id_z = static_cast<int>(floor((t_z - radius) / voxel_z_));
 
-	/* Find intersection of the cube containing
-	 * the NN sphere of the point and the voxel grid
-	 */
-	max_id_x = (max_id_x > real_max_bx_) ? real_max_bx_ : max_id_x;
-	max_id_y = (max_id_y > real_max_by_) ? real_max_by_ : max_id_y;
-	max_id_z = (max_id_z > real_max_bz_) ? real_max_bz_ : max_id_z;
+    /* Find intersection of the cube containing
+     * the NN sphere of the point and the voxel grid
+     */
+    max_id_x = (max_id_x > real_max_bx_) ? real_max_bx_ : max_id_x;
+    max_id_y = (max_id_y > real_max_by_) ? real_max_by_ : max_id_y;
+    max_id_z = (max_id_z > real_max_bz_) ? real_max_bz_ : max_id_z;
 
-	min_id_x = (min_id_x < real_min_bx_) ? real_min_bx_ : min_id_x;
-	min_id_y = (min_id_y < real_min_by_) ? real_min_by_ : min_id_y;
-	min_id_z = (min_id_z < real_min_bz_) ? real_min_bz_ : min_id_z;
-	int nn = 0;
+    min_id_x = (min_id_x < real_min_bx_) ? real_min_bx_ : min_id_x;
+    min_id_y = (min_id_y < real_min_by_) ? real_min_by_ : min_id_y;
+    min_id_z = (min_id_z < real_min_bz_) ? real_min_bz_ : min_id_z;
+    int nn = 0;
 
-	for (int idx = min_id_x; idx <= max_id_x && nn < max_nn; idx++) {
-		for (int idy = min_id_y; idy <= max_id_y && nn < max_nn; idy++) {
-			for (int idz = min_id_z; idz <= max_id_z && nn < max_nn; idz++) {
-				int vid = voxelId(idx, idy, idz,
-									min_b_x_, min_b_y_, min_b_z_,
-									vgrid_x_, vgrid_y_, vgrid_z_);
+    for (int idx = min_id_x; idx <= max_id_x && nn < max_nn; idx++) {
+        for (int idy = min_id_y; idy <= max_id_y && nn < max_nn; idy++) {
+            for (int idz = min_id_z; idz <= max_id_z && nn < max_nn; idz++) {
+                int vid = voxelId(idx, idy, idz,
+                                  min_b_x_, min_b_y_, min_b_z_,
+                                  vgrid_x_, vgrid_y_, vgrid_z_);
 
-				if ((*points_per_voxel_)[vid] >= min_points_per_voxel_) {
-					double cx = (*centroid_)[vid](0) - static_cast<double>(t_x);
-					double cy = (*centroid_)[vid](1) - static_cast<double>(t_y);
-					double cz = (*centroid_)[vid](2) - static_cast<double>(t_z);
+                if ((*points_per_voxel_)[vid] >= min_points_per_voxel_) {
+                    double cx = (*centroid_)[vid](0) - static_cast<double>(t_x);
+                    double cy = (*centroid_)[vid](1) - static_cast<double>(t_y);
+                    double cz = (*centroid_)[vid](2) - static_cast<double>(t_z);
 
-					double distance = sqrt(cx * cx + cy * cy + cz * cz);
+                    double distance = sqrt(cx * cx + cy * cy + cz * cz);
 
-					if (distance < radius) {
-						nn++;
-						voxel_ids.push_back(vid);
-					}
-				}
-			}
-		}
-	}
+                    if (distance < radius) {
+                        nn++;
+                        voxel_ids.push_back(vid);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void VoxelGrid::setPointsRaw(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap)
+{
+    for (auto&& p : priorMap->points) {
+        int vid = voxelId(p);
+        if ((*points_per_voxel_)[vid] >= min_points_per_voxel_)
+        {
+            if ((*points_raw_per_voxel_)[vid]->size() == 0) {
+                pcl::PointCloud<pcl::PointXYZ>::Ptr points_raw(new pcl::PointCloud<pcl::PointXYZ>);
+                (*points_raw_per_voxel_)[vid] = points_raw;
+            }
+            (*points_raw_per_voxel_)[vid]->push_back(p);
+        }
+    }
+    //float t_x = p.x;
+    //float t_y = p.y;
+    //float t_z = p.z;
+
+    //int max_id_x = static_cast<int>(floor((t_x + radius) / voxel_x_));
+    //int max_id_y = static_cast<int>(floor((t_y + radius) / voxel_y_));
+    //int max_id_z = static_cast<int>(floor((t_z + radius) / voxel_z_));
+
+    //int min_id_x = static_cast<int>(floor((t_x - radius) / voxel_x_));
+    //int min_id_y = static_cast<int>(floor((t_y - radius) / voxel_y_));
+    //int min_id_z = static_cast<int>(floor((t_z - radius) / voxel_z_));
+
+    /* Find intersection of the cube containing
+     * the NN sphere of the point and the voxel grid
+     */
+    //max_id_x = (max_id_x > real_max_bx_) ? real_max_bx_ : max_id_x;
+    //max_id_y = (max_id_y > real_max_by_) ? real_max_by_ : max_id_y;
+    //max_id_z = (max_id_z > real_max_bz_) ? real_max_bz_ : max_id_z;
+
+    //min_id_x = (min_id_x < real_min_bx_) ? real_min_bx_ : min_id_x;
+    //min_id_y = (min_id_y < real_min_by_) ? real_min_by_ : min_id_y;
+    //min_id_z = (min_id_z < real_min_bz_) ? real_min_bz_ : min_id_z;
+    //int nn = 0;
+
+    /*
+    for (int idx = min_id_x; idx <= max_id_x && nn < max_nn; idx++) {
+        for (int idy = min_id_y; idy <= max_id_y && nn < max_nn; idy++) {
+            for (int idz = min_id_z; idz <= max_id_z && nn < max_nn; idz++) {
+                int vid = voxelId(idx, idy, idz,
+                                  min_b_x_, min_b_y_, min_b_z_,
+                                  vgrid_x_, vgrid_y_, vgrid_z_);
+
+                if ((*points_per_voxel_)[vid] >= min_points_per_voxel_) {
+                    double cx = (*centroid_)[vid](0) - static_cast<double>(t_x);
+                    double cy = (*centroid_)[vid](1) - static_cast<double>(t_y);
+                    double cz = (*centroid_)[vid](2) - static_cast<double>(t_z);
+
+                    double distance = sqrt(cx * cx + cy * cy + cz * cz);
+
+                    if (distance < radius) {
+                        nn++;
+                        voxel_ids.push_back(vid);
+                    }
+                }
+            }
+        }
+    }
+    */
 }
 
 void VoxelGrid::scatterPointsToVoxelGrid()

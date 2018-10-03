@@ -7,7 +7,7 @@ find_package(PCL REQUIRED)
 find_package(Eigen3 QUIET)
 #find_package(Boost)
 
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC")
 
 if (NOT EIGEN3_FOUND)
     # Fallback to cmake_modules
