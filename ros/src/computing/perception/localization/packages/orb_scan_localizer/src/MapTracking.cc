@@ -339,7 +339,7 @@ void MapTracking::Track()
     // Store frame pose information to retrieve the complete camera trajectory afterwards.
     if(!mCurrentFrame.mTcw.empty())
     {
-        std::cout << "Current Position\n" << mCurrentFrame.mTcw << "\n";
+        // std::cout << "Current Position\n" << mCurrentFrame.mTcw << "\n";
         std::cout << "Current inverse Position\n" << mCurrentFrame.mTcw.inv() << "\n";
         // XXX: We found some occurences of empty pose from mpReferenceKF
         if (mCurrentFrame.mpReferenceKF->GetPose().empty()==true)
@@ -364,7 +364,7 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
     std::cout << "ScanWithNDT\n";
     const vector<MapPoint*> &vpRefMPs = mpMap->GetReferenceMapPoints();
     set<MapPoint*> spRefMPs(vpRefMPs.begin(), vpRefMPs.end());
-		// Local Map
+    // Local Map
     pcl::PointCloud<pcl::PointXYZ>::Ptr l_points (new pcl::PointCloud<pcl::PointXYZ>);
 
     for (auto&& p: spRefMPs) {
