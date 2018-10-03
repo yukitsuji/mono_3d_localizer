@@ -43,6 +43,7 @@
 #include <pcl/point_types.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <icp_7dof/voxel_grid.h>
+#include <icp_7dof/icp_7dof_correspondence_estimation.h>
 
 using std::string;
 

@@ -1,6 +1,7 @@
 //#include <pcl/registration/boost.h>
 #include <pcl/correspondence.h>
 #include "icp_7dof/icp_7dof.h"
+#include <chrono>
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 void
@@ -105,7 +106,13 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
     pcl::toPCLPointCloud2 (*target_, *target_blob);
 
   // Pass in the default target for the Correspondence Estimation/Rejection code
+  std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
   correspondence_estimation_->setInputTarget (target_);
+  std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+  double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+  std::cout << "setInputTarget: " << ttrack << "\n";
+  std::cout << "correspondence_estimation_->requiresTargetNormals: " << correspondence_estimation_->requiresTargetNormals() << "\n";
+
   if (correspondence_estimation_->requiresTargetNormals ())
     correspondence_estimation_->setTargetNormals (target_blob);
   // Correspondence Rejectors need a binary blob
@@ -140,16 +147,27 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
     previous_transformation_ = transformation_;
 
     // Set the source each iteration, to ensure the dirty flag is updated
+    t1 = std::chrono::steady_clock::now();
     correspondence_estimation_->setInputSource (input_transformed);
-    if (correspondence_estimation_->requiresSourceNormals ())
-      correspondence_estimation_->setSourceNormals (input_transformed_blob);
+    //if (correspondence_estimation_->requiresSourceNormals ())
+    //  correspondence_estimation_->setSourceNormals (input_transformed_blob);
+    t2 = std::chrono::steady_clock::now();
+    ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    std::cout << "setInputSource: " << ttrack << "\n";
+
+    t1 = std::chrono::steady_clock::now();
     // Estimate correspondences
     if (use_reciprocal_correspondence_)
       correspondence_estimation_->determineReciprocalCorrespondences (*correspondences_, corr_dist_threshold_);
     else
       correspondence_estimation_->determineCorrespondences (*correspondences_, corr_dist_threshold_);
 
+    t2 = std::chrono::steady_clock::now();
+    ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    std::cout << "determineCorrespondences: " << ttrack << "\n";
+    std::cout << "use_reciprocal_correspondence_: " << use_reciprocal_correspondence_ << "\n";
     //if (correspondence_rejectors_.empty ())
+    t1 = std::chrono::steady_clock::now();
     CorrespondencesPtr temp_correspondences (new Correspondences (*correspondences_));
     for (size_t i = 0; i < correspondence_rejectors_.size (); ++i)
     {
@@ -165,6 +183,9 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
       if (i < correspondence_rejectors_.size () - 1)
         *temp_correspondences = *correspondences_;
     }
+    t2 = std::chrono::steady_clock::now();
+    ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    std::cout << "Correspondence rejector: " << ttrack << "\n";
 
     size_t cnt = correspondences_->size ();
     // Check whether we have enough correspondences
@@ -176,13 +197,21 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
       break;
     }
 
+    t1 = std::chrono::steady_clock::now();
     // Estimate the transform
     transformation_estimation_->estimateNonRigidTransformation (*input_transformed, *target_, *correspondences_, transformation_);
+    t2 = std::chrono::steady_clock::now();
+    ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    std::cout << "estimateNonRigidTransformation: " << ttrack << "\n";
 
     // Transform the data
+    t1 = std::chrono::steady_clock::now();
     transformCloud (*input_transformed, *input_transformed, transformation_);
-
+    t2 = std::chrono::steady_clock::now();
+    ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    std::cout << "transformCloud: " << ttrack << "\n";
     // Obtain the final transformation
+
     final_transformation_ = transformation_ * final_transformation_;
 
     ++nr_iterations_;

@@ -38,6 +38,7 @@ set(srcs
         src/icp_7dof.cpp
         src/icp_7dof_transform_lm.cpp
         src/voxel_grid.cpp
+        src/icp_7dof_correspondence_estimation.cpp
         )
 
 set(incs
@@ -48,6 +49,7 @@ set(incs
         include/icp_7dof/icp_7dof_transform_lm.h
         include/icp_7dof/voxel_grid.h
         include/icp_7dof/SymmetricEigenSolver.h
+        include/icp_7dof/icp_7dof_correspondence_estimation.h
         )
 
 #set(impl_incs
