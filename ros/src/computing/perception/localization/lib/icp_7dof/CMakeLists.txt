@@ -37,6 +37,7 @@ include_directories(
 set(srcs
         src/icp_7dof.cpp
         src/icp_7dof_transform_lm.cpp
+        src/voxel_grid.cpp
         )
 
 set(incs
@@ -45,6 +46,8 @@ set(incs
         include/icp_7dof/icp_7dof_transform.h
         include/icp_7dof/warp_point_nonrigid_7d.h
         include/icp_7dof/icp_7dof_transform_lm.h
+        include/icp_7dof/voxel_grid.h
+        include/SymmetricEigenSolver.h
         )
 
 #set(impl_incs
