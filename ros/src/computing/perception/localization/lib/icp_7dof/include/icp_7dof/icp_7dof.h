@@ -8,7 +8,8 @@
 //#include "registration_7dof.h"
 #include "icp_7dof_transform.h"
 #include "icp_7dof_transform_lm.h"
-#include <pcl/registration/correspondence_estimation.h>
+#include "icp_7dof_correspondence_estimation.h"
+//#include <pcl/registration/correspondence_estimation.h>
 #include <pcl/registration/default_convergence_criteria.h>
 
 namespace pcl
@@ -92,7 +93,7 @@ namespace pcl
       using Registration<pcl::PointXYZ, pcl::PointXYZ, double>::euclidean_fitness_epsilon_;
       using Registration<pcl::PointXYZ, pcl::PointXYZ, double>::correspondences_;
       // using Registration<pcl::PointXYZ, pcl::PointXYZ, double>::transformation_estimation_;
-      using Registration<pcl::PointXYZ, pcl::PointXYZ, double>::correspondence_estimation_;
+      // using Registration<pcl::PointXYZ, pcl::PointXYZ, double>::correspondence_estimation_;
       using Registration<pcl::PointXYZ, pcl::PointXYZ, double>::correspondence_rejectors_;
 
       typename pcl::registration::DefaultConvergenceCriteria<double>::Ptr convergence_criteria_;
@@ -112,7 +113,7 @@ namespace pcl
       {
         reg_name_ = "IterativeClosestPoint7dof";
         transformation_estimation_.reset (new pcl::registration::TransformationEstimation7dofLM());
-        correspondence_estimation_.reset (new pcl::registration::CorrespondenceEstimation<pcl::PointXYZ, pcl::PointXYZ, double>);
+        correspondence_estimation_.reset (new pcl::registration::ICPCorrespondenceEstimation);
         convergence_criteria_.reset(new pcl::registration::DefaultConvergenceCriteria<double> (nr_iterations_, transformation_, *correspondences_));
       };
 
@@ -253,7 +254,7 @@ namespace pcl
       bool need_source_blob_, need_target_blob_;
 
       TransformationEstimationPtr transformation_estimation_;
-
+      pcl::registration::ICPCorrespondenceEstimation::Ptr correspondence_estimation_;
   };
 }
 

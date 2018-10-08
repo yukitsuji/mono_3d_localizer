@@ -91,7 +91,7 @@ namespace pcl
           * (e.g., the point cloud that we want to align the input source to)
           * \param[in] cloud the input point cloud target
           */
-        inline void 
+        virtual void 
         setInputTarget (const PointCloudTargetConstPtr &cloud);
 
         /** \brief Get a pointer to the input point cloud dataset target. */

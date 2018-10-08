@@ -1,6 +1,7 @@
 //#include <pcl/registration/boost.h>
-#include <pcl/correspondence.h>
+//#include <pcl/correspondence.h>
 #include "icp_7dof/icp_7dof.h"
+#include "icp_7dof/icp_7dof_correspondence_estimation.h"
 #include <chrono>
 
 ///////////////////////////////////////////////////////////////////////////////////////////
