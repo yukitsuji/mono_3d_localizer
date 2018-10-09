@@ -134,7 +134,7 @@ namespace pcl
       inline typename pcl::registration::DefaultConvergenceCriteria<double>::Ptr
       getConvergeCriteria ()
       {
-        return convergence_criteria_;
+          return convergence_criteria_;
       }
 
       /** \brief Provide a pointer to the input source
@@ -172,6 +172,8 @@ namespace pcl
         }
       }
 
+      inline void setDistThreshold(double thres) { corr_dist_threshold_ = thres * thres; }
+
       /** \brief Provide a pointer to the input target
         * (e.g., the point cloud that we want to align to the target)
         *
@@ -180,19 +182,19 @@ namespace pcl
       virtual void
       setInputTarget (const PointCloudTargetConstPtr &cloud)
       {
-        Registration<pcl::PointXYZ, pcl::PointXYZ, double>::setInputTarget (cloud);
-        std::vector<pcl::PCLPointField> fields;
-        pcl::getFields (*cloud, fields);
-        target_has_normals_ = false;
-        for (size_t i = 0; i < fields.size (); ++i)
-        {
-          if (fields[i].name == "normal_x" || fields[i].name == "normal_y" || fields[i].name == "normal_z")
+          Registration<pcl::PointXYZ, pcl::PointXYZ, double>::setInputTarget (cloud);
+          std::vector<pcl::PCLPointField> fields;
+          pcl::getFields (*cloud, fields);
+          target_has_normals_ = false;
+          for (size_t i = 0; i < fields.size (); ++i)
           {
-            target_has_normals_ = true;
-            break;
+              if (fields[i].name == "normal_x" || fields[i].name == "normal_y" || fields[i].name == "normal_z")
+              {
+                  target_has_normals_ = true;
+                  break;
+              }
           }
-        }
-        correspondence_estimation_->setInputTargetTree(cloud);
+          correspondence_estimation_->setInputTargetTree(cloud);
       }
 
       /** \brief Set whether to use reciprocal correspondence or not

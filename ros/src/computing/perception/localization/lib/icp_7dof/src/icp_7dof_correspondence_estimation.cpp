@@ -77,82 +77,45 @@ pcl::registration::ICPCorrespondenceEstimationBase::CustomInitCompute ()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-bool
-pcl::registration::ICPCorrespondenceEstimationBase::initComputeReciprocal ()
-{
-  // Only update source kd-tree if a new target cloud was set
-  if (source_cloud_updated_ && !force_no_recompute_reciprocal_)
-  {
-    if (point_representation_)
-      tree_reciprocal_->setPointRepresentation (point_representation_);
-    // If the target indices have been given via setIndicesTarget
-    if (indices_)
-      tree_reciprocal_->setInputCloud (getInputSource(), getIndicesSource());
-    else
-      tree_reciprocal_->setInputCloud (getInputSource());
-
-    source_cloud_updated_ = false;
-  }
-
-  return (true);
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////
 void
 pcl::registration::ICPCorrespondenceEstimation::determineCorrespondences (
     pcl::Correspondences &correspondences, double max_distance)
 {
-  if (!CustomInitCompute ())
-    return;
+    if (!CustomInitCompute ())
+        return;
 
-  double max_dist_sqr = max_distance * max_distance;
+    double max_dist_sqr = max_distance * max_distance;
 
-  correspondences.resize (indices_->size ());
+    correspondences.resize (indices_->size ());
 
-  std::vector<int> index (1);
-  std::vector<float> distance (1);
-  pcl::Correspondence corr;
-  unsigned int nr_valid_correspondences = 0;
+    std::vector<int> index (1);
+    std::vector<float> distance (1);
+    pcl::Correspondence corr;
+    unsigned int nr_valid_correspondences = 0;
   
-  // Check if the template types are the same. If true, avoid a copy.
-  // Both point types MUST be registered using the POINT_CLOUD_REGISTER_POINT_STRUCT macro!
-  if (isSamePointType<pcl::PointXYZ, pcl::PointXYZ> ())
-  {
+    // Check if the template types are the same. If true, avoid a copy.
+    // Both point types MUST be registered using the POINT_CLOUD_REGISTER_POINT_STRUCT macro!
     // Iterate over the input set of source indices
     for (std::vector<int>::const_iterator idx = indices_->begin (); idx != indices_->end (); ++idx)
     {
-      tree_->nearestKSearch (input_->points[*idx], 1, index, distance);
-      if (distance[0] > max_dist_sqr)
-        continue;
+        tree_->nearestKSearch (input_->points[*idx], 1, index, distance);
+        if (distance[0] > max_dist_sqr)
+            continue;
 
-      corr.index_query = *idx;
-      corr.index_match = index[0];
-      corr.distance = distance[0];
-      correspondences[nr_valid_correspondences++] = corr;
+        corr.index_query = *idx;
+        corr.index_match = index[0];
+        corr.distance = distance[0];
+        correspondences[nr_valid_correspondences++] = corr;
     }
-  }
-  else
-  {
-    pcl::PointXYZ pt;
-    
-    // Iterate over the input set of source indices
-    for (std::vector<int>::const_iterator idx = indices_->begin (); idx != indices_->end (); ++idx)
-    {
-      // Copy the source data to a target pcl::PointXYZ format so we can search in the tree
-      copyPoint (input_->points[*idx], pt);
+    correspondences.resize (nr_valid_correspondences);
+    deinitCompute ();
+}
 
-      tree_->nearestKSearch (pt, 1, index, distance);
-      if (distance[0] > max_dist_sqr)
-        continue;
-
-      corr.index_query = *idx;
-      corr.index_match = index[0];
-      corr.distance = distance[0];
-      correspondences[nr_valid_correspondences++] = corr;
-    }
-  }
-  correspondences.resize (nr_valid_correspondences);
-  deinitCompute ();
+///////////////////////////////////////////////////////////////////////////////////////////
+bool
+pcl::registration::ICPCorrespondenceEstimationBase::initComputeReciprocal ()
+{
+    exit(0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -160,79 +123,7 @@ void
 pcl::registration::ICPCorrespondenceEstimation::determineReciprocalCorrespondences (
     pcl::Correspondences &correspondences, double max_distance)
 {
-  if (!initCompute ())
-    return;
-
-  // setup tree for reciprocal search
-  // Set the internal point representation of choice
-  if (!initComputeReciprocal())
-    return;
-  double max_dist_sqr = max_distance * max_distance;
-
-  correspondences.resize (indices_->size());
-  std::vector<int> index (1);
-  std::vector<float> distance (1);
-  std::vector<int> index_reciprocal (1);
-  std::vector<float> distance_reciprocal (1);
-  pcl::Correspondence corr;
-  unsigned int nr_valid_correspondences = 0;
-  int target_idx = 0;
-
-  // Check if the template types are the same. If true, avoid a copy.
-  // Both point types MUST be registered using the POINT_CLOUD_REGISTER_POINT_STRUCT macro!
-  if (isSamePointType<pcl::PointXYZ, pcl::PointXYZ> ())
-  {
-    // Iterate over the input set of source indices
-    for (std::vector<int>::const_iterator idx = indices_->begin (); idx != indices_->end (); ++idx)
-    {
-      tree_->nearestKSearch (input_->points[*idx], 1, index, distance);
-      if (distance[0] > max_dist_sqr)
-        continue;
-
-      target_idx = index[0];
-
-      tree_reciprocal_->nearestKSearch (target_->points[target_idx], 1, index_reciprocal, distance_reciprocal);
-      if (distance_reciprocal[0] > max_dist_sqr || *idx != index_reciprocal[0])
-        continue;
-
-      corr.index_query = *idx;
-      corr.index_match = index[0];
-      corr.distance = distance[0];
-      correspondences[nr_valid_correspondences++] = corr;
-    }
-  }
-  else
-  {
-    pcl::PointXYZ pt_src;
-    pcl::PointXYZ pt_tgt;
-   
-    // Iterate over the input set of source indices
-    for (std::vector<int>::const_iterator idx = indices_->begin (); idx != indices_->end (); ++idx)
-    {
-      // Copy the source data to a target pcl::PointXYZ format so we can search in the tree
-      copyPoint (input_->points[*idx], pt_src);
-
-      tree_->nearestKSearch (pt_src, 1, index, distance);
-      if (distance[0] > max_dist_sqr)
-        continue;
-
-      target_idx = index[0];
-
-      // Copy the target data to a target pcl::PointXYZ format so we can search in the tree_reciprocal
-      copyPoint (target_->points[target_idx], pt_tgt);
-
-      tree_reciprocal_->nearestKSearch (pt_tgt, 1, index_reciprocal, distance_reciprocal);
-      if (distance_reciprocal[0] > max_dist_sqr || *idx != index_reciprocal[0])
-        continue;
-
-      corr.index_query = *idx;
-      corr.index_match = index[0];
-      corr.distance = distance[0];
-      correspondences[nr_valid_correspondences++] = corr;
-    }
-  }
-  correspondences.resize (nr_valid_correspondences);
-  deinitCompute ();
+    exit(0);
 }
 
 

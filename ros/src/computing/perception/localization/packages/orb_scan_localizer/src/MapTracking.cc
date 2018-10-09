@@ -382,6 +382,7 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
 
     icp_.setInputSource(l_points);
     icp_.setMaximumIterations(10);
+    icp_.setDistThreshold(2.0);
     pcl::PointCloud<pcl::PointXYZ> output;
     icp_.align (output);
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
