@@ -94,6 +94,9 @@ namespace pcl
         virtual void 
         setInputTarget (const PointCloudTargetConstPtr &cloud);
 
+        virtual void
+        setInputTargetTree (const PointCloudTargetConstPtr &cloud);
+
         /** \brief Get a pointer to the input point cloud dataset target. */
         inline PointCloudTargetConstPtr const 
         getInputTarget () { return (target_ ); }
@@ -275,6 +278,8 @@ namespace pcl
         /** \brief Internal computation initialization. */
         bool
         initCompute ();
+
+        bool CustomInitCompute();
         
         /** \brief Internal computation initialization for reciprocal correspondences. */
         bool

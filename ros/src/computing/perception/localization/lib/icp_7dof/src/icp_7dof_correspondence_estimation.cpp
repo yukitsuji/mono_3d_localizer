@@ -20,6 +20,13 @@ void pcl::registration::ICPCorrespondenceEstimationBase::setInputTarget (
   target_cloud_updated_ = true;
 }
 
+void pcl::registration::ICPCorrespondenceEstimationBase::setInputTargetTree (
+    const PointCloudTargetConstPtr &cloud)
+{
+    tree_->setInputCloud (cloud);
+    target_cloud_updated_ = false;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 bool
 pcl::registration::ICPCorrespondenceEstimationBase::initCompute ()
@@ -38,6 +45,30 @@ pcl::registration::ICPCorrespondenceEstimationBase::initCompute ()
       tree_->setInputCloud (target_, target_indices_);
     else
       tree_->setInputCloud (target_);
+
+    target_cloud_updated_ = false;
+  }
+
+  return (PCLBase<pcl::PointXYZ>::initCompute ());
+}
+
+bool
+pcl::registration::ICPCorrespondenceEstimationBase::CustomInitCompute ()
+{
+  if (!target_)
+  {
+    PCL_ERROR ("[pcl::registration::%s::compute] No input target dataset was given!\n", getClassName ().c_str ());
+    return (false);
+  }
+
+  // Only update target kd-tree if a new target cloud was set
+  if (target_cloud_updated_ && !force_no_recompute_)
+  {
+    // If the target indices have been given via setIndicesTarget
+    //if (target_indices_)
+    //  tree_->setInputCloud (target_, target_indices_);
+    //else
+    //  tree_->setInputCloud (target_);
 
     target_cloud_updated_ = false;
   }
@@ -71,7 +102,7 @@ void
 pcl::registration::ICPCorrespondenceEstimation::determineCorrespondences (
     pcl::Correspondences &correspondences, double max_distance)
 {
-  if (!initCompute ())
+  if (!CustomInitCompute ())
     return;
 
   double max_dist_sqr = max_distance * max_distance;

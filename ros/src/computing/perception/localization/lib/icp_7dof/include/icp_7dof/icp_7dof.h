@@ -192,6 +192,7 @@ namespace pcl
             break;
           }
         }
+        correspondence_estimation_->setInputTargetTree(cloud);
       }
 
       /** \brief Set whether to use reciprocal correspondence or not
