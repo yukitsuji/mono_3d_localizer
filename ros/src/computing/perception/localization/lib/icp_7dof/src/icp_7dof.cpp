@@ -4,6 +4,7 @@
 #include "icp_7dof/icp_7dof_correspondence_estimation.h"
 #include <chrono>
 
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 void
 pcl::IterativeClosestPoint7dof::transformCloud (
@@ -117,14 +118,14 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
   if (correspondence_estimation_->requiresTargetNormals ())
     correspondence_estimation_->setTargetNormals (target_blob);
   // Correspondence Rejectors need a binary blob
-  for (size_t i = 0; i < correspondence_rejectors_.size (); ++i)
-  {
-    registration::CorrespondenceRejector::Ptr& rej = correspondence_rejectors_[i];
-    if (rej->requiresTargetPoints ())
-      rej->setTargetPoints (target_blob);
-    if (rej->requiresTargetNormals () && target_has_normals_)
-      rej->setTargetNormals (target_blob);
-  }
+  // for (size_t i = 0; i < correspondence_rejectors_.size (); ++i)
+  // {
+  //   registration::CorrespondenceRejector::Ptr& rej = correspondence_rejectors_[i];
+  //   if (rej->requiresTargetPoints ())
+  //     rej->setTargetPoints (target_blob);
+  //   if (rej->requiresTargetNormals () && target_has_normals_)
+  //     rej->setTargetNormals (target_blob);
+  // }
 
   convergence_criteria_->setMaximumIterations (max_iterations_);
   convergence_criteria_->setRelativeMSE (euclidean_fitness_epsilon_);
@@ -166,27 +167,27 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
     t2 = std::chrono::steady_clock::now();
     ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
     std::cout << "determineCorrespondences: " << ttrack << "\n";
-    std::cout << "use_reciprocal_correspondence_: " << use_reciprocal_correspondence_ << "\n";
+    // std::cout << "use_reciprocal_correspondence_: " << use_reciprocal_correspondence_ << "\n";
     //if (correspondence_rejectors_.empty ())
-    t1 = std::chrono::steady_clock::now();
-    CorrespondencesPtr temp_correspondences (new Correspondences (*correspondences_));
-    for (size_t i = 0; i < correspondence_rejectors_.size (); ++i)
-    {
-      registration::CorrespondenceRejector::Ptr& rej = correspondence_rejectors_[i];
-      PCL_DEBUG ("Applying a correspondence rejector method: %s.\n", rej->getClassName ().c_str ());
-      if (rej->requiresSourcePoints ())
-        rej->setSourcePoints (input_transformed_blob);
-      if (rej->requiresSourceNormals () && source_has_normals_)
-        rej->setSourceNormals (input_transformed_blob);
-      rej->setInputCorrespondences (temp_correspondences);
-      rej->getCorrespondences (*correspondences_);
-      // Modify input for the next iteration
-      if (i < correspondence_rejectors_.size () - 1)
-        *temp_correspondences = *correspondences_;
-    }
-    t2 = std::chrono::steady_clock::now();
-    ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-    std::cout << "Correspondence rejector: " << ttrack << "\n";
+    // t1 = std::chrono::steady_clock::now();
+    // CorrespondencesPtr temp_correspondences (new Correspondences (*correspondences_));
+    // for (size_t i = 0; i < correspondence_rejectors_.size (); ++i)
+    // {
+    //   registration::CorrespondenceRejector::Ptr& rej = correspondence_rejectors_[i];
+    //   PCL_DEBUG ("Applying a correspondence rejector method: %s.\n", rej->getClassName ().c_str ());
+    //   if (rej->requiresSourcePoints ())
+    //     rej->setSourcePoints (input_transformed_blob);
+    //   if (rej->requiresSourceNormals () && source_has_normals_)
+    //     rej->setSourceNormals (input_transformed_blob);
+    //   rej->setInputCorrespondences (temp_correspondences);
+    //   rej->getCorrespondences (*correspondences_);
+    //   // Modify input for the next iteration
+    //   if (i < correspondence_rejectors_.size () - 1)
+    //     *temp_correspondences = *correspondences_;
+    // }
+    // t2 = std::chrono::steady_clock::now();
+    // ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    // std::cout << "Correspondence rejector: " << ttrack << "\n";
 
     size_t cnt = correspondences_->size ();
     // Check whether we have enough correspondences

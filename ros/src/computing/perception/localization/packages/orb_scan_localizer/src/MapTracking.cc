@@ -378,12 +378,17 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
         l_points->push_back(point);
     }
 
-    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+		std::cout << "Set ICP configuration\n";
 
     icp_.setInputSource(l_points);
     icp_.setMaximumIterations(10);
     icp_.setDistThreshold(2.0);
     pcl::PointCloud<pcl::PointXYZ> output;
+
+		std::cout << "Start alignment\n";
+
+		std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+
     icp_.align (output);
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
@@ -581,8 +586,6 @@ void MapTracking::MonocularInitialization()
             tcw.copyTo(Tcw.rowRange(0,3).col(3));
             mCurrentFrame.SetPose(Tcw);
 
-            cerr << Tcw << endl;
-
             CreateInitialMapMonocular();
 	    std::cout << "##### Initialization Success #####\n";
         }
@@ -613,6 +616,7 @@ void MapTracking::CreateInitialMapMonocular()
 
         //Create MapPoint.
         cv::Mat worldPos(mvIniP3D[i]);
+				// worldPos *= ratio;
 
         MapPoint* pMP = new MapPoint(worldPos,pKFcur,mpMap);
 
@@ -637,49 +641,96 @@ void MapTracking::CreateInitialMapMonocular()
     pKFini->UpdateConnections();
     pKFcur->UpdateConnections();
 
-    // Scale initial baseline
-    cv::Mat Tc2w = pKFcur->GetPose();
-    std::cout << "orig\n" << Tc2w << "\n";
-    cv::Mat initPose = (cv::Mat_<float>(4, 4) <<
-                           0.9999978, 5.272628/10000, -2.066935/1000, -4.690294/100,
-                           -5.296506/10000, 0.9999992, -1.154865/1000, -2.839928/100, 
-                           2.066324/1000, 1.155958/1000, 0.9999971, 0.8586941,
-                           0, 0, 0, 1);
-    cv::Mat invPose = initPose.inv();
-    double ratio =  invPose.at<float>(2, 3) / Tc2w.at<float>(2, 3);
-    Tc2w = invPose;
-    std::cout << "InitPose\n" << initPose << "\n";
-    std::cout << "invPose\n" << Tc2w << "\n";
+		// Bundle Adjustment
+		cout << "New Map created with " << mpMap->MapPointsInMap() << " points" << endl;
 
-    //invMedianDepth = -0.8586941 / Tc2w.at<float>(2, 3);
-    std::cout << "ratio: " << ratio << "\n";
-    pKFcur->SetPose(Tc2w);
+		// # TODO: Update temporary transformation value
+
+		Optimizer::GlobalBundleAdjustemnt(mpMap,20);
+
+		// Set median depth to 1
+		float medianDepth = pKFini->ComputeSceneMedianDepth(2);
+		float invMedianDepth = 1.0f/medianDepth;
+
+		if(medianDepth<0 || pKFcur->TrackedMapPoints(1)<100)
+		{
+				cout << "Wrong initialization, reseting..." << endl;
+				Reset();
+				return;
+		}
+
+		// Scale initial baseline
+		cv::Mat Tc2w = pKFcur->GetPose();
+
+		std::cout << "Tc2w\n" << Tc2w << "\n";
+		// TODO: Scale alignment
+		invMedianDepth = 0.75;
+		// invMedianDepth = -0.8586941 / Tc2w.at<float>(2, 3);
+		std::cout << "invMedianDepth: " << invMedianDepth << "\n";
+
+		Tc2w.col(3).rowRange(0,3) = Tc2w.col(3).rowRange(0,3)*invMedianDepth;
+		pKFcur->SetPose(Tc2w);
+
+		std::cout << "Initial Tc2w\n";
+		std::cout << Tc2w << "\n";
+
+		// Scale points
+		vector<MapPoint*> vpAllMapPoints = pKFini->GetMapPointMatches();
+		for(size_t iMP=0; iMP<vpAllMapPoints.size(); iMP++)
+		{
+				if(vpAllMapPoints[iMP])
+				{
+						MapPoint* pMP = vpAllMapPoints[iMP];
+						pMP->SetWorldPos(pMP->GetWorldPos()*invMedianDepth);
+				}
+		}
+
 
     // Scale points
-    vector<MapPoint*> vpAllMapPoints = pKFini->GetMapPointMatches();
-    for(size_t iMP=0; iMP<vpAllMapPoints.size(); iMP++)
-    {
-        if(vpAllMapPoints[iMP])
-        {
-            MapPoint* pMP = vpAllMapPoints[iMP];
-            pMP->SetWorldPos(pMP->GetWorldPos()*ratio);
-        }
-    }
+    // vector<MapPoint*> vpAllMapPoints = pKFini->GetMapPointMatches();
+    // for(size_t iMP=0; iMP<vpAllMapPoints.size(); iMP++)
+    // {
+    //     if(vpAllMapPoints[iMP])
+    //     {
+    //         MapPoint* pMP = vpAllMapPoints[iMP];
+    //         pMP->SetWorldPos(pMP->GetWorldPos()*0.72); //ratio);
+    //     }
+    // }
+    // // Bundle Adjustment
+    // cout << "New Map created with " << mpMap->MapPointsInMap() << " points" << endl;
+    // Optimizer::InitialGlobalBundleAdjustemnt(mpMap, 20);
+		//
+    // // Set median depth to 1
+    // float medianDepth = pKFini->ComputeSceneMedianDepth(2);
+    // //float invMedianDepth = 1.0f/medianDepth;
+		//
+    // if(medianDepth<0 || pKFcur->TrackedMapPoints(1)<100)
+    // {
+    //     cout << "Wrong initialization, reseting..." << endl;
+    //     Reset();
+    //     return;
+    // }
 
-    // Bundle Adjustment
-    cout << "New Map created with " << mpMap->MapPointsInMap() << " points" << endl;
-    Optimizer::InitialGlobalBundleAdjustemnt(mpMap,20);
-
-    // Set median depth to 1
-    float medianDepth = pKFini->ComputeSceneMedianDepth(2);
-    //float invMedianDepth = 1.0f/medianDepth;
-
-    if(medianDepth<0 || pKFcur->TrackedMapPoints(1)<100)
-    {
-        cout << "Wrong initialization, reseting..." << endl;
-        Reset();
-        return;
-    }
+		// // Scale initial baseline
+		// std::cout <<
+		//
+		// cv::Mat Tc2w = pKFcur->GetPose();
+		// std::cout << "orig\n" << Tc2w << "\n";
+		// cv::Mat initPose = (cv::Mat_<float>(4, 4) <<
+		// 											 0.9999978, 5.272628/10000, -2.066935/1000, -4.690294/100,
+		// 											 -5.296506/10000, 0.9999992, -1.154865/1000, -2.839928/100,
+		// 											 2.066324/1000, 1.155958/1000, 0.9999971, 0.8586941,
+		// 											 0, 0, 0, 1);
+		// cv::Mat invPose = initPose.inv();
+		// double ratio =  invPose.at<float>(2, 3) / Tc2w.at<float>(2, 3);
+		// Tc2w = invPose;
+		// std::cout << "InitPose\n" << initPose << "\n";
+		// std::cout << "invPose\n" << Tc2w << "\n";
+		//
+		// //invMedianDepth = -0.8586941 / Tc2w.at<float>(2, 3);
+		// std::cout << "ratio: " << ratio << "\n";
+		// pKFcur->SetPose(Tc2w);
+		// mCurrentFrame.SetPose(pKFcur->GetPose());
 
     // Scale initial baseline
     // TODO: Scale alignment

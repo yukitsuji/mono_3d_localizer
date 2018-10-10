@@ -6,23 +6,28 @@
 void pcl::registration::ICPCorrespondenceEstimationBase::setInputTarget (
     const PointCloudTargetConstPtr &cloud)
 {
-  if (cloud->points.empty ())
-  {
-    PCL_ERROR ("[pcl::registration::%s::setInputTarget] Invalid or empty point cloud dataset given!\n", getClassName ().c_str ());
-    return;
-  }
-  target_ = cloud;
-
-  // Set the internal point representation of choice
-  if (point_representation_)
-    tree_->setPointRepresentation (point_representation_);
-
-  target_cloud_updated_ = true;
+  // if (cloud->points.empty ())
+  // {
+  //   PCL_ERROR ("[pcl::registration::%s::setInputTarget] Invalid or empty point cloud dataset given!\n", getClassName ().c_str ());
+  //   return;
+  // }
+  // target_ = cloud;
+  //
+  // // Set the internal point representation of choice
+  // if (point_representation_)
+  //   tree_->setPointRepresentation (point_representation_);
+  //
+  // target_cloud_updated_ = true;
 }
 
 void pcl::registration::ICPCorrespondenceEstimationBase::setInputTargetTree (
     const PointCloudTargetConstPtr &cloud)
 {
+    target_ = cloud;
+
+    // Set the internal point representation of choice
+    if (point_representation_)
+      tree_->setPointRepresentation (point_representation_);
     tree_->setInputCloud (cloud);
     target_cloud_updated_ = false;
 }
@@ -33,21 +38,18 @@ pcl::registration::ICPCorrespondenceEstimationBase::initCompute ()
 {
   if (!target_)
   {
-    PCL_ERROR ("[pcl::registration::%s::compute] No input target dataset was given!\n", getClassName ().c_str ());
+    PCL_ERROR ("[pcl::registration::%s::initCompute] No input target dataset was given!\n", getClassName ().c_str ());
     return (false);
   }
 
   // Only update target kd-tree if a new target cloud was set
-  if (target_cloud_updated_ && !force_no_recompute_)
-  {
-    // If the target indices have been given via setIndicesTarget
-    if (target_indices_)
-      tree_->setInputCloud (target_, target_indices_);
-    else
-      tree_->setInputCloud (target_);
+  // If the target indices have been given via setIndicesTarget
+  if (target_indices_)
+    tree_->setInputCloud (target_, target_indices_);
+  else
+    tree_->setInputCloud (target_);
 
-    target_cloud_updated_ = false;
-  }
+  target_cloud_updated_ = false;
 
   return (PCLBase<pcl::PointXYZ>::initCompute ());
 }
@@ -57,21 +59,11 @@ pcl::registration::ICPCorrespondenceEstimationBase::CustomInitCompute ()
 {
   if (!target_)
   {
-    PCL_ERROR ("[pcl::registration::%s::compute] No input target dataset was given!\n", getClassName ().c_str ());
+    PCL_ERROR ("[pcl::registration::%s::CustomInitCompute] No input target dataset was given!\n", getClassName ().c_str ());
     return (false);
   }
 
-  // Only update target kd-tree if a new target cloud was set
-  if (target_cloud_updated_ && !force_no_recompute_)
-  {
-    // If the target indices have been given via setIndicesTarget
-    //if (target_indices_)
-    //  tree_->setInputCloud (target_, target_indices_);
-    //else
-    //  tree_->setInputCloud (target_);
-
-    target_cloud_updated_ = false;
-  }
+  target_cloud_updated_ = false;
 
   return (PCLBase<pcl::PointXYZ>::initCompute ());
 }
@@ -92,7 +84,7 @@ pcl::registration::ICPCorrespondenceEstimation::determineCorrespondences (
     std::vector<float> distance (1);
     pcl::Correspondence corr;
     unsigned int nr_valid_correspondences = 0;
-  
+
     // Check if the template types are the same. If true, avoid a copy.
     // Both point types MUST be registered using the POINT_CLOUD_REGISTER_POINT_STRUCT macro!
     // Iterate over the input set of source indices
@@ -125,5 +117,3 @@ pcl::registration::ICPCorrespondenceEstimation::determineReciprocalCorrespondenc
 {
     exit(0);
 }
-
-

@@ -73,6 +73,8 @@ namespace pcl
       typedef typename TransformationEstimation::Ptr TransformationEstimationPtr;
       typedef typename TransformationEstimation::ConstPtr TransformationEstimationConstPtr;
 
+      typedef typename KdTree::PointRepresentationConstPtr PointRepresentationConstPtr;
+
       using Registration<pcl::PointXYZ, pcl::PointXYZ, double>::reg_name_;
       using Registration<pcl::PointXYZ, pcl::PointXYZ, double>::getClassName;
       using Registration<pcl::PointXYZ, pcl::PointXYZ, double>::input_;
@@ -119,6 +121,97 @@ namespace pcl
 
       /** \brief Empty destructor */
       virtual ~IterativeClosestPoint7dof () {}
+
+      inline bool initCompute ()
+      {
+        if (!target_)
+        {
+          PCL_ERROR ("[pcl::registration::%s::initCompute] No input target dataset was given!\n", getClassName ().c_str ());
+          return (false);
+        }
+
+        // Only update target kd-tree if a new target cloud was set
+        tree_->setInputCloud (target_);
+        target_cloud_updated_ = false;
+
+
+        std::cout << "################ In ICP_7DOF: initCompute #######################\n";
+
+        // Update the correspondence estimation
+        if (correspondence_estimation_)
+        {
+          correspondence_estimation_->setSearchMethodTarget (tree_, true);
+          correspondence_estimation_->setTarget (target_);
+          // correspondence_estimation_->setSearchMethodSource (tree_reciprocal_, force_no_recompute_reciprocal_);
+        }
+
+        // Note: we /cannot/ update the search method on all correspondence rejectors, because we know
+        // nothing about them. If they should be cached, they must be cached individually.
+
+        return (PCLBase<pcl::PointXYZ>::initCompute ());
+      }
+
+      inline bool CustomInitCompute ()
+      {
+        if (!target_)
+        {
+          PCL_ERROR ("[pcl::registration::%s::CustomInitCompute] No input target dataset was given!\n", getClassName ().c_str ());
+          return (false);
+        }
+
+        return (PCLBase<pcl::PointXYZ>::initCompute ());
+      }
+
+      inline void align (PointCloudSource &output)
+      {
+        align (output, Matrix4::Identity ());
+      }
+
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      inline void align (PointCloudSource &output, const Matrix4& guess)
+      {
+        if (!CustomInitCompute ())
+          return;
+
+        // Resize the output dataset
+        if (output.points.size () != indices_->size ())
+          output.points.resize (indices_->size ());
+        // Copy the header
+        output.header   = input_->header;
+        // Check if the output will be computed for all points or only a subset
+        if (indices_->size () != input_->points.size ())
+        {
+          output.width    = static_cast<uint32_t> (indices_->size ());
+          output.height   = 1;
+        }
+        else
+        {
+          output.width    = static_cast<uint32_t> (input_->width);
+          output.height   = input_->height;
+        }
+        output.is_dense = input_->is_dense;
+
+        // Copy the point data to output
+        for (size_t i = 0; i < indices_->size (); ++i)
+          output.points[i] = input_->points[(*indices_)[i]];
+
+        // Set the internal point representation of choice unless otherwise noted
+        if (point_representation_ && !force_no_recompute_)
+          tree_->setPointRepresentation (point_representation_);
+
+        // Perform the actual transformation computation
+        converged_ = false;
+        final_transformation_ = transformation_ = previous_transformation_ = Matrix4::Identity ();
+
+        // Right before we estimate the transformation, we set all the point.data[3] values to 1 to aid the rigid
+        // transformation
+        for (size_t i = 0; i < indices_->size (); ++i)
+          output.points[i].data[3] = 1.0;
+
+        computeTransformation (output, guess);
+
+        deinitCompute ();
+      }
 
       void
       setTransformationEstimation (const TransformationEstimationPtr &te) { transformation_estimation_ = te; }
@@ -179,22 +272,26 @@ namespace pcl
         *
         * \param[in] cloud the input point cloud target
         */
-      virtual void
+      inline void
       setInputTarget (const PointCloudTargetConstPtr &cloud)
       {
-          Registration<pcl::PointXYZ, pcl::PointXYZ, double>::setInputTarget (cloud);
+          // Registration<pcl::PointXYZ, pcl::PointXYZ, double>::setInputTarget (cloud);
+          target_ = cloud;
+          target_cloud_updated_ = true;
+
           std::vector<pcl::PCLPointField> fields;
           pcl::getFields (*cloud, fields);
           target_has_normals_ = false;
-          for (size_t i = 0; i < fields.size (); ++i)
-          {
-              if (fields[i].name == "normal_x" || fields[i].name == "normal_y" || fields[i].name == "normal_z")
-              {
-                  target_has_normals_ = true;
-                  break;
-              }
-          }
-          correspondence_estimation_->setInputTargetTree(cloud);
+          // for (size_t i = 0; i < fields.size (); ++i)
+          // {
+          //     if (fields[i].name == "normal_x" || fields[i].name == "normal_y" || fields[i].name == "normal_z")
+          //     {
+          //         target_has_normals_ = true;
+          //         break;
+          //     }
+          // }
+          // correspondence_estimation_->setInputTargetTree(cloud);
+          initCompute();
       }
 
       /** \brief Set whether to use reciprocal correspondence or not
@@ -258,6 +355,9 @@ namespace pcl
 
       TransformationEstimationPtr transformation_estimation_;
       pcl::registration::ICPCorrespondenceEstimation::Ptr correspondence_estimation_;
+
+      /** \brief The point representation used (internal). */
+      PointRepresentationConstPtr point_representation_;
   };
 }
 

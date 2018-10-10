@@ -14,7 +14,7 @@ namespace pcl
 {
   namespace registration
   {
-    /** \brief Abstract @b ICPCorrespondenceEstimationBase class. 
+    /** \brief Abstract @b ICPCorrespondenceEstimationBase class.
       * All correspondence estimation methods should inherit from this.
       * \author Radu B. Rusu
       * \ingroup registration
@@ -48,7 +48,7 @@ namespace pcl
         typedef typename KdTree::PointRepresentationConstPtr PointRepresentationConstPtr;
 
         /** \brief Empty constructor. */
-        ICPCorrespondenceEstimationBase () 
+        ICPCorrespondenceEstimationBase ()
           : corr_name_ ("ICPCorrespondenceEstimationBase")
           , tree_ (new pcl::search::KdTree<pcl::PointXYZ>)
           , tree_reciprocal_ (new pcl::search::KdTree<pcl::PointXYZ>)
@@ -63,16 +63,16 @@ namespace pcl
           , force_no_recompute_reciprocal_ (false)
         {
         }
-      
+
         /** \brief Empty destructor */
         virtual ~ICPCorrespondenceEstimationBase () {}
 
-        /** \brief Provide a pointer to the input source 
+        /** \brief Provide a pointer to the input source
           * (e.g., the point cloud that we want to align to the target)
           *
           * \param[in] cloud the input point cloud source
           */
-        inline void 
+        inline void
         setInputSource (const PointCloudSourceConstPtr &cloud)
         {
           source_cloud_updated_ = true;
@@ -81,24 +81,24 @@ namespace pcl
         }
 
         /** \brief Get a pointer to the input point cloud dataset target. */
-        inline PointCloudSourceConstPtr const 
-        getInputSource () 
-        { 
-          return (input_ ); 
+        inline PointCloudSourceConstPtr const
+        getInputSource ()
+        {
+          return (input_ );
         }
 
-        /** \brief Provide a pointer to the input target 
+        /** \brief Provide a pointer to the input target
           * (e.g., the point cloud that we want to align the input source to)
           * \param[in] cloud the input point cloud target
           */
-        virtual void 
+        virtual void
         setInputTarget (const PointCloudTargetConstPtr &cloud);
 
         virtual void
         setInputTargetTree (const PointCloudTargetConstPtr &cloud);
 
         /** \brief Get a pointer to the input point cloud dataset target. */
-        inline PointCloudTargetConstPtr const 
+        inline PointCloudTargetConstPtr const
         getInputTarget () { return (target_ ); }
 
 
@@ -113,7 +113,7 @@ namespace pcl
         {
           PCL_WARN ("[pcl::registration::%s::setSourceNormals] This class does not require input source normals", getClassName ().c_str ());
         }
-        
+
         /** \brief See if this rejector requires target normals */
         virtual bool
         requiresTargetNormals () const
@@ -126,9 +126,9 @@ namespace pcl
           PCL_WARN ("[pcl::registration::%s::setTargetNormals] This class does not require input target normals", getClassName ().c_str ());
         }
 
-        /** \brief Provide a pointer to the vector of indices that represent the 
+        /** \brief Provide a pointer to the vector of indices that represent the
           * input source point cloud.
-          * \param[in] indices a pointer to the vector of indices 
+          * \param[in] indices a pointer to the vector of indices
           */
         inline void
         setIndicesSource (const IndicesPtr &indices)
@@ -137,11 +137,11 @@ namespace pcl
         }
 
         /** \brief Get a pointer to the vector of indices used for the source dataset. */
-        inline IndicesPtr const 
+        inline IndicesPtr const
         getIndicesSource () { return (indices_); }
 
         /** \brief Provide a pointer to the vector of indices that represent the input target point cloud.
-          * \param[in] indices a pointer to the vector of indices 
+          * \param[in] indices a pointer to the vector of indices
           */
         inline void
         setIndicesTarget (const IndicesPtr &indices)
@@ -151,27 +151,33 @@ namespace pcl
         }
 
         /** \brief Get a pointer to the vector of indices used for the target dataset. */
-        inline IndicesPtr const 
+        inline IndicesPtr const
         getIndicesTarget () { return (target_indices_); }
 
         /** \brief Provide a pointer to the search object used to find correspondences in
           * the target cloud.
           * \param[in] tree a pointer to the spatial search object.
-          * \param[in] force_no_recompute If set to true, this tree will NEVER be 
-          * recomputed, regardless of calls to setInputTarget. Only use if you are 
+          * \param[in] force_no_recompute If set to true, this tree will NEVER be
+          * recomputed, regardless of calls to setInputTarget. Only use if you are
           * confident that the tree will be set correctly.
           */
         inline void
-        setSearchMethodTarget (const KdTreePtr &tree, 
-                               bool force_no_recompute = false) 
-        { 
-          tree_ = tree; 
+        setSearchMethodTarget (const KdTreePtr &tree,
+                               bool force_no_recompute = true)
+        {
+          tree_ = tree;
           if (force_no_recompute)
           {
             force_no_recompute_ = true;
           }
           // Since we just set a new tree, we need to check for updates
-          target_cloud_updated_ = true;
+          target_cloud_updated_ = false;
+        }
+
+        inline void
+        setTarget (const PointCloudTargetConstPtr &cloud)
+        {
+          target_ = cloud;
         }
 
         /** \brief Get a pointer to the search method used to find correspondences in the
@@ -185,15 +191,15 @@ namespace pcl
         /** \brief Provide a pointer to the search object used to find correspondences in
           * the source cloud (usually used by reciprocal correspondence finding).
           * \param[in] tree a pointer to the spatial search object.
-          * \param[in] force_no_recompute If set to true, this tree will NEVER be 
-          * recomputed, regardless of calls to setInputSource. Only use if you are 
+          * \param[in] force_no_recompute If set to true, this tree will NEVER be
+          * recomputed, regardless of calls to setInputSource. Only use if you are
           * extremely confident that the tree will be set correctly.
           */
         inline void
-        setSearchMethodSource (const KdTreeReciprocalPtr &tree, 
-                               bool force_no_recompute = false) 
-        { 
-          tree_reciprocal_ = tree; 
+        setSearchMethodSource (const KdTreeReciprocalPtr &tree,
+                               bool force_no_recompute = false)
+        {
+          tree_reciprocal_ = tree;
           if ( force_no_recompute )
           {
             force_no_recompute_reciprocal_ = true;
@@ -214,25 +220,25 @@ namespace pcl
           * \param[out] correspondences the found correspondences (index of query point, index of target point, distance)
           * \param[in] max_distance maximum allowed distance between correspondences
           */
-        virtual void 
+        virtual void
         determineCorrespondences (pcl::Correspondences &correspondences,
                                   double max_distance = std::numeric_limits<double>::max ()) = 0;
 
         /** \brief Determine the reciprocal correspondences between input and target cloud.
-          * A correspondence is considered reciprocal if both Src_i has Tgt_i as a 
+          * A correspondence is considered reciprocal if both Src_i has Tgt_i as a
           * correspondence, and Tgt_i has Src_i as one.
           *
           * \param[out] correspondences the found correspondences (index of query and target point, distance)
           * \param[in] max_distance maximum allowed distance between correspondences
           */
-        virtual void 
+        virtual void
         determineReciprocalCorrespondences (pcl::Correspondences &correspondences,
                                             double max_distance = std::numeric_limits<double>::max ()) = 0;
 
-        /** \brief Provide a boost shared pointer to the PointRepresentation to be used 
+        /** \brief Provide a boost shared pointer to the PointRepresentation to be used
           * when searching for nearest neighbors.
           *
-          * \param[in] point_representation the PointRepresentation to be used by the 
+          * \param[in] point_representation the PointRepresentation to be used by the
           * k-D tree for nearest neighbor search
           */
         inline void
@@ -255,7 +261,7 @@ namespace pcl
         KdTreeReciprocalPtr tree_reciprocal_;
 
 
-        
+
         /** \brief The input point cloud dataset target. */
         PointCloudTargetConstPtr target_;
 
@@ -272,7 +278,7 @@ namespace pcl
         std::vector<pcl::PCLPointField> input_fields_;
 
         /** \brief Abstract class get name method. */
-        inline const std::string& 
+        inline const std::string&
         getClassName () const { return (corr_name_); }
 
         /** \brief Internal computation initialization. */
@@ -280,7 +286,7 @@ namespace pcl
         initCompute ();
 
         bool CustomInitCompute();
-        
+
         /** \brief Internal computation initialization for reciprocal correspondences. */
         bool
         initComputeReciprocal ();
@@ -293,11 +299,11 @@ namespace pcl
          * This way, we avoid rebuilding the reciprocal kd-tree for the source cloud every time the determineCorrespondences () method
          * is called. */
         bool source_cloud_updated_;
-        /** \brief A flag which, if set, means the tree operating on the target cloud 
+        /** \brief A flag which, if set, means the tree operating on the target cloud
          * will never be recomputed*/
         bool force_no_recompute_;
-        
-        /** \brief A flag which, if set, means the tree operating on the source cloud 
+
+        /** \brief A flag which, if set, means the tree operating on the source cloud
          * will never be recomputed*/
         bool force_no_recompute_reciprocal_;
 
@@ -359,11 +365,11 @@ namespace pcl
         typedef typename KdTree::PointRepresentationConstPtr PointRepresentationConstPtr;
 
         /** \brief Empty constructor. */
-        ICPCorrespondenceEstimation () 
+        ICPCorrespondenceEstimation ()
         {
           corr_name_  = "ICPCorrespondenceEstimation";
         }
-      
+
         /** \brief Empty destructor */
         virtual ~ICPCorrespondenceEstimation () {}
 
@@ -371,24 +377,24 @@ namespace pcl
           * \param[out] correspondences the found correspondences (index of query point, index of target point, distance)
           * \param[in] max_distance maximum allowed distance between correspondences
           */
-        virtual void 
+        virtual void
         determineCorrespondences (pcl::Correspondences &correspondences,
                                   double max_distance = std::numeric_limits<double>::max ());
 
         /** \brief Determine the reciprocal correspondences between input and target cloud.
-          * A correspondence is considered reciprocal if both Src_i has Tgt_i as a 
+          * A correspondence is considered reciprocal if both Src_i has Tgt_i as a
           * correspondence, and Tgt_i has Src_i as one.
           *
           * \param[out] correspondences the found correspondences (index of query and target point, distance)
           * \param[in] max_distance maximum allowed distance between correspondences
           */
-        virtual void 
+        virtual void
         determineReciprocalCorrespondences (pcl::Correspondences &correspondences,
                                             double max_distance = std::numeric_limits<double>::max ());
 
-        
+
         /** \brief Clone and cast to ICPCorrespondenceEstimationBase */
-        virtual boost::shared_ptr< ICPCorrespondenceEstimationBase > 
+        virtual boost::shared_ptr< ICPCorrespondenceEstimationBase >
         clone () const
         {
           Ptr copy (new ICPCorrespondenceEstimation (*this));
@@ -399,4 +405,3 @@ namespace pcl
 }
 
 #endif /* ICP_7DOF_CORRESPONDENCE_ESTIMATION_H_ */
-
