@@ -87,6 +87,7 @@ protected:
     void SearchInNeighbors();
 
     void KeyFrameCulling();
+    void KeyFrameCullingByNumber(int max_count);
 
     cv::Mat ComputeF12(KeyFrame* &pKF1, KeyFrame* &pKF2);
 

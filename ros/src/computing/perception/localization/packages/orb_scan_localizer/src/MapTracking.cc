@@ -146,21 +146,22 @@ void MapTracking::setMapLoaded()
 
 void MapTracking::SetLocalMapper(LocalMapping *pLocalMapper)
 {
-    mpLocalMapper=pLocalMapper;
+    mpLocalMapper = pLocalMapper;
 }
 
 void MapTracking::SetViewer(Viewer *pViewer)
 {
-    mpViewer=pViewer;
+    mpViewer = pViewer;
 }
 
 void MapTracking::SetMapPublisher(MapPublisher *pViewer)
 {
-    mpMapPublisher=pViewer;
+    mpMapPublisher = pViewer;
 }
 
 cv::Mat MapTracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 {
+    double sum_time = 0;
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     mImGray = im;
 
@@ -180,8 +181,9 @@ cv::Mat MapTracking::GrabImageMonocular(const cv::Mat &im, const double &timesta
     }
 
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-    double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    double ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
     std::cout << "Convert gray Image " << ttrack << "\n";
+		sum_time += ttrack;
 
     t1 = std::chrono::steady_clock::now();
 
@@ -193,14 +195,24 @@ cv::Mat MapTracking::GrabImageMonocular(const cv::Mat &im, const double &timesta
                               mK, mDistCoef, mbf, mThDepth);
 
     t2 = std::chrono::steady_clock::now();
-    ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
     std::cout << "Orb Image " << ttrack << "\n";
+		sum_time += ttrack;
 
     t1 = std::chrono::steady_clock::now();
     Track();
     t2 = std::chrono::steady_clock::now();
-    ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
     std::cout << "Tracking Image " << ttrack << "\n";
+		sum_time += ttrack;
+
+		std::cout << "Sum of basic module time: " << sum_time << "\n";
+
+		// t1 = std::chrono::steady_clock::now();
+		// mpLocalMapper->RunOnce();
+		// t2 = std::chrono::steady_clock::now();
+    // ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    // std::cout << "local mapping " << ttrack << "\n";
 
     return mCurrentFrame.mTcw.clone();
 }
@@ -233,46 +245,58 @@ void MapTracking::Track()
     {
         // System is initialized. Track Frame.
         bool bOK;
-
+				std::chrono::steady_clock::time_point t1;
+				std::chrono::steady_clock::time_point t2;
+				double ttrack;
         // Initial camera pose estimation using motion model or relocalization (if tracking is lost)
         // Local Mapping is activated. This is the normal behaviour, unless
         // you explicitly activate the "only tracking" mode.
         if(mState == OK)
-        {
-            // Local Mapping might have changed some MapPoints tracked in last frame
-            CheckReplacedInLastFrame();
+				{
+		        // Local Mapping might have changed some MapPoints tracked in last frame
+		        CheckReplacedInLastFrame();
 
-            if(mVelocity.empty()) // || mCurrentFrame.mnId<mnLastRelocFrameId+2)
-            {
-                bOK = TrackReferenceKeyFrame();
-            }
-            else
-            {
-                bOK = TrackWithMotionModel(); // matching with previous frame
-                if(!bOK)
-                    bOK = TrackReferenceKeyFrame();
-            }
-        }
-        else
-        {
-            // // TODO: Need to implement when tracking is lost.
-            // // Triangulation and scan matching is useful.
-            // bOK = Relocalization();
-        }
+		        if(mVelocity.empty()) // || mCurrentFrame.mnId<mnLastRelocFrameId+2)
+		        {
+		            bOK = TrackReferenceKeyFrame();
+		        }
+		        else
+		        {
+							  t1 = std::chrono::steady_clock::now();
+		            bOK = TrackWithMotionModel(); // matching with previous frame
+								t2 = std::chrono::steady_clock::now();
+								ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+								std::cout << "TrackWithMotionModel " << ttrack << "\n";
+
+		            if(!bOK) {
+								    t1 = std::chrono::steady_clock::now();
+									  bOK = TrackReferenceKeyFrame();
+										t2 = std::chrono::steady_clock::now();
+										ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+										std::cout << "TrackReferenceKeyFrame " << ttrack << "\n";
+								}
+		        }
+				}
+
         mCurrentFrame.mpReferenceKF = mpReferenceKF;
+
         // If we have an initial estimation of the camera pose and matching. Track the local map.
+				t1 = std::chrono::steady_clock::now();
         if(bOK)
             bOK = TrackLocalMap();
+				t2 = std::chrono::steady_clock::now();
+				ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+				std::cout << "TrackLocalMap " << ttrack << "\n";
 
         // mCurrentFrame.mTcwを使って位置調整？
         pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap = mpMap->GetPriorMapPoints();
         if (priorMap) {
-            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+            t1 = std::chrono::steady_clock::now();
             ScanWithNDT(mCurrentFrame.mTcw);
             // ScanWithNDT(mCurrentFrame.mpReferenceKF->GetPoseInverse());
             // mCurrentFrame.mpReferenceKF->GetPoseInverse().t();
-            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-            double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+            t2 = std::chrono::steady_clock::now();
+            ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
             std::cout << "ScanWithNDT " << ttrack << "\n";
         }
 
@@ -318,6 +342,7 @@ void MapTracking::Track()
         // Check if we need to insert a new keyframe
         if(NeedNewKeyFrame()) {
             CreateNewKeyFrame();
+						// mpLocalMapper->RunOnce();
         }
 
         // We allow points with high innovation (considered outliers by the Huber Function)
@@ -391,7 +416,7 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
 
     icp_.align (output);
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-    double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    double ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
     std::cout << "[done, " << ttrack <<  " s : " << output.width * output.height << " points], has converged: ";
     std::cout << icp_.hasConverged() << " with score: " << icp_.getFitnessScore () << "\n";
     Eigen::Matrix4d transformation = icp_.getFinalTransformation ();
@@ -925,9 +950,9 @@ bool MapTracking::TrackLocalMap()
         }
     }
 
+		std::cout << "Number of match in TrackLocalMap: " << mnMatchesInliers << "\n";
     // Decide if the tracking was successful
-    if(mnMatchesInliers < 30) {
-	//    	cerr << "TrackLocalMap Failure: B" << endl;
+    if(mnMatchesInliers < 10) {
         return false;
     }
     else
@@ -1065,12 +1090,12 @@ void MapTracking::UpdateLocalPoints()
         {
             if(!pMP)
                 continue;
-            if(pMP->mnTrackReferenceForFrame==mCurrentFrame.mnId)
+            if(pMP->mnTrackReferenceForFrame == mCurrentFrame.mnId)
                 continue;
             if(!pMP->isBad())
             {
                 mvpLocalMapPoints.push_back(pMP);
-                pMP->mnTrackReferenceForFrame=mCurrentFrame.mnId;
+                pMP->mnTrackReferenceForFrame = mCurrentFrame.mnId;
             }
         }
     }
@@ -1078,6 +1103,9 @@ void MapTracking::UpdateLocalPoints()
 
 void MapTracking::UpdateLocalKeyFrames()
 {
+	  std::cout << "Number of local map KF: Before Filtering: " << mvpLocalKeyFrames.size() << '\n';
+		vector<KeyFrame*> vpLocalKeyFrames = mCurrentFrame.mpReferenceKF->GetVectorCovisibleKeyFrames();
+		std::cout << "Number of local map KF: Before Filtering: " << vpLocalKeyFrames.size() << '\n';
     // Each map point vote for the keyframes in which it has been observed
     map<KeyFrame*,int> keyframeCounter;
     for(int i=0; i<mCurrentFrame.N; ++i)
@@ -1100,6 +1128,8 @@ void MapTracking::UpdateLocalKeyFrames()
 
     if(keyframeCounter.empty())
         return;
+
+		std::cout << "KeyFrameCounter size: " << keyframeCounter.size() << "\n";
 
     int max = 0;
     KeyFrame* pKFmax = static_cast<KeyFrame*>(NULL);
@@ -1156,7 +1186,7 @@ void MapTracking::UpdateLocalKeyFrames()
     mvpLocalKeyFrames = filteredKeyFrames;
 
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-    double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    double ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
     std::cout << "Create KeyFrame " << ttrack << "\n";
     std::cout << "Number of local map KF: " << countSoter.size() << '\n';
     std::cout << "Number of local map KF: After Filtering: " << mvpLocalKeyFrames.size() << '\n';

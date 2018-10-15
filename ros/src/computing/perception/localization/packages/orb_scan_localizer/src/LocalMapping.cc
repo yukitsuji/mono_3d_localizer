@@ -23,7 +23,7 @@
 #include "Optimizer.h"
 
 #include <mutex>
-
+#include <chrono>
 
 
 namespace ORB_SLAM2
@@ -83,6 +83,8 @@ void LocalMapping::Run()
 
                 // Check redundant local Keyframes
                 KeyFrameCulling();
+
+                KeyFrameCullingByNumber(20);
             }
         }
         else if(Stop())
@@ -114,36 +116,74 @@ void LocalMapping::Run()
 
 void LocalMapping::RunOnce()
 {
+  std::cout << "RunOnce\n";
+  std::chrono::steady_clock::time_point t1;
+  std::chrono::steady_clock::time_point t2;
+  double ttrack;
+  SetAcceptKeyFrames(true);
 	// Check if there are keyframes in the queue
 	if(CheckNewKeyFrames())
 	{
+    t1 = std::chrono::steady_clock::now();
 		// BoW conversion and insertion in Map
 		ProcessNewKeyFrame();
+    t2 = std::chrono::steady_clock::now();
+    ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    std::cout << "ProcessNewKeyFrame " << ttrack << "\n";
 
+    t1 = std::chrono::steady_clock::now();
 		// Check recent MapPoints
 		MapPointCulling();
+    t2 = std::chrono::steady_clock::now();
+    ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    std::cout << "MapPointCulling " << ttrack << "\n";
 
+
+    t1 = std::chrono::steady_clock::now();
 		// Triangulate new MapPoints
 		CreateNewMapPoints();
+    t2 = std::chrono::steady_clock::now();
+    ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    std::cout << "CreateNewMapPoints " << ttrack << "\n";
 
 		if(!CheckNewKeyFrames())
 		{
+      t1 = std::chrono::steady_clock::now();
 			// Find more matches in neighbor keyframes and fuse point duplications
 			SearchInNeighbors();
+      t2 = std::chrono::steady_clock::now();
+      ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+      std::cout << "SearchInNeighbors " << ttrack << "\n";
 		}
 
 		mbAbortBA = false;
 
 		if(!CheckNewKeyFrames())
 		{
+      t1 = std::chrono::steady_clock::now();
 			// Local BA
-			if(mpMap->KeyFramesInMap()>2)
-				Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, &mbAbortBA, mpMap);
+			if(mpMap->KeyFramesInMap() > 2)
+				Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, false, mpMap);
+      t2 = std::chrono::steady_clock::now();
+      ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+      std::cout << "LocalBundleAdjustment " << ttrack << "\n";
 
+
+      t1 = std::chrono::steady_clock::now();
 			// Check redundant local Keyframes
 			KeyFrameCulling();
+      t2 = std::chrono::steady_clock::now();
+      ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+      std::cout << "KeyFrameCulling " << ttrack << "\n";
+
+      t1 = std::chrono::steady_clock::now();
+      KeyFrameCullingByNumber(20);
+      t2 = std::chrono::steady_clock::now();
+      ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+      std::cout << "KeyFrameCullingByNumber " << ttrack << "\n";
 		}
 	}
+  SetAcceptKeyFrames(true);
 }
 
 
@@ -239,7 +279,7 @@ void LocalMapping::MapPointCulling()
 void LocalMapping::CreateNewMapPoints()
 {
     // Retrieve neighbor keyframes in covisibility graph
-    int nn=20;
+    int nn = 20;
     const vector<KeyFrame*> vpNeighKFs = mpCurrentKeyFrame->GetBestCovisibilityKeyFrames(nn);
 
     ORBmatcher matcher(0.6,false);
@@ -532,14 +572,13 @@ void LocalMapping::SearchInNeighbors()
         }
     }
 
-    matcher.Fuse(mpCurrentKeyFrame,vpFuseCandidates);
-
+    matcher.Fuse(mpCurrentKeyFrame, vpFuseCandidates);
 
     // Update points
     vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
-    for(size_t i=0, iend=vpMapPointMatches.size(); i<iend; i++)
+    for(size_t i=0, iend=vpMapPointMatches.size(); i<iend; ++i)
     {
-        MapPoint* pMP=vpMapPointMatches[i];
+        MapPoint* pMP = vpMapPointMatches[i];
         if(pMP)
         {
             if(!pMP->isBad())
@@ -630,7 +669,7 @@ bool LocalMapping::AcceptKeyFrames()
 void LocalMapping::SetAcceptKeyFrames(bool flag)
 {
     unique_lock<mutex> lock(mMutexAccept);
-    mbAcceptKeyFrames=flag;
+    mbAcceptKeyFrames = flag;
 }
 
 bool LocalMapping::SetNotStop(bool flag)
@@ -708,6 +747,24 @@ void LocalMapping::KeyFrameCulling()
         if(nRedundantObservations>0.9*nMPs){
             pKF->SetBadFlag();
         }
+    }
+}
+
+void LocalMapping::KeyFrameCullingByNumber(int max_count)
+{
+    // Check redundant keyframes (only local keyframes)
+    // A keyframe is considered redundant if the 90% of the MapPoints it sees, are seen
+    // in at least other 3 keyframes (in the same or finer scale)
+    // We only consider close stereo points
+    vector<KeyFrame*> vpLocalKeyFrames = mpCurrentKeyFrame->GetVectorCovisibleKeyFrames();
+
+    if (vpLocalKeyFrames.size() <= max_count) return;
+
+    for (vector<KeyFrame*>::iterator vit=vpLocalKeyFrames.begin()+(max_count-1), vend=vpLocalKeyFrames.end(); vit!=vend; vit++)
+    {
+        KeyFrame* pKF = *vit;
+        if (pKF->mnId == 0) continue;
+        pKF->SetBadFlag();
     }
 }
 

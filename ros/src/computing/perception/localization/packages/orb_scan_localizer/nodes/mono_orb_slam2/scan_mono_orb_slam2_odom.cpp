@@ -89,36 +89,37 @@ int main(int argc, char **argv)
 
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
         // Pass the image to the SLAM system
-        std:cout << "HOGE/n";
         SLAM.TrackMonocular(im, tframe, true);
 
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
-        double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+        double ttrack = std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
 
-        vTimesTrack[ni]=ttrack;
+        vTimesTrack[ni] = ttrack;
         std::cout << "time " << ttrack << "\n";
 
         // Wait to load the next frame
-        double T=0;
-        if(ni<nImages-1)
-            T = vTimestamps[ni+1]-tframe;
-        else if(ni>0)
-            T = tframe-vTimestamps[ni-1];
+        // double T=0;
+        // if(ni<nImages-1)
+        //     T = vTimestamps[ni+1]-tframe;
+        // else if(ni>0)
+        //     T = tframe-vTimestamps[ni-1];
+        //
+        // if(ttrack<T)
+        //     usleep((T-ttrack)*1e6);
 
-        if(ttrack<T)
-            usleep((T-ttrack)*1e6);
+        usleep(0.01);
     }
 
     // Stop all threads
     SLAM.Shutdown();
 
     // Tracking time statistics
-    sort(vTimesTrack.begin(),vTimesTrack.end());
+    sort(vTimesTrack.begin(), vTimesTrack.end());
     float totaltime = 0;
     for(int ni=0; ni<nImages; ni++)
     {
-        totaltime+=vTimesTrack[ni];
+        totaltime += vTimesTrack[ni];
     }
     cout << "-------" << endl << endl;
     cout << "median tracking time: " << vTimesTrack[nImages/2] << endl;
@@ -126,6 +127,8 @@ int main(int argc, char **argv)
 
     // Save camera trajectory
     SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
+
+    ros::shutdown();
 
     return 0;
 }

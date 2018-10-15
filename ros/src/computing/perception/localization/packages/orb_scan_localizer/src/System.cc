@@ -130,7 +130,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
     std::cout << "Launched tracker\n";
     //Initialize the Local Mapping thread and launch
     mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR);
-    mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run,mpLocalMapper);
+    mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run, mpLocalMapper);
     std::cout << "Launched local map\n";
 
     mpLocalMapper->SetTracker(mpMapTracker);
