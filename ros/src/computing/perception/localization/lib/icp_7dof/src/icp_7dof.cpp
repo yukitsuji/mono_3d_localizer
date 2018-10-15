@@ -167,6 +167,7 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
     t2 = std::chrono::steady_clock::now();
     ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
     std::cout << "determineCorrespondences: " << ttrack << "\n";
+    std::cout << "correspondence size: from " << input_transformed->size() << " to " << correspondences_->size() << "\n";
     // std::cout << "use_reciprocal_correspondence_: " << use_reciprocal_correspondence_ << "\n";
     //if (correspondence_rejectors_.empty ())
     // t1 = std::chrono::steady_clock::now();

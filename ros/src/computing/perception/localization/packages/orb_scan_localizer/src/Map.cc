@@ -175,6 +175,13 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Map::SetPriorMapPoints(pcl::PointCloud<pcl::
     _pcd = pcd;
 }
 
+void Map::VoxelGridFilter(double filter_res) {
+	pcl::VoxelGrid<pcl::PointXYZ> voxel_grid_filter;
+	voxel_grid_filter.setLeafSize(filter_res, filter_res, filter_res);
+	voxel_grid_filter.setInputCloud(_pcd);
+	voxel_grid_filter.filter(*_pcd);
+}
+
 // we expect direction vector has been normalized,
 // as returned by Frame::getDirectionVector()
 //KeyFrame* Map::getNearestKeyFrame (const float &x, const float &y, const float &z,

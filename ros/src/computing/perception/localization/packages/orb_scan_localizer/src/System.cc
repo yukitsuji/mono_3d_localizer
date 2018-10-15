@@ -124,6 +124,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
 
     if (!mapFileName.empty()) {
         mpMapTracker->SetSourceMap(mpMap->GetPriorMapPoints());
+        mpMap->VoxelGridFilter(2.0);
     }
 
     std::cout << "Launched tracker\n";

@@ -35,7 +35,7 @@
 #include <pcl/octree/octree.h>
 #include <pcl/octree/impl/octree_search.hpp>
 #include <pcl/io/pcd_io.h>
-
+#include <pcl/filters/voxel_grid.h>
 
 #include <ORBVocabulary.h>
 
@@ -98,7 +98,8 @@ public:
     // Load pcd file
     void loadPCDFile(const std::string &filename);
     pcl::PointCloud<pcl::PointXYZ>::Ptr GetPriorMapPoints();
-    pcl::PointCloud<pcl::PointXYZ>::Ptr SetPriorMapPoints(pcl::PointCloud<pcl::PointXYZ>::Ptr pcd); 
+    pcl::PointCloud<pcl::PointXYZ>::Ptr SetPriorMapPoints(pcl::PointCloud<pcl::PointXYZ>::Ptr pcd);
+		void VoxelGridFilter(double filter_res);
 
 		struct MapFileHeader {
 			char signature[7];
