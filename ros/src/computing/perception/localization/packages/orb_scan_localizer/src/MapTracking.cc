@@ -421,69 +421,65 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
     std::cout << "Transformation\n";
     std::cout << transformation << "\n";
 
-		pcl::PointCloud<pcl::PointXYZ>::Ptr g_points (new pcl::PointCloud<pcl::PointXYZ>);
-		g_points->resize (l_points->size ());
-		*g_points = *l_points;
-		transformation *= 2;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr g_points (new pcl::PointCloud<pcl::PointXYZ>);
+    g_points->resize (l_points->size ());
+    *g_points = *l_points;
+    transformation *= 2;
 
-		t1 = std::chrono::steady_clock::now();
-		icp_.transformCloudPublic(*g_points, *g_points, transformation);
-		t2 = std::chrono::steady_clock::now();
-		ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-		std::cout << "TransformCloudPublic: " << ttrack << "\n";
+    t1 = std::chrono::steady_clock::now();
+    icp_.transformCloudPublic(*g_points, *g_points, transformation);
+    t2 = std::chrono::steady_clock::now();
+    ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    std::cout << "TransformCloudPublic: " << ttrack << "\n";
 
-		// Map Points: Transfrom world points into reference frame based points
-		pcl::PointCloud<pcl::PointXYZ>::Ptr hoge (new pcl::PointCloud<pcl::PointXYZ>);
-		*hoge = *l_points;
-		// cv::Mat tmp =  mCurrentFrame.mTcw.inv();
-		// Eigen::Map<Eigen::Matrix4d> toRef(tmp.data() );
-		Eigen::Matrix4d toRef = Converter::toMatrix4d(mCurrentFrame.mTcw);
-		icp_.transformCloudPublic(*hoge, *hoge, toRef);
-		// icp_.align (output, toRef, toRef);
+    // Map Points: Transfrom world points into reference frame based points
+    pcl::PointCloud<pcl::PointXYZ>::Ptr hoge (new pcl::PointCloud<pcl::PointXYZ>);
+    *hoge = *l_points;
+    Eigen::Matrix4d toRef = Converter::toMatrix4d(mCurrentFrame.mTcw);
+    icp_.transformCloudPublic(*hoge, *hoge, toRef);
+    // icp_.align (output, toRef, toRef);
 
-		// Map Points: Transform orig to icp result
-		// pcl::PointCloud<pcl::PointXYZ>::Ptr converted_points (l_points);
-		// for (auto&& p: spRefMPs) {
-		// 		if (p == NULL || p->isBad())
-		// 				continue;
-		// 		cv::Mat pos = p->GetWorldPos();
+    // Map Points: Transform orig to icp result
+    // pcl::PointCloud<pcl::PointXYZ>::Ptr converted_points (l_points);
+    // for (auto&& p: spRefMPs) {
+    //     if (p == NULL || p->isBad())
+    //         continue;
+    //     cv::Mat pos = p->GetWorldPos();
     //     pos = transformation * pos;
-		// 		p->SetWorldPos(pos);
-		// }
+    // 	   p->SetWorldPos(pos);
+    // }
 
-		// Frame Pose: Transform orig to icp result
+    // Frame Pose: Transform orig to icp result
 
 
-		// cv::Mat Tcr = mCurrentFrame.mTcw * mCurrentFrame.mpReferenceKF->GetPoseInverse();
+    // cv::Mat Tcr = mCurrentFrame.mTcw * mCurrentFrame.mpReferenceKF->GetPoseInverse();
     sensor_msgs::PointCloud2 pc2_l;
-		ros::Time current_scan_time = ros::Time::now();
+    ros::Time current_scan_time = ros::Time::now();
 
     pc2_l.header.frame_id= "map";
-		pc2_l.header.stamp = current_scan_time; //header->stamp;
-		l_points->header = pcl_conversions::toPCL(pc2_l.header);
-		for (auto&& p : l_points->points)
-		{
-			  double x = p.z;
-				double y = -p.x;
-				double z = -p.y;
-				p.x = x; p.y = y; p.z = z;
-		}
-		local_pub.publish(l_points);
+    pc2_l.header.stamp = current_scan_time; //header->stamp;
+    l_points->header = pcl_conversions::toPCL(pc2_l.header);
+    for (auto&& p : l_points->points)
+    {
+        double x = p.z;
+        double y = -p.x;
+        double z = -p.y;
+        p.x = x; p.y = y; p.z = z;
+    }
+    local_pub.publish(l_points);
 
-		sensor_msgs::PointCloud2 pc2_g;
+    sensor_msgs::PointCloud2 pc2_g;
     pc2_g.header.frame_id= "map";
-		pc2_g.header.stamp = current_scan_time; //header->stamp;
-		hoge->header = pcl_conversions::toPCL(pc2_g.header);
-		for (auto&& p : hoge->points)
-		{
-			  // p = transformation * p;
-			  double x = p.z;
-				double y = -p.x;
-				double z = -p.y;
-				p.x = x; p.y = y; p.z = z;
-		}
-		global_pub.publish(hoge);
-
+    pc2_g.header.stamp = current_scan_time; //header->stamp;
+    hoge->header = pcl_conversions::toPCL(pc2_g.header);
+    for (auto&& p : hoge->points)
+    {
+        double x = p.z;
+        double y = -p.x;
+        double z = -p.y;
+        p.x = x; p.y = y; p.z = z;
+    }
+    global_pub.publish(hoge);
 
     // // currAbsolutePos.copyTo(Tcw);
     // cv::Mat Rcw = currAbsolutePos.rowRange(0,3).colRange(0,3);

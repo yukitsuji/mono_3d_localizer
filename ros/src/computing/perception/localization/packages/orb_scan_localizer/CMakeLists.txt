@@ -168,14 +168,14 @@ list(APPEND ORIG_ORB_BIN_LINKS
 #)
 
 #add_executable(
-#        orig_mono_orb_slam2_cl
-#        nodes/mono_orb_slam2/mono_orb_slam2_cl.cpp
+#        orig_mono_orb_slam2_no
+#        nodes/mono_orb_slam2/mono_orb_slam2_no.cpp
 #)
 
-# add_dependencies(orig_mono_orb_slam2_cl ${catkin_EXPORTED_TARGETS})
+# add_dependencies(orig_mono_orb_slam2_no ${catkin_EXPORTED_TARGETS})
 
 #target_link_libraries(
-#        orig_mono_orb_slam2_cl
+#        orig_mono_orb_slam2_no
 #        ${ORIG_ORB_BIN_LINKS}
 #        ${LINK_LIBRARIES}
 #        ${catkin_INCLUDE_DIRS}
@@ -188,17 +188,6 @@ add_executable(
 
 target_link_libraries(
         scan_mono_orb_slam2
-        ${ORIG_ORB_BIN_LINKS}
-        ${LINK_LIBRARIES}
-)
-
-add_executable(
-        scan_mono_orb_slam2_pub
-        nodes/mono_orb_slam2/scan_mono_orb_slam2_pub.cpp
-)
-
-target_link_libraries(
-        scan_mono_orb_slam2_pub
         ${ORIG_ORB_BIN_LINKS}
         ${LINK_LIBRARIES}
 )
@@ -241,34 +230,6 @@ target_link_libraries(
 #        ${catkin_INCLUDE_DIRS}
 )
 
-#install(TARGETS scan_mono_orb_slam2_odom
-#        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-#        )
-
-#add_executable(
-#        icp_sample
-#        nodes/mono_orb_slam2/icp_sample.cpp
-#)
-
-
-#target_link_libraries(
-#        icp_sample
-#        ${ORIG_ORB_BIN_LINKS}
-#        ${LINK_LIBRARIES}
-#)
-
-#add_executable(
-#        icp_solver
-#        src/icp_solver.cpp
-#)
-
-#target_link_libraries(
-#        icp_solver
-#        ${ORIG_ORB_BIN_LINKS}
-#        ${LINK_LIBRARIES}
-#)
 
 add_executable(
         icp_solver_7dof
@@ -284,9 +245,3 @@ target_link_libraries(
 
 add_dependencies(icp_solver_7dof ${catkin_EXPORTED_TARGETS})
 
-
-#install(TARGETS icp_solver_7dof
-#        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-#        )
