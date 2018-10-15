@@ -411,7 +411,7 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
     icp_.setDistThreshold(0.5);
     pcl::PointCloud<pcl::PointXYZ> output;
 
-		std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     icp_.align (output);
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     double ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
@@ -437,7 +437,7 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
     *hoge = *l_points;
     Eigen::Matrix4d toRef = Converter::toMatrix4d(mCurrentFrame.mTcw);
     icp_.transformCloudPublic(*hoge, *hoge, toRef);
-    // icp_.align (output, toRef, toRef);
+    icp_.align (output, Eigen::Matrix4d::Identity(), toRef);
 
     // Map Points: Transform orig to icp result
     // pcl::PointCloud<pcl::PointXYZ>::Ptr converted_points (l_points);

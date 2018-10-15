@@ -214,7 +214,7 @@ namespace pcl
       }
 
       //////////////////////////////////////////////////////////////////////////////////////////////
-      inline void align (PointCloudSource &output, const Matrix4& guess, const Matrix4& guess2)
+      inline void align (PointCloudSource &output, const Matrix4& guess, const Matrix4& global_to_local)
       {
         if (!CustomInitCompute ())
           return;
@@ -254,7 +254,7 @@ namespace pcl
         for (size_t i = 0; i < indices_->size (); ++i)
           output.points[i].data[3] = 1.0;
 
-        computeTransformation (output, Matrix4::Identity (), guess2);
+        computeTransformation (output, guess, global_to_local);
 
         deinitCompute ();
       }
@@ -385,7 +385,7 @@ namespace pcl
 
       virtual void
       computeTransformation (PointCloudSource &output, const Matrix4 &guess,
-                             const Matrix4 &guess2);
+                             const Matrix4 &global_to_local);
 
       /** \brief Looks at the Estimators and Rejectors and determines whether their blob-setter methods need to be called */
       virtual void
