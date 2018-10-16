@@ -213,6 +213,52 @@ namespace pcl
         deinitCompute ();
       }
 
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      inline void align (PointCloudSource &output, const Matrix4& guess, const Matrix4& guess2)
+      {
+        if (!CustomInitCompute ())
+          return;
+
+        // Resize the output dataset
+        if (output.points.size () != indices_->size ())
+          output.points.resize (indices_->size ());
+        // Copy the header
+        output.header   = input_->header;
+        // Check if the output will be computed for all points or only a subset
+        if (indices_->size () != input_->points.size ())
+        {
+          output.width    = static_cast<uint32_t> (indices_->size ());
+          output.height   = 1;
+        }
+        else
+        {
+          output.width    = static_cast<uint32_t> (input_->width);
+          output.height   = input_->height;
+        }
+        output.is_dense = input_->is_dense;
+
+        // Copy the point data to output
+        for (size_t i = 0; i < indices_->size (); ++i)
+          output.points[i] = input_->points[(*indices_)[i]];
+
+        // Set the internal point representation of choice unless otherwise noted
+        if (point_representation_ && !force_no_recompute_)
+          tree_->setPointRepresentation (point_representation_);
+
+        // Perform the actual transformation computation
+        converged_ = false;
+        final_transformation_ = transformation_ = previous_transformation_ = Matrix4::Identity ();
+
+        // Right before we estimate the transformation, we set all the point.data[3] values to 1 to aid the rigid
+        // transformation
+        for (size_t i = 0; i < indices_->size (); ++i)
+          output.points[i].data[3] = 1.0;
+
+        computeTransformation (output, Matrix4::Identity (), guess2);
+
+        deinitCompute ();
+      }
+
       void
       transformCloudPublic (const PointCloudSource &input,
                       PointCloudSource &output,
@@ -336,6 +382,10 @@ namespace pcl
         */
       virtual void
       computeTransformation (PointCloudSource &output, const Matrix4 &guess);
+
+      virtual void
+      computeTransformation (PointCloudSource &output, const Matrix4 &guess,
+                             const Matrix4 &guess2);
 
       /** \brief Looks at the Estimators and Rejectors and determines whether their blob-setter methods need to be called */
       virtual void

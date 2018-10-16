@@ -4,6 +4,7 @@
 #include "icp_7dof/icp_7dof_correspondence_estimation.h"
 #include <chrono>
 
+
 void
 pcl::IterativeClosestPoint7dof::transformCloudPublic (
     const PointCloudSource &input,
@@ -140,8 +141,149 @@ pcl::IterativeClosestPoint7dof::transformCloud (
       memcpy (data_out + z_idx_offset_, &pt_t[2], sizeof (float));
     }
   }
-
 }
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+void
+pcl::IterativeClosestPoint7dof::computeTransformation (
+    PointCloudSource &output, const Matrix4 &guess, const Matrix4 &guess2)
+{
+  // Point cloud containing the correspondences of each point in <input, indices>
+  PointCloudSourcePtr input_transformed (new PointCloudSource);
+
+  nr_iterations_ = 0;
+  converged_ = false;
+
+  const bool debug = false;
+
+  // Initialise final transformation to the guessed one
+  final_transformation_ = guess;
+
+  // If the guessed transformation is non identity
+  if (guess != Matrix4::Identity ())
+  {
+    input_transformed->resize (input_->size ());
+     // Apply guessed transformation prior to search for neighbours
+    transformCloud (*input_, *input_transformed, guess);
+  }
+  else
+    *input_transformed = *input_;
+
+  transformation_ = Matrix4::Identity ();
+
+  // Make blobs if necessary
+  determineRequiredBlobData ();
+  PCLPointCloud2::Ptr target_blob (new PCLPointCloud2);
+  if (need_target_blob_)
+    pcl::toPCLPointCloud2 (*target_, *target_blob);
+
+  // Pass in the default target for the Correspondence Estimation/Rejection code
+  std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+  correspondence_estimation_->setInputTarget (target_);
+  std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+  double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+  if (debug) {
+      std::cout << "setInputTarget: " << ttrack << "\n";
+      std::cout << "correspondence_estimation_->requiresTargetNormals: " << correspondence_estimation_->requiresTargetNormals() << "\n";
+  }
+
+  if (correspondence_estimation_->requiresTargetNormals ())
+      correspondence_estimation_->setTargetNormals (target_blob);
+
+
+  convergence_criteria_->setMaximumIterations (max_iterations_);
+  convergence_criteria_->setRelativeMSE (euclidean_fitness_epsilon_);
+  convergence_criteria_->setTranslationThreshold (transformation_epsilon_);
+  // if (transformation_rotation_epsilon_ > 0)
+  //   convergence_criteria_->setRotationThreshold (transformation_rotation_epsilon_);
+  // else
+  convergence_criteria_->setRotationThreshold (1.0 - transformation_epsilon_);
+
+  // Repeat until convergence
+  do
+  {
+    // Get blob data if needed
+    PCLPointCloud2::Ptr input_transformed_blob;
+    if (need_source_blob_)
+    {
+      input_transformed_blob.reset (new PCLPointCloud2);
+      toPCLPointCloud2 (*input_transformed, *input_transformed_blob);
+    }
+    // Save the previously estimated transformation
+    previous_transformation_ = transformation_;
+
+    // Set the source each iteration, to ensure the dirty flag is updated
+    t1 = std::chrono::steady_clock::now();
+    correspondence_estimation_->setInputSource (input_transformed);
+    t2 = std::chrono::steady_clock::now();
+    ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    if (debug)
+        std::cout << "setInputSource: " << ttrack << "\n";
+
+    t1 = std::chrono::steady_clock::now();
+    // Estimate correspondences
+    correspondence_estimation_->determineCorrespondences (*correspondences_, corr_dist_threshold_);
+
+    t2 = std::chrono::steady_clock::now();
+    ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    if (debug)
+    {
+        std::cout << "determineCorrespondences: " << ttrack << "\n";
+        std::cout << "correspondence size: from " << input_transformed->size() << " to " << correspondences_->size() << "\n";
+    }
+
+    size_t cnt = correspondences_->size ();
+    // Check whether we have enough correspondences
+    if (static_cast<int> (cnt) < min_number_correspondences_)
+    {
+      PCL_ERROR ("[pcl::%s::computeTransformation] Not enough correspondences found. Relax your threshold parameters. %d \n", getClassName ().c_str (), corr_dist_threshold_);
+      convergence_criteria_->setConvergenceState(pcl::registration::DefaultConvergenceCriteria<double>::CONVERGENCE_CRITERIA_NO_CORRESPONDENCES);
+      converged_ = false;
+      break;
+    }
+
+    t1 = std::chrono::steady_clock::now();
+    // Estimate the transform
+    transformation_estimation_->estimateNonRigidTransformation (*input_transformed, *target_, *correspondences_, transformation_);
+    t2 = std::chrono::steady_clock::now();
+    ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    if (debug)
+        std::cout << "estimateNonRigidTransformation: " << ttrack << "\n";
+
+    // Transform the data
+    t1 = std::chrono::steady_clock::now();
+    transformCloud (*input_transformed, *input_transformed, transformation_);
+    t2 = std::chrono::steady_clock::now();
+    ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    if (debug)
+        std::cout << "transformCloud: " << ttrack << "\n";
+
+    // Obtain the final transformation
+    final_transformation_ = transformation_ * final_transformation_;
+
+    std::cout << "transformation_\n";
+    std::cout << final_transformation_ << "\n";
+
+    ++nr_iterations_;
+
+    converged_ = static_cast<bool> ((*convergence_criteria_));
+  }
+  while (!converged_);
+
+  // Transform the input cloud using the final transformation
+  PCL_DEBUG ("Transformation is:\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n",
+      final_transformation_ (0, 0), final_transformation_ (0, 1), final_transformation_ (0, 2), final_transformation_ (0, 3),
+      final_transformation_ (1, 0), final_transformation_ (1, 1), final_transformation_ (1, 2), final_transformation_ (1, 3),
+      final_transformation_ (2, 0), final_transformation_ (2, 1), final_transformation_ (2, 2), final_transformation_ (2, 3),
+      final_transformation_ (3, 0), final_transformation_ (3, 1), final_transformation_ (3, 2), final_transformation_ (3, 3));
+
+  // Copy all the values
+  output = *input_;
+  // Transform the XYZ + normals
+  transformCloud (*input_, output, final_transformation_);
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 void
@@ -154,7 +296,7 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
   nr_iterations_ = 0;
   converged_ = false;
 
-  const bool debug = false;
+  const bool debug = true;
 
   // Initialise final transformation to the guessed one
   final_transformation_ = guess;
