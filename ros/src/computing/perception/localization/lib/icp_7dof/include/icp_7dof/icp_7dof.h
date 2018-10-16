@@ -214,6 +214,11 @@ namespace pcl
       }
 
       void
+      transformCloudPublic (const PointCloudSource &input,
+                      PointCloudSource &output,
+                      const Matrix4 &transform);
+
+      void
       setTransformationEstimation (const TransformationEstimationPtr &te) { transformation_estimation_ = te; }
 
       /** \brief Returns a pointer to the DefaultConvergenceCriteria used by the IterativeClosestPoint7dof class.

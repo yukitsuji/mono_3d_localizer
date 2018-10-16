@@ -98,6 +98,11 @@ int main(int argc, char **argv)
         vTimesTrack[ni] = ttrack;
         std::cout << "time " << ttrack << "\n";
 
+        double sleep_time = 0.1 - ttrack;
+
+        if (sleep_time > 0)
+            usleep(sleep_time * 1000000);
+
         // Wait to load the next frame
         // double T=0;
         // if(ni<nImages-1)
@@ -107,8 +112,6 @@ int main(int argc, char **argv)
         //
         // if(ttrack<T)
         //     usleep((T-ttrack)*1e6);
-
-        usleep(0.01);
     }
 
     // Stop all threads

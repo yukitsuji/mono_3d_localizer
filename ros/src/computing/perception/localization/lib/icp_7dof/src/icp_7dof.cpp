@@ -4,6 +4,74 @@
 #include "icp_7dof/icp_7dof_correspondence_estimation.h"
 #include <chrono>
 
+void
+pcl::IterativeClosestPoint7dof::transformCloudPublic (
+    const PointCloudSource &input,
+    PointCloudSource &output,
+    const Matrix4 &transform)
+{
+  Eigen::Vector4f pt (0.0f, 0.0f, 0.0f, 1.0f), pt_t;
+  Eigen::Matrix4f tr = transform.template cast<float> ();
+
+  // XYZ is ALWAYS present due to the templatization, so we only have to check for normals
+  if (source_has_normals_)
+  {
+    Eigen::Vector3f nt, nt_t;
+    Eigen::Matrix3f rot = tr.block<3, 3> (0, 0);
+
+    for (size_t i = 0; i < input.size (); ++i)
+    {
+      const uint8_t* data_in = reinterpret_cast<const uint8_t*> (&input[i]);
+      uint8_t* data_out = reinterpret_cast<uint8_t*> (&output[i]);
+      memcpy (&pt[0], data_in + x_idx_offset_, sizeof (float));
+      memcpy (&pt[1], data_in + y_idx_offset_, sizeof (float));
+      memcpy (&pt[2], data_in + z_idx_offset_, sizeof (float));
+
+      if (!pcl_isfinite (pt[0]) || !pcl_isfinite (pt[1]) || !pcl_isfinite (pt[2]))
+        continue;
+
+      pt_t = tr * pt;
+
+      memcpy (data_out + x_idx_offset_, &pt_t[0], sizeof (float));
+      memcpy (data_out + y_idx_offset_, &pt_t[1], sizeof (float));
+      memcpy (data_out + z_idx_offset_, &pt_t[2], sizeof (float));
+
+      memcpy (&nt[0], data_in + nx_idx_offset_, sizeof (float));
+      memcpy (&nt[1], data_in + ny_idx_offset_, sizeof (float));
+      memcpy (&nt[2], data_in + nz_idx_offset_, sizeof (float));
+
+      if (!pcl_isfinite (nt[0]) || !pcl_isfinite (nt[1]) || !pcl_isfinite (nt[2]))
+        continue;
+
+      nt_t = rot * nt;
+
+      memcpy (data_out + nx_idx_offset_, &nt_t[0], sizeof (float));
+      memcpy (data_out + ny_idx_offset_, &nt_t[1], sizeof (float));
+      memcpy (data_out + nz_idx_offset_, &nt_t[2], sizeof (float));
+    }
+  }
+  else
+  {
+    for (size_t i = 0; i < input.size (); ++i)
+    {
+      const uint8_t* data_in = reinterpret_cast<const uint8_t*> (&input[i]);
+      uint8_t* data_out = reinterpret_cast<uint8_t*> (&output[i]);
+      memcpy (&pt[0], data_in + x_idx_offset_, sizeof (float));
+      memcpy (&pt[1], data_in + y_idx_offset_, sizeof (float));
+      memcpy (&pt[2], data_in + z_idx_offset_, sizeof (float));
+
+      if (!pcl_isfinite (pt[0]) || !pcl_isfinite (pt[1]) || !pcl_isfinite (pt[2]))
+        continue;
+
+      pt_t = tr * pt;
+
+      memcpy (data_out + x_idx_offset_, &pt_t[0], sizeof (float));
+      memcpy (data_out + y_idx_offset_, &pt_t[1], sizeof (float));
+      memcpy (data_out + z_idx_offset_, &pt_t[2], sizeof (float));
+    }
+  }
+
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 void
@@ -86,6 +154,8 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
   nr_iterations_ = 0;
   converged_ = false;
 
+  const bool debug = false;
+
   // Initialise final transformation to the guessed one
   final_transformation_ = guess;
 
@@ -112,20 +182,14 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
   correspondence_estimation_->setInputTarget (target_);
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
   double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-  std::cout << "setInputTarget: " << ttrack << "\n";
-  std::cout << "correspondence_estimation_->requiresTargetNormals: " << correspondence_estimation_->requiresTargetNormals() << "\n";
+  if (debug) {
+      std::cout << "setInputTarget: " << ttrack << "\n";
+      std::cout << "correspondence_estimation_->requiresTargetNormals: " << correspondence_estimation_->requiresTargetNormals() << "\n";
+  }
 
   if (correspondence_estimation_->requiresTargetNormals ())
-    correspondence_estimation_->setTargetNormals (target_blob);
-  // Correspondence Rejectors need a binary blob
-  // for (size_t i = 0; i < correspondence_rejectors_.size (); ++i)
-  // {
-  //   registration::CorrespondenceRejector::Ptr& rej = correspondence_rejectors_[i];
-  //   if (rej->requiresTargetPoints ())
-  //     rej->setTargetPoints (target_blob);
-  //   if (rej->requiresTargetNormals () && target_has_normals_)
-  //     rej->setTargetNormals (target_blob);
-  // }
+      correspondence_estimation_->setTargetNormals (target_blob);
+
 
   convergence_criteria_->setMaximumIterations (max_iterations_);
   convergence_criteria_->setRelativeMSE (euclidean_fitness_epsilon_);
@@ -151,44 +215,22 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
     // Set the source each iteration, to ensure the dirty flag is updated
     t1 = std::chrono::steady_clock::now();
     correspondence_estimation_->setInputSource (input_transformed);
-    //if (correspondence_estimation_->requiresSourceNormals ())
-    //  correspondence_estimation_->setSourceNormals (input_transformed_blob);
     t2 = std::chrono::steady_clock::now();
     ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-    std::cout << "setInputSource: " << ttrack << "\n";
+    if (debug)
+        std::cout << "setInputSource: " << ttrack << "\n";
 
     t1 = std::chrono::steady_clock::now();
     // Estimate correspondences
-    if (use_reciprocal_correspondence_)
-      correspondence_estimation_->determineReciprocalCorrespondences (*correspondences_, corr_dist_threshold_);
-    else
-      correspondence_estimation_->determineCorrespondences (*correspondences_, corr_dist_threshold_);
+    correspondence_estimation_->determineCorrespondences (*correspondences_, corr_dist_threshold_);
 
     t2 = std::chrono::steady_clock::now();
     ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-    std::cout << "determineCorrespondences: " << ttrack << "\n";
-    std::cout << "correspondence size: from " << input_transformed->size() << " to " << correspondences_->size() << "\n";
-    // std::cout << "use_reciprocal_correspondence_: " << use_reciprocal_correspondence_ << "\n";
-    //if (correspondence_rejectors_.empty ())
-    // t1 = std::chrono::steady_clock::now();
-    // CorrespondencesPtr temp_correspondences (new Correspondences (*correspondences_));
-    // for (size_t i = 0; i < correspondence_rejectors_.size (); ++i)
-    // {
-    //   registration::CorrespondenceRejector::Ptr& rej = correspondence_rejectors_[i];
-    //   PCL_DEBUG ("Applying a correspondence rejector method: %s.\n", rej->getClassName ().c_str ());
-    //   if (rej->requiresSourcePoints ())
-    //     rej->setSourcePoints (input_transformed_blob);
-    //   if (rej->requiresSourceNormals () && source_has_normals_)
-    //     rej->setSourceNormals (input_transformed_blob);
-    //   rej->setInputCorrespondences (temp_correspondences);
-    //   rej->getCorrespondences (*correspondences_);
-    //   // Modify input for the next iteration
-    //   if (i < correspondence_rejectors_.size () - 1)
-    //     *temp_correspondences = *correspondences_;
-    // }
-    // t2 = std::chrono::steady_clock::now();
-    // ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-    // std::cout << "Correspondence rejector: " << ttrack << "\n";
+    if (debug)
+    {
+        std::cout << "determineCorrespondences: " << ttrack << "\n";
+        std::cout << "correspondence size: from " << input_transformed->size() << " to " << correspondences_->size() << "\n";
+    }
 
     size_t cnt = correspondences_->size ();
     // Check whether we have enough correspondences
@@ -205,23 +247,24 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
     transformation_estimation_->estimateNonRigidTransformation (*input_transformed, *target_, *correspondences_, transformation_);
     t2 = std::chrono::steady_clock::now();
     ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-    std::cout << "estimateNonRigidTransformation: " << ttrack << "\n";
+    if (debug)
+        std::cout << "estimateNonRigidTransformation: " << ttrack << "\n";
 
     // Transform the data
     t1 = std::chrono::steady_clock::now();
     transformCloud (*input_transformed, *input_transformed, transformation_);
     t2 = std::chrono::steady_clock::now();
     ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-    std::cout << "transformCloud: " << ttrack << "\n";
-    // Obtain the final transformation
+    if (debug)
+        std::cout << "transformCloud: " << ttrack << "\n";
 
+    // Obtain the final transformation
     final_transformation_ = transformation_ * final_transformation_;
 
-    ++nr_iterations_;
+    std::cout << "transformation_\n";
+    std::cout << final_transformation_ << "\n";
 
-    // Update the vizualization of icp convergence
-    //if (update_visualizer_ != 0)
-    //  update_visualizer_(output, source_indices_good, *target_, target_indices_good );
+    ++nr_iterations_;
 
     converged_ = static_cast<bool> ((*convergence_criteria_));
   }

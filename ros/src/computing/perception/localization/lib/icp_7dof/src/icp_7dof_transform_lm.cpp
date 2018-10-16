@@ -49,7 +49,6 @@ pcl::registration::TransformationEstimation7dofLM::estimateNonRigidTransformatio
 
   OptimizationFunctor functor (static_cast<int> (cloud_src.points.size ()), this);
   Eigen::NumericalDiff<OptimizationFunctor> num_diff (functor);
-  //Eigen::LevenbergMarquardt<Eigen::NumericalDiff<OptimizationFunctor>, double> lm (num_diff);
   Eigen::LevenbergMarquardt<Eigen::NumericalDiff<OptimizationFunctor>, double> lm (num_diff);
   int info = lm.minimize (x);
 

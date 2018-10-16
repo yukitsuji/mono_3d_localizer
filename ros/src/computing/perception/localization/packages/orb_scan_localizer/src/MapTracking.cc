@@ -365,16 +365,19 @@ void MapTracking::Track()
     if(!mCurrentFrame.mTcw.empty())
     {
         // std::cout << "Current Position\n" << mCurrentFrame.mTcw << "\n";
-        std::cout << "Current inverse Position\n" << mCurrentFrame.mTcw.inv() << "\n";
         // XXX: We found some occurences of empty pose from mpReferenceKF
         if (mCurrentFrame.mpReferenceKF->GetPose().empty()==true)
             cout << "XXX: KF pose is empty" << endl;
 
         cv::Mat Tcr = mCurrentFrame.mTcw * mCurrentFrame.mpReferenceKF->GetPoseInverse();
-        //  cout << mCurrentFrame.mpReferenceKF << endl;
         mlRelativeFramePoses.push_back(Tcr);
         mlAbsoluteFramePoses.push_back(mCurrentFrame.mTcw);
         mlpReferences.push_back(mpReferenceKF);
+
+				std::cout << "Current inverse Position\n" << mCurrentFrame.mTcw.inv() << "\n";
+				std::cout << "Current reference Position\n" << Tcr.inv() << "\n";
+				std::cout << "Current kf Position\n" << mCurrentFrame.mpReferenceKF->GetPoseInverse() << "\n";
+				std::cout << "Current multiply Position\n" << mCurrentFrame.mpReferenceKF->GetPoseInverse() * Tcr.inv() << "\n";
     }
 }
 
@@ -385,7 +388,7 @@ void MapTracking::SetSourceMap(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap) {
 
 void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
 {
-    // pcl::console::setVerbosityLevel(pcl::console::L_DEBUG);
+    pcl::console::setVerbosityLevel(pcl::console::L_DEBUG);
     std::cout << "ScanWithNDT\n";
     const vector<MapPoint*> &vpRefMPs = mpMap->GetReferenceMapPoints();
     set<MapPoint*> spRefMPs(vpRefMPs.begin(), vpRefMPs.end());
@@ -403,17 +406,12 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
         l_points->push_back(point);
     }
 
-		std::cout << "Set ICP configuration\n";
-
     icp_.setInputSource(l_points);
     icp_.setMaximumIterations(10);
-    icp_.setDistThreshold(1.5);
+    icp_.setDistThreshold(0.5);
     pcl::PointCloud<pcl::PointXYZ> output;
 
-		std::cout << "Start alignment\n";
-
 		std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-
     icp_.align (output);
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     double ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
@@ -422,6 +420,70 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
     Eigen::Matrix4d transformation = icp_.getFinalTransformation ();
     std::cout << "Transformation\n";
     std::cout << transformation << "\n";
+
+		pcl::PointCloud<pcl::PointXYZ>::Ptr g_points (new pcl::PointCloud<pcl::PointXYZ>);
+		g_points->resize (l_points->size ());
+		*g_points = *l_points;
+		transformation *= 2;
+
+		t1 = std::chrono::steady_clock::now();
+		icp_.transformCloudPublic(*g_points, *g_points, transformation);
+		t2 = std::chrono::steady_clock::now();
+		ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+		std::cout << "TransformCloudPublic: " << ttrack << "\n";
+
+		// Map Points: Transfrom world points into reference frame based points
+		pcl::PointCloud<pcl::PointXYZ>::Ptr hoge (new pcl::PointCloud<pcl::PointXYZ>);
+		*hoge = *l_points;
+		// cv::Mat tmp =  mCurrentFrame.mTcw.inv();
+		// Eigen::Map<Eigen::Matrix4d> toRef(tmp.data() );
+		Eigen::Matrix4d toRef = Converter::toMatrix4d(mCurrentFrame.mTcw);
+		icp_.transformCloudPublic(*hoge, *hoge, toRef);
+		// icp_.align (output, toRef, toRef);
+
+		// Map Points: Transform orig to icp result
+		// pcl::PointCloud<pcl::PointXYZ>::Ptr converted_points (l_points);
+		// for (auto&& p: spRefMPs) {
+		// 		if (p == NULL || p->isBad())
+		// 				continue;
+		// 		cv::Mat pos = p->GetWorldPos();
+    //     pos = transformation * pos;
+		// 		p->SetWorldPos(pos);
+		// }
+
+		// Frame Pose: Transform orig to icp result
+
+
+		// cv::Mat Tcr = mCurrentFrame.mTcw * mCurrentFrame.mpReferenceKF->GetPoseInverse();
+    sensor_msgs::PointCloud2 pc2_l;
+		ros::Time current_scan_time = ros::Time::now();
+
+    pc2_l.header.frame_id= "map";
+		pc2_l.header.stamp = current_scan_time; //header->stamp;
+		l_points->header = pcl_conversions::toPCL(pc2_l.header);
+		for (auto&& p : l_points->points)
+		{
+			  double x = p.z;
+				double y = -p.x;
+				double z = -p.y;
+				p.x = x; p.y = y; p.z = z;
+		}
+		local_pub.publish(l_points);
+
+		sensor_msgs::PointCloud2 pc2_g;
+    pc2_g.header.frame_id= "map";
+		pc2_g.header.stamp = current_scan_time; //header->stamp;
+		hoge->header = pcl_conversions::toPCL(pc2_g.header);
+		for (auto&& p : hoge->points)
+		{
+			  // p = transformation * p;
+			  double x = p.z;
+				double y = -p.x;
+				double z = -p.y;
+				p.x = x; p.y = y; p.z = z;
+		}
+		global_pub.publish(hoge);
+
 
     // // currAbsolutePos.copyTo(Tcw);
     // cv::Mat Rcw = currAbsolutePos.rowRange(0,3).colRange(0,3);
@@ -442,7 +504,7 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
 //     const vector<MapPoint*> &vpRefMPs = mpMap->GetReferenceMapPoints();
 //
 //     set<MapPoint*> spRefMPs(vpRefMPs.begin(), vpRefMPs.end());
-// 		ros::Time current_scan_time = ros::Time::now();
+// 		 ros::Time current_scan_time = ros::Time::now();
 //
 //     if(vpMPs.empty())
 //         return;
@@ -481,7 +543,7 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
 //     }
 //     sensor_msgs::PointCloud2 pc2_l;
 //     pc2_l.header.frame_id= "velodyne";
-// 		pc2_l.header.stamp = current_scan_time; //header->stamp;
+// 		 pc2_l.header.stamp = current_scan_time; //header->stamp;
 //     l_points->header = pcl_conversions::toPCL(pc2_l.header);
 //     local_pub.publish(l_points);
 //
@@ -689,7 +751,7 @@ void MapTracking::CreateInitialMapMonocular()
 
 		std::cout << "Tc2w\n" << Tc2w << "\n";
 		// TODO: Scale alignment
-		invMedianDepth = 0.75;
+		invMedianDepth = 0.73;
 		// invMedianDepth = -0.8586941 / Tc2w.at<float>(2, 3);
 		std::cout << "invMedianDepth: " << invMedianDepth << "\n";
 
@@ -710,7 +772,7 @@ void MapTracking::CreateInitialMapMonocular()
 				}
 		}
 
-
+		// if (false) {
     // Scale points
     // vector<MapPoint*> vpAllMapPoints = pKFini->GetMapPointMatches();
     // for(size_t iMP=0; iMP<vpAllMapPoints.size(); iMP++)
@@ -735,7 +797,7 @@ void MapTracking::CreateInitialMapMonocular()
     //     Reset();
     //     return;
     // }
-
+		//
 		// // Scale initial baseline
 		// std::cout <<
 		//
@@ -756,26 +818,26 @@ void MapTracking::CreateInitialMapMonocular()
 		// std::cout << "ratio: " << ratio << "\n";
 		// pKFcur->SetPose(Tc2w);
 		// mCurrentFrame.SetPose(pKFcur->GetPose());
-
-    // Scale initial baseline
+		//
+    // // Scale initial baseline
     // TODO: Scale alignment
-    //invMedianDepth = 0.72;
-    //invMedianDepth = -0.8586941 / Tc2w.at<float>(2, 3);
-    //std::cout << "invMedianDepth: " << invMedianDepth << "\n";
-
-    //Tc2w.col(3).rowRange(0,3) = Tc2w.col(3).rowRange(0,3)*invMedianDepth;
-    //pKFcur->SetPose(Tc2w);
-
+    // invMedianDepth = 0.72;
+    // invMedianDepth = -0.8586941 / Tc2w.at<float>(2, 3);
+    // std::cout << "invMedianDepth: " << invMedianDepth << "\n";
+		//
+    // Tc2w.col(3).rowRange(0,3) = Tc2w.col(3).rowRange(0,3)*invMedianDepth;
+    // pKFcur->SetPose(Tc2w);
+		//
     // Scale points
-    //vector<MapPoint*> vpAllMapPoints = pKFini->GetMapPointMatches();
-    //for(size_t iMP=0; iMP<vpAllMapPoints.size(); iMP++)
-    //{
+    // vector<MapPoint*> vpAllMapPoints = pKFini->GetMapPointMatches();
+    // for(size_t iMP=0; iMP<vpAllMapPoints.size(); iMP++)
+    // {
     //    if(vpAllMapPoints[iMP])
     //    {
     //        MapPoint* pMP = vpAllMapPoints[iMP];
     //        pMP->SetWorldPos(pMP->GetWorldPos()*invMedianDepth);
     //    }
-    //}
+    // }
 
     mpLocalMapper->InsertKeyFrame(pKFini);
     mpLocalMapper->InsertKeyFrame(pKFcur);
