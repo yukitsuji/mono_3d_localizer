@@ -266,7 +266,7 @@ namespace pcl
           double fitness_score = 0.0;
           Eigen::Matrix4d local_to_global = global_to_local.inverse();
           // Transform the input dataset using the final transformation
-          PointCloudSource input_transformed;
+          PointCloudSource input_transformed = *input_;
           transformCloudPublic(*input_, input_transformed, global_to_local);
           transformPointCloud (input_transformed, input_transformed, final_transformation_);
           transformPointCloud (input_transformed, input_transformed, local_to_global);

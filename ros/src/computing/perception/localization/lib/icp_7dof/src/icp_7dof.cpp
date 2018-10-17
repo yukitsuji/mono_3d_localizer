@@ -428,14 +428,14 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
     // Obtain the final transformation
     final_transformation_ = transformation_ * final_transformation_;
 
-    std::cout << "transformation_\n";
-    std::cout << final_transformation_ << "\n";
-
     ++nr_iterations_;
 
     converged_ = static_cast<bool> ((*convergence_criteria_));
   }
   while (!converged_);
+
+  std::cout << "transformation_\n";
+  std::cout << final_transformation_ << "\n";
 
   // Transform the input cloud using the final transformation
   PCL_DEBUG ("Transformation is:\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n",

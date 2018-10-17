@@ -416,7 +416,7 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     double ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
     std::cout << "[done, " << ttrack <<  " s : " << output.width * output.height << " points], has converged: ";
-    std::cout << icp_.hasConverged() << " with score: " << icp_.getFitnessScore () << "\n";
+    std::cout << icp_.hasConverged() << " with score: " << icp_.getFitnessScore (Eigen::Matrix4d::Identity()) << "\n";
     Eigen::Matrix4d transformation = icp_.getFinalTransformation ();
     std::cout << "Transformation\n";
     std::cout << transformation << "\n";

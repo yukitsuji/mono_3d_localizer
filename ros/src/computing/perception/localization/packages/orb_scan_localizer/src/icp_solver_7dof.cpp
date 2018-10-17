@@ -103,7 +103,7 @@ compute ()
     PointCloud<PointXYZ> output;
     icp.align (output);
     print_info ("[done, "); print_value ("%g", tt.toc ()); print_info (" ms : "); print_value ("%d", output.width * output.height); print_info (" points], has converged: ");
-    print_value ("%d", icp.hasConverged ()); print_info (" with score: %f\n",  icp.getFitnessScore ());
+    //print_value ("%d", icp.hasConverged ()); print_info (" with score: %f\n",  icp.getFitnessScore ());
     Eigen::Matrix4d transformation = icp.getFinalTransformation ();
     PCL_ERROR ("Transformation is:\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n",
         transformation (0, 0), transformation (0, 1), transformation (0, 2), transformation (0, 3),
