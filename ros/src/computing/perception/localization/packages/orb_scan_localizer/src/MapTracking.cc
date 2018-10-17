@@ -443,7 +443,7 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
     t2 = std::chrono::steady_clock::now();
     ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
     std::cout << "[done, " << ttrack <<  " s : " << output.width * output.height << " points], has converged: ";
-    std::cout << icp_.hasConverged() << " with score: " << icp_.getFitnessScore () << "\n";
+    std::cout << icp_.hasConverged() << " with score: " << icp_.getFitnessScore (toRef) << "\n";
     // Map Points: Transform orig to icp result
     // pcl::PointCloud<pcl::PointXYZ>::Ptr converted_points (l_points);
     // for (auto&& p: spRefMPs) {

@@ -259,6 +259,40 @@ namespace pcl
         deinitCompute ();
       }
 
+
+      inline double getFitnessScore (Eigen::Matrix4d global_to_local)
+      {
+
+          double fitness_score = 0.0;
+          Eigen::Matrix4d local_to_global = global_to_local.inverse();
+          // Transform the input dataset using the final transformation
+          PointCloudSource input_transformed;
+          transformCloudPublic(*input_, input_transformed, global_to_local);
+          transformPointCloud (input_transformed, input_transformed, final_transformation_);
+          transformPointCloud (input_transformed, input_transformed, local_to_global);
+          std::vector<int> nn_indices (1);
+          std::vector<float> nn_dists (1);
+
+          // For each point in the source dataset
+          int nr = 0;
+          for (size_t i = 0; i < input_transformed.points.size (); ++i)
+          {
+              // Find its nearest neighbor in the target
+              tree_->nearestKSearch (input_transformed.points[i], 1, nn_indices, nn_dists);
+    
+              // Deal with occlusions (incomplete targets)
+              // Add to the fitness score
+              fitness_score += nn_dists[0];
+              nr++;
+          }
+
+          if (nr > 0)
+              return (fitness_score / nr);
+          else
+              return (std::numeric_limits<double>::max ());
+      }
+
+
       void
       transformCloudPublic (const PointCloudSource &input,
                       PointCloudSource &output,

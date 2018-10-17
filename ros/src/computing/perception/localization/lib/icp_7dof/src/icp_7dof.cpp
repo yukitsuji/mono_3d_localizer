@@ -236,7 +236,7 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
       PointCloudSourcePtr local_input (new PointCloudSource);
       PointCloudSourcePtr local_selected_input (new PointCloudSource);
       PointCloudSourcePtr local_target (new PointCloudSource);
-     
+ 
       *local_input = *input_transformed; 
       transformCloudPublic(*local_input, *local_input, global_to_local);
  
@@ -249,6 +249,8 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
       }
       
       transformCloudPublic(*local_target, *local_target, global_to_local);
+
+      std::cout << local_target->points[0] << " to " << target_->points[(*correspondences_)[0].index_match] << "\n";
 
       t2 = std::chrono::steady_clock::now();
       ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
@@ -280,14 +282,19 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
       // Obtain the final transformation
       final_transformation_ = transformation_ * final_transformation_;
 
-      std::cout << "transformation_\n";
-      std::cout << final_transformation_ << "\n";
+      if (debug) {
+          std::cout << "transformation_\n";
+          std::cout << final_transformation_ << "\n";
+      }
 
       ++nr_iterations_;
 
       converged_ = static_cast<bool> ((*convergence_criteria_));
   }
   while (!converged_);
+
+  std::cout << "transformation_\n";
+  std::cout << final_transformation_ << "\n";
 
   // Transform the input cloud using the final transformation
   PCL_DEBUG ("Transformation is:\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n",
