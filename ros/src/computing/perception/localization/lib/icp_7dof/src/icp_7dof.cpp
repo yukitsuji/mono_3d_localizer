@@ -191,6 +191,8 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
   // else
   convergence_criteria_->setRotationThreshold (1.0 - transformation_epsilon_);
 
+  Eigen::Matrix4d local_to_global = global_to_local.inverse();
+
   // Repeat until convergence
   do
   {
@@ -230,18 +232,26 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
       // computational cost would be explosive if the transformation from global to local is done in estimateNonRigidTransformation
       // that should be done before estimateNonRigidTransformation.
       PointCloudSourcePtr local_input (new PointCloudSource);
+      PointCloudSourcePtr local_selected_input (new PointCloudSource);
       PointCloudSourcePtr local_target (new PointCloudSource);
-       
-      local_input->resize(cnt);
+     
+      *local_input = *input_transformed; 
+      transformCloudPublic(*local_input, *local_input, global_to_local);
+ 
+      local_selected_input->resize(cnt);
       local_target->resize(cnt);
       for (int i=0; i<cnt; ++i)
       {
-      
+          local_selected_input->points[i] = local_input->points[(*correspondences_)[i].index_query];
+          local_target->points[i] = target_->points[(*correspondences_)[i].index_match];
       }
+      
+      transformCloudPublic(*local_target, *local_target, global_to_local);
 
       t1 = std::chrono::steady_clock::now();
       // Estimate the transform
-      transformation_estimation_->estimateNonRigidTransformation (*input_transformed, *target_, *correspondences_, transformation_);
+      // transformation_estimation_->estimateNonRigidTransformation (*input_transformed, *target_, *correspondences_, transformation_);
+      transformation_estimation_->estimateNonRigidTransformation (*local_selected_input, *local_target, transformation_);
       t2 = std::chrono::steady_clock::now();
       ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
       if (debug)
@@ -249,7 +259,11 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
 
       // Transform the data
       t1 = std::chrono::steady_clock::now();
-      transformCloud (*input_transformed, *input_transformed, transformation_);
+      // transformCloud (*input_transformed, *input_transformed, transformation_);
+      transformCloud (*local_input, *local_input, transformation_);
+      *input_transformed = *local_input;
+      transformCloud (*input_transformed, *input_transformed, local_to_global);
+
       t2 = std::chrono::steady_clock::now();
       ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
       if (debug)
