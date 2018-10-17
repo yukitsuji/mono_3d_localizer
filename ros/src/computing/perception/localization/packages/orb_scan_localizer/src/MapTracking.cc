@@ -388,7 +388,7 @@ void MapTracking::SetSourceMap(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap) {
 
 void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
 {
-    pcl::console::setVerbosityLevel(pcl::console::L_DEBUG);
+    // pcl::console::setVerbosityLevel(pcl::console::L_DEBUG);
     std::cout << "ScanWithNDT\n";
     const vector<MapPoint*> &vpRefMPs = mpMap->GetReferenceMapPoints();
     set<MapPoint*> spRefMPs(vpRefMPs.begin(), vpRefMPs.end());

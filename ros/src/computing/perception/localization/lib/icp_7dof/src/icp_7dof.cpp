@@ -155,7 +155,7 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
   nr_iterations_ = 0;
   converged_ = false;
 
-  const bool debug = false;
+  const bool debug = true;
 
   // Initialise final transformation to the guessed one
   final_transformation_ = guess;
@@ -228,6 +228,8 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
           break;
       }
 
+
+      t1 = std::chrono::steady_clock::now();
       // customize input and its correspondence 
       // computational cost would be explosive if the transformation from global to local is done in estimateNonRigidTransformation
       // that should be done before estimateNonRigidTransformation.
@@ -248,6 +250,11 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
       
       transformCloudPublic(*local_target, *local_target, global_to_local);
 
+      t2 = std::chrono::steady_clock::now();
+      ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+      if (debug)
+          std::cout << "global to local: " << ttrack << "\n";
+
       t1 = std::chrono::steady_clock::now();
       // Estimate the transform
       // transformation_estimation_->estimateNonRigidTransformation (*input_transformed, *target_, *correspondences_, transformation_);
@@ -260,6 +267,7 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
       // Transform the data
       t1 = std::chrono::steady_clock::now();
       // transformCloud (*input_transformed, *input_transformed, transformation_);
+
       transformCloud (*local_input, *local_input, transformation_);
       *input_transformed = *local_input;
       transformCloud (*input_transformed, *input_transformed, local_to_global);
