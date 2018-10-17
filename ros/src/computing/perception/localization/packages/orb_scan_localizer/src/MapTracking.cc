@@ -437,8 +437,13 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
     *hoge = *l_points;
     Eigen::Matrix4d toRef = Converter::toMatrix4d(mCurrentFrame.mTcw);
     icp_.transformCloudPublic(*hoge, *hoge, toRef);
-    icp_.align (output, Eigen::Matrix4d::Identity(), toRef);
 
+    t1 = std::chrono::steady_clock::now();
+    icp_.align (output, Eigen::Matrix4d::Identity(), toRef);
+    t2 = std::chrono::steady_clock::now();
+    ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    std::cout << "[done, " << ttrack <<  " s : " << output.width * output.height << " points], has converged: ";
+    std::cout << icp_.hasConverged() << " with score: " << icp_.getFitnessScore () << "\n";
     // Map Points: Transform orig to icp result
     // pcl::PointCloud<pcl::PointXYZ>::Ptr converted_points (l_points);
     // for (auto&& p: spRefMPs) {

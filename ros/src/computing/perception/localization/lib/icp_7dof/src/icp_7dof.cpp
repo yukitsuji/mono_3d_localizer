@@ -155,7 +155,7 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
   nr_iterations_ = 0;
   converged_ = false;
 
-  const bool debug = true;
+  const bool debug = false;
 
   // Initialise final transformation to the guessed one
   final_transformation_ = guess;
@@ -314,7 +314,7 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
   nr_iterations_ = 0;
   converged_ = false;
 
-  const bool debug = true;
+  const bool debug = false;
 
   // Initialise final transformation to the guessed one
   final_transformation_ = guess;
