@@ -142,8 +142,6 @@ void NormalDistributionsTransform<PointSourceType, PointTargetType>::computeTran
 	int points_number = source_cloud_->points.size();
 
 	while (!converged_) {
-		previous_transformation_ = transformation_;
-
 		// Solve for decent direction using newton method, line 23 in Algorithm 2 [Magnusson 2009]
 		Eigen::JacobiSVD<Eigen::Matrix<double, 6, 6> > sv(hessian, Eigen::ComputeFullU | Eigen::ComputeFullV);
 		// Negative for maximization as opposed to minimization
@@ -162,14 +160,7 @@ void NormalDistributionsTransform<PointSourceType, PointTargetType>::computeTran
 		delta_p_norm = computeStepLengthMT(p, delta_p, delta_p_norm, step_size_, transformation_epsilon_ / 2, score, score_gradient, hessian, trans_cloud_);
 		delta_p *= delta_p_norm;
 
-		transformation_ = (Eigen::Translation<float, 3>(static_cast<float>(delta_p(0)), static_cast<float>(delta_p(1)), static_cast<float>(delta_p(2))) *
-							Eigen::AngleAxis<float>(static_cast<float>(delta_p(3)), Eigen::Vector3f::UnitX()) *
-							Eigen::AngleAxis<float>(static_cast<float>(delta_p(4)), Eigen::Vector3f::UnitY()) *
-							Eigen::AngleAxis<float>(static_cast<float>(delta_p(5)), Eigen::Vector3f::UnitZ())).matrix();
-
 		p = p + delta_p;
-
-		//Not update visualizer
 
 		if (nr_iterations_ > max_iterations_ || (nr_iterations_ && (std::fabs(delta_p_norm) < transformation_epsilon_))) {
 			converged_ = true;

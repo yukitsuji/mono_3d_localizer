@@ -90,7 +90,7 @@ namespace g2o {
     }
 
     // core part of the Levenbarg algorithm
-    if (iteration == 0) {       
+    if (iteration == 0) {
       _currentLambda = computeLambdaInit();
       _ni = 2;
       _nBad = 0;
@@ -112,7 +112,10 @@ namespace g2o {
         globalStats->timeLinearSolution+=get_monotonic_time()-t;
         t=get_monotonic_time();
       }
+
+      // Update states of optimizer
       _optimizer->update(_solver->x());
+
       if (globalStats) {
         globalStats->timeUpdate = get_monotonic_time()-t;
       }
