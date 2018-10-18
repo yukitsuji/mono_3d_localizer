@@ -250,8 +250,6 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
       
       transformCloudPublic(*local_target, *local_target, global_to_local);
 
-      std::cout << local_target->points[0] << " to " << target_->points[(*correspondences_)[0].index_match] << "\n";
-
       t2 = std::chrono::steady_clock::now();
       ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
       if (debug)
