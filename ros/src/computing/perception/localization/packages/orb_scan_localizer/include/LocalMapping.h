@@ -26,7 +26,7 @@
 #include "Tracking.h"
 #include "MapTracking.h"
 #include "KeyFrameDatabase.h"
-
+#include <icp_7dof/icp_7dof.h>
 #include <mutex>
 
 
@@ -76,6 +76,14 @@ public:
 
     std::mutex localMappingRunMutex;
 
+    bool use_icp_ = false;
+
+    void SetICP(pcl::IterativeClosestPoint7dof &icp) {
+        icp_ = icp;
+        use_icp_ = true;
+    }
+
+    pcl::IterativeClosestPoint7dof icp_;
 
 protected:
 

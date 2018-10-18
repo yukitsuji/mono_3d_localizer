@@ -158,6 +158,8 @@ public:
     bool isUseMapPublisher;
 
     icp_7dof::VoxelGrid voxel_grid_;
+    pcl::IterativeClosestPoint7dof icp_;
+    void SetSourceMap(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap);
 
 private:
 

@@ -289,15 +289,17 @@ void MapTracking::Track()
 				std::cout << "TrackLocalMap " << ttrack << "\n";
 
         // mCurrentFrame.mTcwを使って位置調整？
-        pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap = mpMap->GetPriorMapPoints();
-        if (priorMap) {
-            t1 = std::chrono::steady_clock::now();
-            ScanWithNDT(mCurrentFrame.mTcw);
-            // ScanWithNDT(mCurrentFrame.mpReferenceKF->GetPoseInverse());
-            // mCurrentFrame.mpReferenceKF->GetPoseInverse().t();
-            t2 = std::chrono::steady_clock::now();
-            ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-            std::cout << "ScanWithNDT " << ttrack << "\n";
+        if (use_icp_) {
+            pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap = mpMap->GetPriorMapPoints();
+            if (priorMap) {
+                t1 = std::chrono::steady_clock::now();
+                ScanWithNDT(mCurrentFrame.mTcw);
+                // ScanWithNDT(mCurrentFrame.mpReferenceKF->GetPoseInverse());
+                // mCurrentFrame.mpReferenceKF->GetPoseInverse().t();
+                t2 = std::chrono::steady_clock::now();
+                ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+                std::cout << "ScanWithNDT " << ttrack << "\n";
+            }
         }
 
         if(bOK){
@@ -381,10 +383,10 @@ void MapTracking::Track()
     }
 }
 
-void MapTracking::SetSourceMap(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap) {
-    icp_.setInputTarget(priorMap);
-    return;
-}
+//void MapTracking::SetSourceMap(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap) {
+//    icp_.setInputTarget(priorMap);
+//    return;
+//}
 
 void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
 {

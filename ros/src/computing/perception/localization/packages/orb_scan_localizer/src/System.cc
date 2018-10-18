@@ -31,6 +31,10 @@
 namespace ORB_SLAM2
 {
 
+void System::SetSourceMap(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap) {
+    icp_.setInputTarget(priorMap);
+}
+
 System::System(const string &strVocFile, const string &strSettingsFile,
                const eSensor sensor, const ros::NodeHandle &node,
                const bool bUseMapPublisher, const bool is_publish,
@@ -122,7 +126,9 @@ System::System(const string &strVocFile, const string &strSettingsFile,
                                    mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
 
     if (!mapFileName.empty()) {
-        mpMapTracker->SetSourceMap(mpMap->GetPriorMapPoints());
+        // mpMapTracker->SetSourceMap(mpMap->GetPriorMapPoints());
+        SetSourceMap(mpMap->GetPriorMapPoints());
+        mpMapTracker->SetICP(icp_);
         mpMap->VoxelGridFilter(2.0);
     }
 

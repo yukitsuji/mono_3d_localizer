@@ -127,10 +127,16 @@ public:
     {  mMaxFrames = f; }
 
     // Setup prior map
-    void SetSourceMap(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap);
+    // void SetSourceMap(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap);
     bool isUpdateMap = false;
+    bool use_icp_ = false;
 
 public:
+
+    void SetICP(pcl::IterativeClosestPoint7dof &icp) {
+        icp_ = icp;
+        use_icp_ = true;
+    }
 
     // Tracking states
     enum eTrackingState{
@@ -193,7 +199,6 @@ public:
     geometry_msgs::PoseStamped orb_pose_msg;
 
     pcl::IterativeClosestPoint7dof icp_;
-
 
 protected:
 
@@ -305,14 +310,14 @@ protected:
     list<MapPoint*> mlpTemporalPoints;
 
     int
-		// Working resolution
-		imageWorkWidth,
-		imageWorkHeight,
-		// ROI
-		ROIx0,
-		ROIy0,
-		ROIwidth,
-		ROIheight;
+    // Working resolution
+    imageWorkWidth,
+    imageWorkHeight,
+    // ROI
+    ROIx0,
+    ROIy0,
+    ROIwidth,
+    ROIheight;
 };
 
 } //namespace ORB_SLAM

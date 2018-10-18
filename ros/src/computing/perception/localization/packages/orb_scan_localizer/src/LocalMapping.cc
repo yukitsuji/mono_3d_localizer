@@ -121,27 +121,27 @@ void LocalMapping::RunOnce()
     std::chrono::steady_clock::time_point t2;
     double ttrack;
     SetAcceptKeyFrames(true);
-	  // Check if there are keyframes in the queue
-	  if(CheckNewKeyFrames())
-	  {
+    // Check if there are keyframes in the queue
+    if(CheckNewKeyFrames())
+    {
         t1 = std::chrono::steady_clock::now();
-		    // BoW conversion and insertion in Map
-		    ProcessNewKeyFrame();
+        // BoW conversion and insertion in Map
+        ProcessNewKeyFrame();
         t2 = std::chrono::steady_clock::now();
         ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
         std::cout << "ProcessNewKeyFrame " << ttrack << "\n";
 
         t1 = std::chrono::steady_clock::now();
-		    // Check recent MapPoints
-	    	MapPointCulling();
+        // Check recent MapPoints
+        MapPointCulling();
         t2 = std::chrono::steady_clock::now();
         ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
         std::cout << "MapPointCulling " << ttrack << "\n";
 
 
         t1 = std::chrono::steady_clock::now();
-		    // Triangulate new MapPoints
-		    CreateNewMapPoints();
+        // Triangulate new MapPoints
+        CreateNewMapPoints();
         t2 = std::chrono::steady_clock::now();
         ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
         std::cout << "CreateNewMapPoints " << ttrack << "\n";
@@ -150,28 +150,28 @@ void LocalMapping::RunOnce()
         {
             t1 = std::chrono::steady_clock::now();
             // Find more matches in neighbor keyframes and fuse point duplications
-			      SearchInNeighbors();
+            SearchInNeighbors();
             t2 = std::chrono::steady_clock::now();
             ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
             std::cout << "SearchInNeighbors " << ttrack << "\n";
-		    }
+        }
 
-		    mbAbortBA = false;
+        mbAbortBA = false;
 
-    		if(!CheckNewKeyFrames())
-    		{
+        if(!CheckNewKeyFrames())
+    	{
             t1 = std::chrono::steady_clock::now();
-      			// Local BA
-      			if(mpMap->KeyFramesInMap() > 2)
-      				Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, false, mpMap);
+      	    // Local BA
+            if(mpMap->KeyFramesInMap() > 2)
+                Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, false, mpMap);
             t2 = std::chrono::steady_clock::now();
             ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
             std::cout << "LocalBundleAdjustment " << ttrack << "\n";
 
 
             t1 = std::chrono::steady_clock::now();
-      			// Check redundant local Keyframes
-      			KeyFrameCulling();
+            // Check redundant local Keyframes
+            KeyFrameCulling();
             t2 = std::chrono::steady_clock::now();
             ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
             std::cout << "KeyFrameCulling " << ttrack << "\n";
@@ -181,8 +181,13 @@ void LocalMapping::RunOnce()
             t2 = std::chrono::steady_clock::now();
             ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
             std::cout << "KeyFrameCullingByNumber " << ttrack << "\n";
-    		}
-	  }
+            
+            if (use_icp_)
+            {
+                
+            }
+        }
+    }
     SetAcceptKeyFrames(true);
 }
 
