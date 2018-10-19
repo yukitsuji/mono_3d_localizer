@@ -109,7 +109,7 @@ public:
     float GetMinDistanceInvariance();
     float GetMaxDistanceInvariance();
     int PredictScale(const float &currentDist, const float &logScaleFactor);
-		
+
 public:
     long unsigned int mnId;
     static long unsigned int nNextId;
@@ -125,6 +125,8 @@ public:
     int mnTrackScaleLevel;
     float mTrackViewCos;
     long unsigned int mnTrackReferenceForFrame;
+		long unsigned int mnLocalMappingForFrame;
+
     long unsigned int mnLastFrameSeen;
 
     // Variables used by local mapping
