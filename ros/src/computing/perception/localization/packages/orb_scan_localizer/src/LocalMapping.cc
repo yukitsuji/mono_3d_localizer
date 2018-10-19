@@ -159,7 +159,7 @@ void LocalMapping::RunOnce()
         mbAbortBA = false;
 
         if(!CheckNewKeyFrames())
-    	{
+    	  {
             t1 = std::chrono::steady_clock::now();
       	    // Local BA
             if(mpMap->KeyFramesInMap() > 2)
@@ -187,81 +187,71 @@ void LocalMapping::RunOnce()
                 // Collect local map point and KeyFrames
                 // Use GetBestCovisibilityKeyFrames or 10 keyframes
                 // TODO: Calculate number of map points
-                int nn = 20;
                 t1 = std::chrono::steady_clock::now();
-                vector<KeyFrame*> vpNeighKFs = mpCurrentKeyFrame->GetBestCovisibilityKeyFrames(nn);
-
-                // 各Map PointにLocalMappingのKeyFrameのIDを格納する変数を作成
+                vector<KeyFrame*> mvpLocalKeyFrames; // = mpCurrentKeyFrame->GetVectorCovisibleKeyFrames();
                 std::vector<MapPoint*> localMapPoints;
                 localMapPoints.clear();
 
-                for (const auto& pKF : vpNeighKFs)
+                vector<MapPoint*> mvpMapPoints = mpCurrentKeyFrame->GetMapPointMatches();
+
+                map<KeyFrame*,int> keyframeCounter;
+                for(int i=0; i<mpCurrentKeyFrame->N; i++)
                 {
-                    std::cout << "KeyFrame id: " << pKF->mnId << "\n";
+                    if(mvpMapPoints[i])
+                    {
+                        MapPoint* pMP = mvpMapPoints[i];
+                        if(!pMP->isBad())
+                        {
+                            const map<KeyFrame*,size_t> observations = pMP->GetObservations();
+                            for(map<KeyFrame*,size_t>::const_iterator it=observations.begin(), itend=observations.end(); it!=itend; it++)
+                                keyframeCounter[it->first]++;
+                        }
+                        else
+                        {
+                            mvpMapPoints[i] = NULL;
+                        }
+                    }
+                }
+
+                if(keyframeCounter.empty())
+                    return;
+
+                mvpLocalKeyFrames.clear();
+                mvpLocalKeyFrames.reserve(keyframeCounter.size());
+
+                // All keyframes that observe a map point are included in the local map. Also check which keyframe shares most points
+                for(map<KeyFrame*,int>::const_iterator it=keyframeCounter.begin(), itEnd=keyframeCounter.end(); it!=itEnd; it++)
+                {
+                    KeyFrame* pKF = it->first;
+                    if(pKF==NULL || pKF->isBad())
+                        continue;
+                    mvpLocalKeyFrames.push_back(it->first);
+                }
+
+
+                // 各Map PointにLocalMappingのKeyFrameのIDを格納する変数を作成
+                for (const auto& pKF : mvpLocalKeyFrames)
+                {
+                    // std::cout << "KeyFrame id: " << pKF->mnId << "\n";
                     const vector<MapPoint*> vpMPs = pKF->GetMapPointMatches();
 
             				for (const auto& pMP : vpMPs)
                     {
                         if(!pMP)
                             continue;
-                        if(pMP->mnLocalMappingForFrame == mCurrentFrame.mnId)
+                        if(pMP->mnLocalMappingForFrame == mpCurrentKeyFrame->mnId)
                             continue;
                         if(!pMP->isBad())
                         {
                             localMapPoints.push_back(pMP);
-                            pMP->mnLocalMappingForFrame = mCurrentFrame.mnId;
+                            pMP->mnLocalMappingForFrame = mpCurrentKeyFrame->mnId;
                         }
                     }
                 }
 
-                // // Search matches by projection from current KF in target KFs
-                // ORBmatcher matcher;
-                // vector<MapPoint*> vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
-                // for(vector<KeyFrame*>::iterator vit=vpTargetKFs.begin(), vend=vpTargetKFs.end(); vit!=vend; vit++)
-                // {
-                //     KeyFrame* pKFi = *vit;
-                //
-                //     matcher.Fuse(pKFi, vpMapPointMatches);
-                // }
-                //
-                // // Search matches by projection from target KFs in current KF
-                // vector<MapPoint*> vpFuseCandidates;
-                // vpFuseCandidates.reserve(vpTargetKFs.size()*vpMapPointMatches.size());
-                //
-                // for(vector<KeyFrame*>::iterator vitKF=vpTargetKFs.begin(), vendKF=vpTargetKFs.end(); vitKF!=vendKF; vitKF++)
-                // {
-                //     KeyFrame* pKFi = *vitKF;
-                //
-                //     vector<MapPoint*> vpMapPointsKFi = pKFi->GetMapPointMatches();
-                //
-                //     for(vector<MapPoint*>::iterator vitMP=vpMapPointsKFi.begin(), vendMP=vpMapPointsKFi.end(); vitMP!=vendMP; vitMP++)
-                //     {
-                //         MapPoint* pMP = *vitMP;
-                //         if(!pMP)
-                //             continue;
-                //         if(pMP->isBad() || pMP->mnFuseCandidateForKF == mpCurrentKeyFrame->mnId)
-                //             continue;
-                //         pMP->mnFuseCandidateForKF = mpCurrentKeyFrame->mnId;
-                //         vpFuseCandidates.push_back(pMP);
-                //     }
-                // }
-                //
-                // matcher.Fuse(mpCurrentKeyFrame, vpFuseCandidates);
+                std::cout << "mvpLocalKeyFrames: " << mvpLocalKeyFrames.size() << "\n";
+                std::cout << "localMapPoints: " << localMapPoints.size() << "\n";
 
-                // Update points
-                // vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
-                // for(size_t i=0, iend=vpMapPointMatches.size(); i<iend; ++i)
-                // {
-                //     MapPoint* pMP = vpMapPointMatches[i];
-                //     if(pMP)
-                //     {
-                //         if(!pMP->isBad())
-                //         {
-                //             pMP->ComputeDistinctiveDescriptors();
-                //             pMP->UpdateNormalAndDepth();
-                //         }
-                //     }
-                // }
 
                 t2 = std::chrono::steady_clock::now();
                 ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
@@ -270,13 +260,52 @@ void LocalMapping::RunOnce()
                 // icp matching using map point
                 t1 = std::chrono::steady_clock::now();
 
+                pcl::PointCloud<pcl::PointXYZ>::Ptr l_points (new pcl::PointCloud<pcl::PointXYZ>);
+                for (auto&& p : localMapPoints)
+                {
+                    cv::Mat pos = p->GetWorldPos();
+                    pcl::PointXYZ point;
+                    point.x = pos.at<float>(0);
+                    point.y = pos.at<float>(1);
+                    point.z = pos.at<float>(2);
+                    l_points->push_back(point);
+                }
+                pcl::console::setVerbosityLevel(pcl::console::L_DEBUG);
+                icp_->setInputSource(l_points);
+                icp_->setMaximumIterations(10);
+                icp_->setDistThreshold(0.5);
+                pcl::PointCloud<pcl::PointXYZ> output;
+                Eigen::Matrix4d transformation;
+
+                Eigen::Matrix4d toRef = Converter::toMatrix4d(mpCurrentKeyFrame->GetPose());
+                icp_->align(output, Eigen::Matrix4d::Identity(), toRef);
+
                 t2 = std::chrono::steady_clock::now();
                 ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
                 std::cout << "icp matching using map point " << ttrack << "\n";
+                std::cout << "[done, " << ttrack <<  " s : " << output.width * output.height << " points], has converged: ";
+                std::cout << icp_->hasConverged() << " with score: " << icp_->getFitnessScore (toRef) << "\n";
 
                 // Update map point and keyframes
                 t1 = std::chrono::steady_clock::now();
-
+                // Update points
+                for(size_t i=0, iend=localMapPoints.size(); i<iend; ++i)
+                {
+                    MapPoint* pMP = localMapPoints[i];
+                    if(pMP)
+                    {
+                        if(!pMP->isBad())
+                        {
+                            pMP->ComputeDistinctiveDescriptors();
+                            pMP->UpdateNormalAndDepth();
+                        }
+                    }
+                }
+                // Update KeyFrames
+                for (const auto& pKF : mvpLocalKeyFrames)
+                {
+                    // pKF->SetPose();
+                }
                 t2 = std::chrono::steady_clock::now();
                 ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
                 std::cout << "Update map point and keyframes " << ttrack << "\n";

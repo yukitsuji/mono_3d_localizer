@@ -129,12 +129,9 @@ public:
     // Setup prior map
     // void SetSourceMap(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap);
     bool isUpdateMap = false;
-    bool use_icp_ = false;
-
-public:
 
     void SetICP(pcl::IterativeClosestPoint7dof &icp) {
-        icp_ = icp;
+        *icp_ = icp;
         use_icp_ = true;
     }
 
@@ -198,7 +195,7 @@ public:
     ros::Publisher orb_pose_pub;
     geometry_msgs::PoseStamped orb_pose_msg;
 
-    pcl::IterativeClosestPoint7dof icp_;
+    pcl::IterativeClosestPoint7dof *icp_;
 
 protected:
 
@@ -318,8 +315,10 @@ protected:
     ROIy0,
     ROIwidth,
     ROIheight;
-};
 
+private:
+    bool use_icp_ = false;
+};
 } //namespace ORB_SLAM
 
 #endif // MAPTRACKING_H

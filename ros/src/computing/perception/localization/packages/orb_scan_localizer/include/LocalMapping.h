@@ -26,9 +26,10 @@
 #include "Tracking.h"
 #include "MapTracking.h"
 #include "KeyFrameDatabase.h"
+#include "Converter.h"
 #include <icp_7dof/icp_7dof.h>
 #include <mutex>
-
+#include <pcl/console/print.h>
 
 namespace ORB_SLAM2
 {
@@ -76,14 +77,12 @@ public:
 
     std::mutex localMappingRunMutex;
 
-    bool use_icp_ = false;
-
     void SetICP(pcl::IterativeClosestPoint7dof &icp) {
-        icp_ = icp;
+        *icp_ = icp;
         use_icp_ = true;
     }
 
-    pcl::IterativeClosestPoint7dof icp_;
+    pcl::IterativeClosestPoint7dof *icp_;
 
 protected:
 
@@ -133,8 +132,10 @@ protected:
 
     bool mbAcceptKeyFrames;
     std::mutex mMutexAccept;
-};
 
+private:
+    bool use_icp_ = false;
+};
 } //namespace ORB_SLAM
 
 #endif // LOCALMAPPING_H

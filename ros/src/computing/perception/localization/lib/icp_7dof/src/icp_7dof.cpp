@@ -155,7 +155,7 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
   nr_iterations_ = 0;
   converged_ = false;
 
-  const bool debug = false;
+  const bool debug = true;
 
   // Initialise final transformation to the guessed one
   final_transformation_ = guess;
@@ -168,7 +168,7 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
   //  transformCloud (*input_, *input_transformed, guess);
   //}
   //else
-    
+
   *input_transformed = *input_;
 
   transformation_ = Matrix4::Identity ();
@@ -178,10 +178,8 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
   correspondence_estimation_->setInputTarget (target_);
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
   double ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-  if (debug) {
+  if (debug)
       std::cout << "setInputTarget: " << ttrack << "\n";
-      std::cout << "correspondence_estimation_->requiresTargetNormals: " << correspondence_estimation_->requiresTargetNormals() << "\n";
-  }
 
   convergence_criteria_->setMaximumIterations (max_iterations_);
   convergence_criteria_->setRelativeMSE (euclidean_fitness_epsilon_);
@@ -230,16 +228,16 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
 
 
       t1 = std::chrono::steady_clock::now();
-      // customize input and its correspondence 
+      // customize input and its correspondence
       // computational cost would be explosive if the transformation from global to local is done in estimateNonRigidTransformation
       // that should be done before estimateNonRigidTransformation.
       PointCloudSourcePtr local_input (new PointCloudSource);
       PointCloudSourcePtr local_selected_input (new PointCloudSource);
       PointCloudSourcePtr local_target (new PointCloudSource);
- 
-      *local_input = *input_transformed; 
+
+      *local_input = *input_transformed;
       transformCloudPublic(*local_input, *local_input, global_to_local);
- 
+
       local_selected_input->resize(cnt);
       local_target->resize(cnt);
       for (int i=0; i<cnt; ++i)
@@ -247,7 +245,7 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
           local_selected_input->points[i] = local_input->points[(*correspondences_)[i].index_query];
           local_target->points[i] = target_->points[(*correspondences_)[i].index_match];
       }
-      
+
       transformCloudPublic(*local_target, *local_target, global_to_local);
 
       t2 = std::chrono::steady_clock::now();

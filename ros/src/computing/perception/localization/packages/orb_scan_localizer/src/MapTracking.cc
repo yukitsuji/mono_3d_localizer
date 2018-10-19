@@ -208,11 +208,11 @@ cv::Mat MapTracking::GrabImageMonocular(const cv::Mat &im, const double &timesta
 
 		std::cout << "Sum of basic module time: " << sum_time << "\n";
 
-		// t1 = std::chrono::steady_clock::now();
-		// mpLocalMapper->RunOnce();
-		// t2 = std::chrono::steady_clock::now();
-    // ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-    // std::cout << "local mapping " << ttrack << "\n";
+		t1 = std::chrono::steady_clock::now();
+		mpLocalMapper->RunOnce();
+		t2 = std::chrono::steady_clock::now();
+    ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    std::cout << "local mapping " << ttrack << "\n";
 
     return mCurrentFrame.mTcw.clone();
 }
@@ -290,16 +290,13 @@ void MapTracking::Track()
 
         // mCurrentFrame.mTcwを使って位置調整？
         if (use_icp_) {
-            pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap = mpMap->GetPriorMapPoints();
-            if (priorMap) {
-                t1 = std::chrono::steady_clock::now();
-                ScanWithNDT(mCurrentFrame.mTcw);
-                // ScanWithNDT(mCurrentFrame.mpReferenceKF->GetPoseInverse());
-                // mCurrentFrame.mpReferenceKF->GetPoseInverse().t();
-                t2 = std::chrono::steady_clock::now();
-                ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-                std::cout << "ScanWithNDT " << ttrack << "\n";
-            }
+            t1 = std::chrono::steady_clock::now();
+            ScanWithNDT(mCurrentFrame.mTcw);
+            // ScanWithNDT(mCurrentFrame.mpReferenceKF->GetPoseInverse());
+            // mCurrentFrame.mpReferenceKF->GetPoseInverse().t();
+            t2 = std::chrono::steady_clock::now();
+            ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+            std::cout << "ScanWithNDT " << ttrack << "\n";
         }
 
         if(bOK){
@@ -384,7 +381,7 @@ void MapTracking::Track()
 }
 
 //void MapTracking::SetSourceMap(pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap) {
-//    icp_.setInputTarget(priorMap);
+//    icp_->setInputTarget(priorMap);
 //    return;
 //}
 
@@ -412,19 +409,19 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
         l_points->push_back(point);
     }
 
-    icp_.setInputSource(l_points);
-    icp_.setMaximumIterations(10);
-    icp_.setDistThreshold(0.5);
+    icp_->setInputSource(l_points);
+    icp_->setMaximumIterations(10);
+    icp_->setDistThreshold(0.5);
     pcl::PointCloud<pcl::PointXYZ> output;
     Eigen::Matrix4d transformation;
 
     // t1 = std::chrono::steady_clock::now();
-    //icp_.align (output);
+    //icp_->align (output);
     // t2 = std::chrono::steady_clock::now();
     // ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
     // std::cout << "[done, " << ttrack <<  " s : " << output.width * output.height << " points], has converged: ";
-    // std::cout << icp_.hasConverged() << " with score: " << icp_.getFitnessScore (Eigen::Matrix4d::Identity()) << "\n";
-    // transformation = icp_.getFinalTransformation ();
+    // std::cout << icp_->hasConverged() << " with score: " << icp_->getFitnessScore (Eigen::Matrix4d::Identity()) << "\n";
+    // transformation = icp_->getFinalTransformation ();
     // std::cout << "Transformation\n";
     // std::cout << transformation << "\n";
 
@@ -434,7 +431,7 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
     // transformation *= 2;
 
     // t1 = std::chrono::steady_clock::now();
-    // icp_.transformCloudPublic(*g_points, *g_points, transformation);
+    // icp_->transformCloudPublic(*g_points, *g_points, transformation);
     // t2 = std::chrono::steady_clock::now();
     // ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
     // std::cout << "TransformCloudPublic: " << ttrack << "\n";
@@ -443,15 +440,15 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
     pcl::PointCloud<pcl::PointXYZ>::Ptr hoge (new pcl::PointCloud<pcl::PointXYZ>);
     *hoge = *l_points;
     Eigen::Matrix4d toRef = Converter::toMatrix4d(mCurrentFrame.mTcw);
-    icp_.transformCloudPublic(*hoge, *hoge, toRef);
+    icp_->transformCloudPublic(*hoge, *hoge, toRef);
 
     t1 = std::chrono::steady_clock::now();
-    icp_.align (output, Eigen::Matrix4d::Identity(), toRef);
+    icp_->align (output, Eigen::Matrix4d::Identity(), toRef);
     t2 = std::chrono::steady_clock::now();
     ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
     std::cout << "[done, " << ttrack <<  " s : " << output.width * output.height << " points], has converged: ";
-    std::cout << icp_.hasConverged() << " with score: " << icp_.getFitnessScore (toRef) << "\n";
-    
+    std::cout << icp_->hasConverged() << " with score: " << icp_->getFitnessScore (toRef) << "\n";
+
     // Map Points: Transform orig to icp result
     // pcl::PointCloud<pcl::PointXYZ>::Ptr converted_points (l_points);
     // for (auto&& p: spRefMPs) {
