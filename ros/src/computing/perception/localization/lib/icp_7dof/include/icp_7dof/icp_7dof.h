@@ -279,7 +279,7 @@ namespace pcl
           {
               // Find its nearest neighbor in the target
               tree_->nearestKSearch (input_transformed.points[i], 1, nn_indices, nn_dists);
-    
+
               // Deal with occlusions (incomplete targets)
               // Add to the fitness score
               fitness_score += nn_dists[0];

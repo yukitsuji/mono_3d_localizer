@@ -120,10 +120,12 @@ void LocalMapping::RunOnce()
     std::chrono::steady_clock::time_point t1;
     std::chrono::steady_clock::time_point t2;
     double ttrack;
-    SetAcceptKeyFrames(true);
+    SetAcceptKeyFrames(false);
     // Check if there are keyframes in the queue
     if(CheckNewKeyFrames())
     {
+        std::cout << "mlNewKeyFrames.size: " << mlNewKeyFrames.size() << "\n";
+
         t1 = std::chrono::steady_clock::now();
         // BoW conversion and insertion in Map
         ProcessNewKeyFrame();
@@ -158,6 +160,8 @@ void LocalMapping::RunOnce()
 
         mbAbortBA = false;
 
+        std::cout << "mlNewKeyFrames.size: " << mlNewKeyFrames.size() << "\n";
+
         if(!CheckNewKeyFrames())
     	  {
             t1 = std::chrono::steady_clock::now();
@@ -177,7 +181,7 @@ void LocalMapping::RunOnce()
             std::cout << "KeyFrameCulling " << ttrack << "\n";
 
             t1 = std::chrono::steady_clock::now();
-            KeyFrameCullingByNumber(20);
+            KeyFrameCullingByNumber(60);
             t2 = std::chrono::steady_clock::now();
             ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
             std::cout << "KeyFrameCullingByNumber " << ttrack << "\n";
@@ -270,7 +274,7 @@ void LocalMapping::RunOnce()
                     point.z = pos.at<float>(2);
                     l_points->push_back(point);
                 }
-                pcl::console::setVerbosityLevel(pcl::console::L_DEBUG);
+                // pcl::console::setVerbosityLevel(pcl::console::L_DEBUG);
                 icp_->setInputSource(l_points);
                 icp_->setMaximumIterations(10);
                 icp_->setDistThreshold(0.5);
@@ -286,8 +290,24 @@ void LocalMapping::RunOnce()
                 std::cout << "[done, " << ttrack <<  " s : " << output.width * output.height << " points], has converged: ";
                 std::cout << icp_->hasConverged() << " with score: " << icp_->getFitnessScore (toRef) << "\n";
 
+                transformation = icp_->getFinalTransformation();
+
                 // Update map point and keyframes
                 t1 = std::chrono::steady_clock::now();
+
+                // Update KeyFrames
+                cv::Mat cv_toRef = Converter::toCvMat(toRef);
+                cv::Mat cv_invtoRef = cv_toRef.inv();
+                cv::Mat cv_transformation = Converter::toCvMat(transformation);
+                for (auto&& pKF : mvpLocalKeyFrames)
+                {
+                    if (pKF->mnId != 0) {
+                        cv::Mat prev_pose = pKF->GetPoseInverse(); // GetPose();
+                        cv::Mat after_pose = cv_invtoRef * cv_transformation * cv_toRef * prev_pose;
+                        pKF->SetPose(after_pose.inv());
+                    }
+                }
+                
                 // Update points
                 for(size_t i=0, iend=localMapPoints.size(); i<iend; ++i)
                 {
@@ -296,23 +316,22 @@ void LocalMapping::RunOnce()
                     {
                         if(!pMP->isBad())
                         {
-                            pMP->ComputeDistinctiveDescriptors();
+                            pcl::PointXYZ p = output[i];
+                            cv::Mat pose = (cv::Mat_<float>(3,1) << p.x, p.y, p.z);
+                            pMP->SetWorldPos(pose);
                             pMP->UpdateNormalAndDepth();
                         }
                     }
                 }
-                // Update KeyFrames
-                for (const auto& pKF : mvpLocalKeyFrames)
-                {
-                    // pKF->SetPose();
-                }
+
                 t2 = std::chrono::steady_clock::now();
                 ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
                 std::cout << "Update map point and keyframes " << ttrack << "\n";
             }
         }
     }
-    SetAcceptKeyFrames(true);
+    if (!mlNewKeyFrames.size())
+        SetAcceptKeyFrames(true);
 }
 
 

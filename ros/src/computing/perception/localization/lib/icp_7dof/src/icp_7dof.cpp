@@ -155,7 +155,7 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
   nr_iterations_ = 0;
   converged_ = false;
 
-  const bool debug = true;
+  const bool debug = false;
 
   // Initialise final transformation to the guessed one
   final_transformation_ = guess;
@@ -302,7 +302,13 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
   // Copy all the values
   output = *input_;
   // Transform the XYZ + normals
-  transformCloud (*input_, output, final_transformation_);
+
+  // transformCloudPublic(output, output, global_to_local);
+  // transformCloudPublic(output, output, final_transformation_);
+  // transformCloudPublic(output, output, local_to_global);
+  Eigen::Matrix4d transformation = local_to_global * final_transformation_ * global_to_local;
+  transformCloudPublic(output, output, transformation);
+
 }
 
 

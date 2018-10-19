@@ -78,7 +78,7 @@ public:
     std::mutex localMappingRunMutex;
 
     void SetICP(pcl::IterativeClosestPoint7dof &icp) {
-        *icp_ = icp;
+        icp_ = &icp;
         use_icp_ = true;
     }
 

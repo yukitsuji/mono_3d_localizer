@@ -208,11 +208,11 @@ cv::Mat MapTracking::GrabImageMonocular(const cv::Mat &im, const double &timesta
 
 		std::cout << "Sum of basic module time: " << sum_time << "\n";
 
-		t1 = std::chrono::steady_clock::now();
-		mpLocalMapper->RunOnce();
-		t2 = std::chrono::steady_clock::now();
-    ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-    std::cout << "local mapping " << ttrack << "\n";
+		// t1 = std::chrono::steady_clock::now();
+		// mpLocalMapper->RunOnce();
+		// t2 = std::chrono::steady_clock::now();
+    // ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    // std::cout << "local mapping " << ttrack << "\n";
 
     return mCurrentFrame.mTcw.clone();
 }
@@ -374,9 +374,9 @@ void MapTracking::Track()
         mlpReferences.push_back(mpReferenceKF);
 
 				std::cout << "Current inverse Position\n" << mCurrentFrame.mTcw.inv() << "\n";
-				std::cout << "Current reference Position\n" << Tcr.inv() << "\n";
-				std::cout << "Current kf Position\n" << mCurrentFrame.mpReferenceKF->GetPoseInverse() << "\n";
-				std::cout << "Current multiply Position\n" << mCurrentFrame.mpReferenceKF->GetPoseInverse() * Tcr.inv() << "\n";
+				// std::cout << "Current reference Position\n" << Tcr.inv() << "\n";
+				// std::cout << "Current kf Position\n" << mCurrentFrame.mpReferenceKF->GetPoseInverse() << "\n";
+				// std::cout << "Current multiply Position\n" << mCurrentFrame.mpReferenceKF->GetPoseInverse() * Tcr.inv() << "\n";
     }
 }
 
@@ -410,7 +410,7 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
     }
 
     icp_->setInputSource(l_points);
-    icp_->setMaximumIterations(10);
+    icp_->setMaximumIterations(1);
     icp_->setDistThreshold(0.5);
     pcl::PointCloud<pcl::PointXYZ> output;
     Eigen::Matrix4d transformation;
@@ -487,6 +487,9 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
         double y = -p.x;
         double z = -p.y;
         p.x = x; p.y = y; p.z = z;
+				if (p.z > 3 || pow(pow(p.x, 2) + pow(p.y, 2), 0.5) > 30) {
+					    p.x=0; p.y=0; p.z=0;
+				}
     }
     global_pub.publish(hoge);
 
