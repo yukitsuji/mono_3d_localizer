@@ -304,10 +304,24 @@ void LocalMapping::RunOnce()
                     if (pKF->mnId != 0) {
                         cv::Mat prev_pose = pKF->GetPoseInverse(); // GetPose();
                         cv::Mat after_pose = cv_invtoRef * cv_transformation * cv_toRef * prev_pose;
+                        // Convert 7DoF to 6Dof: det |after_pose|
+                        cv::Mat after_R = after_pose.rowRange(0,3).colRange(0,3)
+                        double s = cv::determinant(after_R);
+                        after_R /= s;
+                        after_R.copyTo(after_pose.rowRange(0,3).colRange(0,3));
                         pKF->SetPose(after_pose.inv());
+                        std::cout << "Scale: " << s << "\n";
                     }
                 }
-                
+
+                // Update points using PCL
+                pcl::PointCloud<pcl::PointXYZ>::Ptr converted_points (new pcl::PointCloud<pcl::PointXYZ>);
+                *converted_points = *l_points;
+                Eigen::Matrix4d updateToGlobal = Converter::toMatrix4d(mpCurrentKeyFrame->GetPoseInverse());
+                icp_->transformCloudPublic(*converted_points, *converted_points, toRef);
+                icp_->transformCloudPublic(*converted_points, *converted_points, transformation);
+                icp_->transformCloudPublic(*converted_points, *converted_points, updateToGlobal);
+
                 // Update points
                 for(size_t i=0, iend=localMapPoints.size(); i<iend; ++i)
                 {

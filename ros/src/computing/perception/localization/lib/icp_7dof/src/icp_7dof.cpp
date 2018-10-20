@@ -278,10 +278,8 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
       // Obtain the final transformation
       final_transformation_ = transformation_ * final_transformation_;
 
-      if (debug) {
-          std::cout << "transformation_\n";
-          std::cout << final_transformation_ << "\n";
-      }
+      if (debug)
+          std::cout << "transformation_\n" << final_transformation_ << "\n";
 
       ++nr_iterations_;
 
@@ -301,14 +299,8 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
 
   // Copy all the values
   output = *input_;
-  // Transform the XYZ + normals
-
-  // transformCloudPublic(output, output, global_to_local);
-  // transformCloudPublic(output, output, final_transformation_);
-  // transformCloudPublic(output, output, local_to_global);
   Eigen::Matrix4d transformation = local_to_global * final_transformation_ * global_to_local;
   transformCloudPublic(output, output, transformation);
-
 }
 
 
