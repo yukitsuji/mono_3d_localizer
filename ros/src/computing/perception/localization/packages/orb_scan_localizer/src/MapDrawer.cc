@@ -41,6 +41,7 @@ MapDrawer::MapDrawer(Map* pMap, const string &strSettingPath):mpMap(pMap)
     mKeyFrameLineWidth = fSettings["Viewer.KeyFrameLineWidth"];
     mGraphLineWidth = fSettings["Viewer.GraphLineWidth"];
     mPointSize = fSettings["Viewer.PointSize"];
+    mPointSize2 = fSettings["Viewer.PointSize2"];
     mCameraSize = fSettings["Viewer.CameraSize"];
     mCameraLineWidth = fSettings["Viewer.CameraLineWidth"];
 
@@ -107,18 +108,18 @@ void MapDrawer::DrawMapPoints()
     if(vpMPs.empty())
         return;
 
-    glPointSize(mPointSize);
-    glBegin(GL_POINTS);
-    glColor3f(0.0,0.0,0.0);
-
-    for(size_t i=0, iend=vpMPs.size(); i<iend;i++)
-    {
-        if(vpMPs[i]==NULL || vpMPs[i]->isBad() || spRefMPs.count(vpMPs[i]))
-            continue;
-        cv::Mat pos = vpMPs[i]->GetWorldPos();
-        glVertex3f(pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
-    }
-    glEnd();
+    // glPointSize(mPointSize);
+    // glBegin(GL_POINTS);
+    // glColor3f(0.0,0.0,0.0);
+    //
+    // for(size_t i=0, iend=vpMPs.size(); i<iend;i++)
+    // {
+    //     if(vpMPs[i]==NULL || vpMPs[i]->isBad() || spRefMPs.count(vpMPs[i]))
+    //         continue;
+    //     cv::Mat pos = vpMPs[i]->GetWorldPos();
+    //     glVertex3f(pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
+    // }
+    // glEnd();
 
     glPointSize(mPointSize);
     glBegin(GL_POINTS);
@@ -131,6 +132,12 @@ void MapDrawer::DrawMapPoints()
         cv::Mat pos = (*sit)->GetWorldPos();
         glVertex3f(pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
     }
+
+    glEnd();
+
+    glPointSize(mPointSize2);
+    glBegin(GL_POINTS);
+    glColor3f(0.0,0.0,0.0);
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr priorMap = mpMap->GetPriorMapPoints();
     if (priorMap) {

@@ -131,7 +131,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
         SetSourceMap(mpMap->GetPriorMapPoints());
         std::cout << "Set finished\n";
         mpMapTracker->SetICP(icp_);
-        mpMap->VoxelGridFilter(2.0);
+        // mpMap->VoxelGridFilter(2.0);
         std::cout << "VoxelGridFilter\n";
     }
 
@@ -139,7 +139,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
     mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR);
 
     mpLocalMapper->SetICP(icp_);
-    mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run, mpLocalMapper);
+    // mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run, mpLocalMapper);
 
     std::cout << "Launched local map\n";
 

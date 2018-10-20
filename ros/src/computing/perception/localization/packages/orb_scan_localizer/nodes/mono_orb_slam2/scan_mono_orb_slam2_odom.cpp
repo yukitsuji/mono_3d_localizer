@@ -98,7 +98,7 @@ int main(int argc, char **argv)
         vTimesTrack[ni] = ttrack;
         std::cout << "time " << ttrack << "\n";
 
-        double sleep_time = 0.1 - ttrack;
+        double sleep_time = 0.5 - ttrack;
 
         if (sleep_time > 0)
             usleep(sleep_time * 1000000);

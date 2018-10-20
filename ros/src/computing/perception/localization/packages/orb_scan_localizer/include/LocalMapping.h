@@ -30,6 +30,7 @@
 #include <icp_7dof/icp_7dof.h>
 #include <mutex>
 #include <pcl/console/print.h>
+#include <pcl/filters/passthrough.h>
 
 namespace ORB_SLAM2
 {

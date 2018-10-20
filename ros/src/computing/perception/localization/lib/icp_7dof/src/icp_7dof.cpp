@@ -220,7 +220,8 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
       // Check whether we have enough correspondences
       if (cnt < min_number_correspondences_)
       {
-          PCL_ERROR ("[pcl::%s::computeTransformation] Not enough correspondences found. Relax your threshold parameters. %d \n", getClassName ().c_str (), corr_dist_threshold_);
+          PCL_ERROR ("[pcl::%s::computeTransformation] Not enough correspondences found. Relax your threshold parameters. %lf from %u to %u \n", 
+                     getClassName ().c_str (), corr_dist_threshold_, input_transformed->size(), cnt);
           convergence_criteria_->setConvergenceState(pcl::registration::DefaultConvergenceCriteria<double>::CONVERGENCE_CRITERIA_NO_CORRESPONDENCES);
           converged_ = false;
           break;

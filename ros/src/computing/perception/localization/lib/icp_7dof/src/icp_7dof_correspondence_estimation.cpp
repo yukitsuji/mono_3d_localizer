@@ -90,8 +90,8 @@ pcl::registration::ICPCorrespondenceEstimation::determineCorrespondences (
     // Iterate over the input set of source indices
     for (std::vector<int>::const_iterator idx = indices_->begin (); idx != indices_->end (); ++idx)
     {
-        if (-input_->points[*idx].y > 2.5 || pow(pow(input_->points[*idx].x, 2) * pow(input_->points[*idx].z, 2), 0.5) > 30)
-            continue;
+        // if (-input_->points[*idx].y > 2.5 || pow(pow(input_->points[*idx].x, 2) * pow(input_->points[*idx].z, 2), 0.5) > 30)
+        //     continue;
         tree_->nearestKSearch (input_->points[*idx], 1, index, distance);
         if (distance[0] > max_dist_sqr)
             continue;

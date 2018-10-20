@@ -208,11 +208,11 @@ cv::Mat MapTracking::GrabImageMonocular(const cv::Mat &im, const double &timesta
 
 		std::cout << "Sum of basic module time: " << sum_time << "\n";
 
-		// t1 = std::chrono::steady_clock::now();
-		// mpLocalMapper->RunOnce();
-		// t2 = std::chrono::steady_clock::now();
-    // ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-    // std::cout << "local mapping " << ttrack << "\n";
+		t1 = std::chrono::steady_clock::now();
+		mpLocalMapper->RunOnce();
+		t2 = std::chrono::steady_clock::now();
+    ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    std::cout << "local mapping " << ttrack << "\n";
 
     return mCurrentFrame.mTcw.clone();
 }
@@ -373,7 +373,7 @@ void MapTracking::Track()
         mlAbsoluteFramePoses.push_back(mCurrentFrame.mTcw);
         mlpReferences.push_back(mpReferenceKF);
 
-				std::cout << "Current inverse Position\n" << mCurrentFrame.mTcw.inv() << "\n";
+				// std::cout << "Current inverse Position\n" << mCurrentFrame.mTcw.inv() << "\n";
 				// std::cout << "Current reference Position\n" << Tcr.inv() << "\n";
 				// std::cout << "Current kf Position\n" << mCurrentFrame.mpReferenceKF->GetPoseInverse() << "\n";
 				// std::cout << "Current multiply Position\n" << mCurrentFrame.mpReferenceKF->GetPoseInverse() * Tcr.inv() << "\n";
@@ -442,12 +442,12 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
     Eigen::Matrix4d toRef = Converter::toMatrix4d(mCurrentFrame.mTcw);
     icp_->transformCloudPublic(*hoge, *hoge, toRef);
 
-    t1 = std::chrono::steady_clock::now();
-    icp_->align (output, Eigen::Matrix4d::Identity(), toRef);
-    t2 = std::chrono::steady_clock::now();
-    ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-    std::cout << "[done, " << ttrack <<  " s : " << output.width * output.height << " points], has converged: ";
-    std::cout << icp_->hasConverged() << " with score: " << icp_->getFitnessScore (toRef) << "\n";
+    // t1 = std::chrono::steady_clock::now();
+    // icp_->align (output, Eigen::Matrix4d::Identity(), toRef);
+    // t2 = std::chrono::steady_clock::now();
+    // ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    // std::cout << "[done, " << ttrack <<  " s : " << output.width * output.height << " points], has converged: ";
+    // std::cout << icp_->hasConverged() << " with score: " << icp_->getFitnessScore (toRef) << "\n";
 
     // Map Points: Transform orig to icp result
     // pcl::PointCloud<pcl::PointXYZ>::Ptr converted_points (l_points);
@@ -477,6 +477,28 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
     }
     local_pub.publish(l_points);
 
+		pcl::PassThrough<pcl::PointXYZ> pass;
+		pass.setInputCloud (hoge);
+		pass.setFilterFieldName ("x");
+		pass.setFilterLimits (-40.0, 40.0);
+		pass.filter (*hoge);
+		pass.setInputCloud (hoge);
+		pass.setFilterFieldName ("z");
+		pass.setFilterLimits (-40.0, 40.0);
+		pass.filter (*hoge);
+		pass.setInputCloud (hoge);
+		pass.setFilterFieldName ("y");
+		pass.setFilterLimits (-40.0, 2);
+		pass.filter (*hoge);
+
+		std::cout << "Filtered Point: " << hoge->size() << "\n";
+
+		double filter_res = 0.5f;
+		pcl::VoxelGrid<pcl::PointXYZ> voxel_grid_filter;
+		voxel_grid_filter.setLeafSize(filter_res, filter_res, filter_res);
+		voxel_grid_filter.setInputCloud(hoge);
+		voxel_grid_filter.filter(*hoge);
+
     sensor_msgs::PointCloud2 pc2_g;
     pc2_g.header.frame_id= "map";
     pc2_g.header.stamp = current_scan_time; //header->stamp;
@@ -487,9 +509,9 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
         double y = -p.x;
         double z = -p.y;
         p.x = x; p.y = y; p.z = z;
-				if (p.z > 3 || pow(pow(p.x, 2) + pow(p.y, 2), 0.5) > 30) {
-					    p.x=0; p.y=0; p.z=0;
-				}
+				// if (p.z > 3 || pow(pow(p.x, 2) + pow(p.y, 2), 0.5) > 30) {
+				// 	    p.x=0; p.y=0; p.z=0;
+				// }
     }
     global_pub.publish(hoge);
 
@@ -759,7 +781,7 @@ void MapTracking::CreateInitialMapMonocular()
 
 		std::cout << "Tc2w\n" << Tc2w << "\n";
 		// TODO: Scale alignment
-		invMedianDepth = 0.73;
+		invMedianDepth = 0.71;
 		// invMedianDepth = -0.8586941 / Tc2w.at<float>(2, 3);
 		std::cout << "invMedianDepth: " << invMedianDepth << "\n";
 

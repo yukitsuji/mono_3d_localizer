@@ -56,6 +56,7 @@ private:
     float mKeyFrameLineWidth;
     float mGraphLineWidth;
     float mPointSize;
+    float mPointSize2;
     float mCameraSize;
     float mCameraLineWidth;
 
