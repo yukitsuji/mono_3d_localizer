@@ -208,11 +208,11 @@ cv::Mat MapTracking::GrabImageMonocular(const cv::Mat &im, const double &timesta
 
 		std::cout << "Sum of basic module time: " << sum_time << "\n";
 
-		// t1 = std::chrono::steady_clock::now();
-		// mpLocalMapper->RunOnce();
-		// t2 = std::chrono::steady_clock::now();
-    // ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-    // std::cout << "local mapping " << ttrack << "\n";
+		t1 = std::chrono::steady_clock::now();
+		mpLocalMapper->RunOnce();
+		t2 = std::chrono::steady_clock::now();
+    ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    std::cout << "local mapping " << ttrack << "\n";
 
     return mCurrentFrame.mTcw.clone();
 }

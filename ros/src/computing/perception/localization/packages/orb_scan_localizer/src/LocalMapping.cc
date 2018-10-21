@@ -459,6 +459,8 @@ void LocalMapping::RunOnce()
                     }
                 }
 
+                t1 = std::chrono::steady_clock::now();
+
                 Eigen::Matrix4d toRef = Converter::toMatrix4d(mpCurrentKeyFrame->GetPose());
 
                 // icp matching using map point
@@ -507,7 +509,17 @@ void LocalMapping::RunOnce()
                 pcl::PointCloud<pcl::PointXYZ> output;
                 Eigen::Matrix4d transformation;
 
+                t2 = std::chrono::steady_clock::now();
+                ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+                std::cout << "Prepare icp " << ttrack << "\n";
+
+                t1 = std::chrono::steady_clock::now();
+
                 icp_->align(output, Eigen::Matrix4d::Identity(), toRef);
+
+                t2 = std::chrono::steady_clock::now();
+                ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+                std::cout << "ICP " << ttrack << "\n";
 
                 transformation = icp_->getFinalTransformation();
 
@@ -519,6 +531,8 @@ void LocalMapping::RunOnce()
                 // Get Map Mutex
                 {
                 unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
+
+                t1 = std::chrono::steady_clock::now();
 
                 for (auto&& pKF : mvpLocalKeyFrames)
                 {
@@ -547,42 +561,15 @@ void LocalMapping::RunOnce()
                         prev_pose.copyTo(after_pose);
                         after_R.copyTo(after_pose.rowRange(0, 3).colRange(0, 3));
                         after_T.copyTo(after_pose.rowRange(0, 3).col(3));
-                        std::cout << "After Pose: " << after_pose << "\n";
-                        std::cout << "After Pose: " << cv_invToRef * local_transform << "\n"; // TODO
-                        std::cout << "After Pose inverse: " << after_pose.inv() << "\n";
-                        std::cout << "After Pose determinant: " << cv::determinant(after_pose) << "\n";
-                        std::cout << "After Pose determinant: " << cv::determinant(after_pose.rowRange(0, 3).colRange(0, 3)) << "\n";
-                        std::cout << "After Pose determinant: " << cv::determinant(after_pose.rowRange(0, 3).colRange(0, 3) / pow(cv::determinant(after_pose), 1.0/3.0)) << "\n";
                         pKF->SetPose(after_pose.inv());
                     }
                 }
 
                 cv_invToRef = mpCurrentKeyFrame->GetPoseInverse();
-                std::cout << "cv_invToRef: " << cv_invToRef << "\n";
-
 
                 // Update KeyFrames
                 for (auto&& pKF : mvpLocalKeyFrames)
                 {
-                    // if (pKF->mnId != mpCurrentKeyFrame->mnId) {
-                    //     cv::Mat prev_pose = pKF->GetPoseInverse(); // GetPose();
-                    //     cv::Mat after_pose = cv_transformation * cv_toRef * prev_pose; // relative pose
-                    //     cv::Mat relative_pose = cv_toRef * prev_pose;
-                    //     // TODO: Relative poseをScale倍するだけで良い？？？？？？
-                    //     // Convert 7DoF to 6Dof: det |after_pose|
-                    //     cv::Mat after_R = after_pose.rowRange(0,3).colRange(0,3);
-                    //     double s = cv::determinant(after_R);
-                    //     after_R /= s;
-                    //
-                    //     // prev_pose.rowRange(0,3).col(3).copyTo(prev_T);
-                    //     after_R.copyTo(after_pose.rowRange(0,3).colRange(0,3));
-                    //     after_pose = cv_invToRef * after_pose;
-                    //     pKF->SetPose(after_pose.inv());
-                    //     // std::cout << "Scale: " << s << "\n";
-                    //     // std::cout << "after_pose" << after_pose << "\n";
-                    //     // std::cout << "after_pose.inv" << after_pose.inv() << "\n";
-                    // }
-
                     if (pKF->mnId != mpCurrentKeyFrame->mnId) {
                         cv::Mat prev_pose = pKF->GetPoseInverse(); // GetPose();
                         cv::Mat relative_pose = cv_toRef * prev_pose;
@@ -591,10 +578,14 @@ void LocalMapping::RunOnce()
                         relative_pose.rowRange(0,3).col(3) *= pow(s, 1.0/3.0); // multiply scale to translation
                         cv::Mat after_pose = cv_invToRef * relative_pose;
                         pKF->SetPose(after_pose.inv());
-                        // std::cout << "Scale: " << s << "\n";
-                        std::cout << "other After Pose: " << after_pose << "\n";
                     }
                 }
+
+                t2 = std::chrono::steady_clock::now();
+                ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+                std::cout << "Update keyframe " << ttrack << "\n";
+
+                t1 = std::chrono::steady_clock::now();
 
                 // Update points using PCL
                 pcl::PointCloud<pcl::PointXYZ>::Ptr converted_points (new pcl::PointCloud<pcl::PointXYZ>);
@@ -619,6 +610,9 @@ void LocalMapping::RunOnce()
                         }
                     }
                 }
+                t2 = std::chrono::steady_clock::now();
+                ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+                std::cout << "Update Mappoint " << ttrack << "\n";
                 }
             }
             }
