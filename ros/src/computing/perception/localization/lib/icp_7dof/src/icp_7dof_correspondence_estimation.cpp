@@ -93,6 +93,7 @@ pcl::registration::ICPCorrespondenceEstimation::determineCorrespondences (
         // if (-input_->points[*idx].y > 2.5 || pow(pow(input_->points[*idx].x, 2) * pow(input_->points[*idx].z, 2), 0.5) > 30)
         //     continue;
         tree_->nearestKSearch (input_->points[*idx], 1, index, distance);
+        // std::cout << "distance: " << distance[0] << ", max_dist_sqr: " << max_dist_sqr << ", max_distance: " << max_distance << "\n";
         if (distance[0] > max_dist_sqr)
             continue;
 

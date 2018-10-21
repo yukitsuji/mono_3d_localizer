@@ -350,7 +350,7 @@ namespace pcl
         }
       }
 
-      inline void setDistThreshold(double thres) { corr_dist_threshold_ = thres * thres; }
+      inline void setDistThreshold(double thres) { corr_dist_threshold_ = thres; }
 
       /** \brief Provide a pointer to the input target
         * (e.g., the point cloud that we want to align to the target)

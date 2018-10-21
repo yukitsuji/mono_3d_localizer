@@ -208,11 +208,11 @@ cv::Mat MapTracking::GrabImageMonocular(const cv::Mat &im, const double &timesta
 
 		std::cout << "Sum of basic module time: " << sum_time << "\n";
 
-		t1 = std::chrono::steady_clock::now();
-		mpLocalMapper->RunOnce();
-		t2 = std::chrono::steady_clock::now();
-    ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-    std::cout << "local mapping " << ttrack << "\n";
+		// t1 = std::chrono::steady_clock::now();
+		// mpLocalMapper->RunOnce();
+		// t2 = std::chrono::steady_clock::now();
+    // ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+    // std::cout << "local mapping " << ttrack << "\n";
 
     return mCurrentFrame.mTcw.clone();
 }
@@ -409,14 +409,14 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
         l_points->push_back(point);
     }
 
-    icp_->setInputSource(l_points);
-    icp_->setMaximumIterations(1);
-    icp_->setDistThreshold(0.5);
+    // icp_->setInputSource(l_points);
+    // icp_->setMaximumIterations(1);
+    // icp_->setDistThreshold(0.5);
     pcl::PointCloud<pcl::PointXYZ> output;
     Eigen::Matrix4d transformation;
 
     // t1 = std::chrono::steady_clock::now();
-    //icp_->align (output);
+    // icp_->align (output);
     // t2 = std::chrono::steady_clock::now();
     // ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
     // std::cout << "[done, " << ttrack <<  " s : " << output.width * output.height << " points], has converged: ";
@@ -465,18 +465,6 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
     sensor_msgs::PointCloud2 pc2_l;
     ros::Time current_scan_time = ros::Time::now();
 
-    pc2_l.header.frame_id= "map";
-    pc2_l.header.stamp = current_scan_time; //header->stamp;
-    l_points->header = pcl_conversions::toPCL(pc2_l.header);
-    for (auto&& p : l_points->points)
-    {
-        double x = p.z;
-        double y = -p.x;
-        double z = -p.y;
-        p.x = x; p.y = y; p.z = z;
-    }
-    local_pub.publish(l_points);
-
 		pcl::PassThrough<pcl::PointXYZ> pass;
 		pass.setInputCloud (hoge);
 		pass.setFilterFieldName ("x");
@@ -488,7 +476,7 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
 		pass.filter (*hoge);
 		pass.setInputCloud (hoge);
 		pass.setFilterFieldName ("y");
-		pass.setFilterLimits (-40.0, 2);
+		pass.setFilterLimits (-1, 5);
 		pass.filter (*hoge);
 
 		std::cout << "Filtered Point: " << hoge->size() << "\n";
@@ -498,6 +486,9 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
 		voxel_grid_filter.setLeafSize(filter_res, filter_res, filter_res);
 		voxel_grid_filter.setInputCloud(hoge);
 		voxel_grid_filter.filter(*hoge);
+
+		*l_points = *hoge;
+		icp_->transformCloudPublic(*l_points, *l_points, toRef.inverse());
 
     sensor_msgs::PointCloud2 pc2_g;
     pc2_g.header.frame_id= "map";
@@ -514,6 +505,18 @@ void MapTracking::ScanWithNDT(cv::Mat currAbsolutePos)
 				// }
     }
     global_pub.publish(hoge);
+
+		pc2_l.header.frame_id= "map";
+		pc2_l.header.stamp = current_scan_time; //header->stamp;
+		l_points->header = pcl_conversions::toPCL(pc2_l.header);
+		for (auto&& p : l_points->points)
+		{
+				double x = p.z;
+				double y = -p.x;
+				double z = -p.y;
+				p.x = x; p.y = y; p.z = z;
+		}
+		local_pub.publish(l_points);
 
     // // currAbsolutePos.copyTo(Tcw);
     // cv::Mat Rcw = currAbsolutePos.rowRange(0,3).colRange(0,3);

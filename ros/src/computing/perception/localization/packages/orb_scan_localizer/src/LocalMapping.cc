@@ -185,21 +185,21 @@ void LocalMapping::Run()
                     pass.filter (*filtered_points);
                     pass.setInputCloud (filtered_points);
                     pass.setFilterFieldName ("y");
-                    pass.setFilterLimits (-40.0, 2);
+                    pass.setFilterLimits (-1, 4);
                     pass.filter (*filtered_points);
 
-                    double filter_res = 0.5f;
-                    pcl::VoxelGrid<pcl::PointXYZ> voxel_grid_filter;
-                    voxel_grid_filter.setLeafSize(filter_res, filter_res, filter_res);
-                    voxel_grid_filter.setInputCloud(filtered_points);
-                    voxel_grid_filter.filter(*filtered_points);
+                    // double filter_res = 0.2f;
+                    // pcl::VoxelGrid<pcl::PointXYZ> voxel_grid_filter;
+                    // voxel_grid_filter.setLeafSize(filter_res, filter_res, filter_res);
+                    // voxel_grid_filter.setInputCloud(filtered_points);
+                    // voxel_grid_filter.filter(*filtered_points);
 
                     icp_->transformCloudPublic(*filtered_points, *filtered_points, toRef.inverse());
 
                     // pcl::console::setVerbosityLevel(pcl::console::L_DEBUG);
                     icp_->setInputSource(filtered_points);
                     icp_->setMaximumIterations(10);
-                    icp_->setDistThreshold(0.5);
+                    icp_->setDistThreshold(0.3);
                     pcl::PointCloud<pcl::PointXYZ> output;
                     Eigen::Matrix4d transformation;
 
@@ -226,7 +226,7 @@ void LocalMapping::Run()
                             cv::Mat local_T = local_transform.rowRange(0,3).col(3);
 
                             double s = cv::determinant(local_R);
-                            local_R /= s;
+                            local_R /= pow(s, 1.0/3.0);
 
                             cv::Mat prev_R, prev_T, prev_pose, after_R, after_T, after_pose;
 
@@ -243,7 +243,6 @@ void LocalMapping::Run()
                             prev_pose.copyTo(after_pose);
                             after_R.copyTo(after_pose.rowRange(0, 3).colRange(0, 3));
                             after_T.copyTo(after_pose.rowRange(0, 3).col(3));
-                            // cv::Mat after_pose = cv_invToRef * local_transform; // TODO
                             pKF->SetPose(after_pose.inv());
                         }
                     }
@@ -253,31 +252,12 @@ void LocalMapping::Run()
                     // Update KeyFrames
                     for (auto&& pKF : mvpLocalKeyFrames)
                     {
-                        // if (pKF->mnId != mpCurrentKeyFrame->mnId) {
-                        //     cv::Mat prev_pose = pKF->GetPoseInverse(); // GetPose();
-                        //     cv::Mat after_pose = cv_transformation * cv_toRef * prev_pose; // relative pose
-                        //     cv::Mat relative_pose = cv_toRef * prev_pose;
-                        //     // TODO: Relative poseをScale倍するだけで良い？？？？？？
-                        //     // Convert 7DoF to 6Dof: det |after_pose|
-                        //     cv::Mat after_R = after_pose.rowRange(0,3).colRange(0,3);
-                        //     double s = cv::determinant(after_R);
-                        //     after_R /= s;
-                        //
-                        //     // prev_pose.rowRange(0,3).col(3).copyTo(prev_T);
-                        //     after_R.copyTo(after_pose.rowRange(0,3).colRange(0,3));
-                        //     after_pose = cv_invToRef * after_pose;
-                        //     pKF->SetPose(after_pose.inv());
-                        //     // std::cout << "Scale: " << s << "\n";
-                        //     // std::cout << "after_pose" << after_pose << "\n";
-                        //     // std::cout << "after_pose.inv" << after_pose.inv() << "\n";
-                        // }
-
                         if (pKF->mnId != mpCurrentKeyFrame->mnId) {
                             cv::Mat prev_pose = pKF->GetPoseInverse(); // GetPose();
                             cv::Mat relative_pose = cv_toRef * prev_pose;
                             cv::Mat cv_transformation_R = cv_transformation.rowRange(0,3).colRange(0,3);
                             double s = cv::determinant(cv_transformation_R);
-                            relative_pose.rowRange(0,3).col(3) *= s; // multiply scale to translation
+                            relative_pose.rowRange(0,3).col(3) *= pow(s, 1.0/3.0); // multiply scale to translation
                             cv::Mat after_pose = cv_invToRef * relative_pose;
                             pKF->SetPose(after_pose.inv());
                             // std::cout << "Scale: " << s << "\n";
@@ -509,21 +489,21 @@ void LocalMapping::RunOnce()
                 pass.filter (*filtered_points);
                 pass.setInputCloud (filtered_points);
                 pass.setFilterFieldName ("y");
-                pass.setFilterLimits (-40.0, 2);
+                pass.setFilterLimits (-1, 5);
                 pass.filter (*filtered_points);
 
-                double filter_res = 0.5f;
-                pcl::VoxelGrid<pcl::PointXYZ> voxel_grid_filter;
-                voxel_grid_filter.setLeafSize(filter_res, filter_res, filter_res);
-                voxel_grid_filter.setInputCloud(filtered_points);
-                voxel_grid_filter.filter(*filtered_points);
+                // double filter_res = 0.2f;
+                // pcl::VoxelGrid<pcl::PointXYZ> voxel_grid_filter;
+                // voxel_grid_filter.setLeafSize(filter_res, filter_res, filter_res);
+                // voxel_grid_filter.setInputCloud(filtered_points);
+                // voxel_grid_filter.filter(*filtered_points);
 
                 icp_->transformCloudPublic(*filtered_points, *filtered_points, toRef.inverse());
 
                 // pcl::console::setVerbosityLevel(pcl::console::L_DEBUG);
                 icp_->setInputSource(filtered_points);
                 icp_->setMaximumIterations(10);
-                icp_->setDistThreshold(0.5);
+                icp_->setDistThreshold(0.2);
                 pcl::PointCloud<pcl::PointXYZ> output;
                 Eigen::Matrix4d transformation;
 
@@ -550,7 +530,7 @@ void LocalMapping::RunOnce()
                         cv::Mat local_T = local_transform.rowRange(0,3).col(3);
 
                         double s = cv::determinant(local_R);
-                        local_R /= s;
+                        local_R /= pow(s, 1.0/3.0);
 
                         cv::Mat prev_R, prev_T, prev_pose, after_R, after_T, after_pose;
 
@@ -567,12 +547,19 @@ void LocalMapping::RunOnce()
                         prev_pose.copyTo(after_pose);
                         after_R.copyTo(after_pose.rowRange(0, 3).colRange(0, 3));
                         after_T.copyTo(after_pose.rowRange(0, 3).col(3));
-                        // cv::Mat after_pose = cv_invToRef * local_transform; // TODO
+                        std::cout << "After Pose: " << after_pose << "\n";
+                        std::cout << "After Pose: " << cv_invToRef * local_transform << "\n"; // TODO
+                        std::cout << "After Pose inverse: " << after_pose.inv() << "\n";
+                        std::cout << "After Pose determinant: " << cv::determinant(after_pose) << "\n";
+                        std::cout << "After Pose determinant: " << cv::determinant(after_pose.rowRange(0, 3).colRange(0, 3)) << "\n";
+                        std::cout << "After Pose determinant: " << cv::determinant(after_pose.rowRange(0, 3).colRange(0, 3) / pow(cv::determinant(after_pose), 1.0/3.0)) << "\n";
                         pKF->SetPose(after_pose.inv());
                     }
                 }
 
                 cv_invToRef = mpCurrentKeyFrame->GetPoseInverse();
+                std::cout << "cv_invToRef: " << cv_invToRef << "\n";
+
 
                 // Update KeyFrames
                 for (auto&& pKF : mvpLocalKeyFrames)
@@ -601,10 +588,11 @@ void LocalMapping::RunOnce()
                         cv::Mat relative_pose = cv_toRef * prev_pose;
                         cv::Mat cv_transformation_R = cv_transformation.rowRange(0,3).colRange(0,3);
                         double s = cv::determinant(cv_transformation_R);
-                        relative_pose.rowRange(0,3).col(3) *= s; // multiply scale to translation
+                        relative_pose.rowRange(0,3).col(3) *= pow(s, 1.0/3.0); // multiply scale to translation
                         cv::Mat after_pose = cv_invToRef * relative_pose;
                         pKF->SetPose(after_pose.inv());
                         // std::cout << "Scale: " << s << "\n";
+                        std::cout << "other After Pose: " << after_pose << "\n";
                     }
                 }
 
