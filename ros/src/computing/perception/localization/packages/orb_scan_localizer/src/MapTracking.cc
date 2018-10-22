@@ -209,7 +209,7 @@ cv::Mat MapTracking::GrabImageMonocular(const cv::Mat &im, const double &timesta
 		std::cout << "Sum of basic module time: " << sum_time << "\n";
 
 		t1 = std::chrono::steady_clock::now();
-		mpLocalMapper->RunOnce();
+		//mpLocalMapper->RunOnce();
 		t2 = std::chrono::steady_clock::now();
     ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
     std::cout << "local mapping " << ttrack << "\n";
@@ -963,7 +963,7 @@ void MapTracking::UpdateLastFrame()
 
 		if (pRef->local_scale != 1 && prev_local_scale != pRef->local_scale) {
 				Tlr.rowRange(0,3).col(3) *= pRef->local_scale;
-				mVelocity.rowRange(0,3).col(3) *= pRef->local_scal;
+				mVelocity.rowRange(0,3).col(3) *= pRef->local_scale;
 		    prev_local_scale = pRef->local_scale;
 		}
     mLastFrame.SetPose(Tlr * pRef->GetPose());

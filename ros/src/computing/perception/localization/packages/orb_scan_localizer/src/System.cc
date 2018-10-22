@@ -106,7 +106,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
             std::cout << "VoxelGrid: " << ttrack << "\n";
             std::cout << "Number of map points: " << mpMap->GetPriorMapPoints()->size() << "\n";
             t1 = std::chrono::steady_clock::now();
-            mpMap->SetPriorMapPoints(voxel_grid_.setPointsRaw(mpMap->GetPriorMapPoints()));
+            //mpMap->SetPriorMapPoints(voxel_grid_.setPointsRaw(mpMap->GetPriorMapPoints()));
             t2 = std::chrono::steady_clock::now();
             ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
             std::cout << "SetPointsRaw: " << ttrack << "\n";
@@ -139,7 +139,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
     mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR);
 
     mpLocalMapper->SetICP(icp_);
-    // mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run, mpLocalMapper);
+    mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run, mpLocalMapper);
 
     std::cout << "Launched local map\n";
 
