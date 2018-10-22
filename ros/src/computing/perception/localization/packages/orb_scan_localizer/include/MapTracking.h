@@ -196,6 +196,7 @@ public:
     geometry_msgs::PoseStamped orb_pose_msg;
 
     pcl::IterativeClosestPoint7dof *icp_;
+    double prev_local_scale;
 
 protected:
 

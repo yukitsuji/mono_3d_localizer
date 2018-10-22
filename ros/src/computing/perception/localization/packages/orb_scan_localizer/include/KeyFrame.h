@@ -211,6 +211,8 @@ public:
     std::vector<float> mvLevelSigma2;
     std::vector<float> mvInvLevelSigma2;
 
+    double local_scale;
+
     // Image bounds and calibration
     int mnMinX;
     int mnMinY;

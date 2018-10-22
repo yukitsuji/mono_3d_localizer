@@ -54,7 +54,7 @@ MapTracking::MapTracking (System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrame
     mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false), mpORBVocabulary(pVoc),
     mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer*>(NULL)), mpSystem(pSys),
     mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpMap(pMap), mnLastRelocFrameId(0),
-		mLocalMapper(NULL), mpReferenceKF(NULL)
+		mLocalMapper(NULL), mpReferenceKF(NULL), prev_local_scale(1)
 
 {
     // Load camera parameters from settings file
@@ -960,8 +960,13 @@ void MapTracking::UpdateLastFrame()
     // Update pose according to reference keyframe
     KeyFrame* pRef = mLastFrame.mpReferenceKF;
     cv::Mat Tlr = mlRelativeFramePoses.back();
+
+		if (pRef->local_scale != 1 && prev_local_scale != pRef->local_scale) {
+				Tlr.rowRange(0,3).col(3) *= pRef->local_scale;
+				mVelocity.rowRange(0,3).col(3) *= pRef->local_scal;
+		    prev_local_scale = pRef->local_scale;
+		}
     mLastFrame.SetPose(Tlr * pRef->GetPose());
-    return;
 }
 
 /*

@@ -534,6 +534,8 @@ void LocalMapping::RunOnce()
 
                 t1 = std::chrono::steady_clock::now();
 
+                double scale = pow(cv::determinant(cv_transformation), 1.0/3.0);
+
                 for (auto&& pKF : mvpLocalKeyFrames)
                 {
                     if (pKF->mnId == mpCurrentKeyFrame->mnId)
@@ -543,25 +545,23 @@ void LocalMapping::RunOnce()
                         cv::Mat local_R = local_transform.rowRange(0,3).colRange(0,3);
                         cv::Mat local_T = local_transform.rowRange(0,3).col(3);
 
-                        double s = cv::determinant(local_R);
-                        local_R /= pow(s, 1.0/3.0);
+                        local_R /= scale;
 
                         cv::Mat prev_R, prev_T, prev_pose, after_R, after_T, after_pose;
 
-                        // OK
                         prev_pose = pKF->GetPoseInverse();
                         prev_pose.rowRange(0, 3).colRange(0, 3).copyTo(prev_R);
                         after_R = prev_R * local_R;
 
-                        // Not OK
                         prev_pose.rowRange(0,3).col(3).copyTo(prev_T);
                         after_T = prev_T + prev_R * local_T;
-                        // after_T = prev_T + local_T;
 
                         prev_pose.copyTo(after_pose);
                         after_R.copyTo(after_pose.rowRange(0, 3).colRange(0, 3));
                         after_T.copyTo(after_pose.rowRange(0, 3).col(3));
                         pKF->SetPose(after_pose.inv());
+                        pKF->local_scale = scale;
+                        break;
                     }
                 }
 
@@ -573,11 +573,10 @@ void LocalMapping::RunOnce()
                     if (pKF->mnId != mpCurrentKeyFrame->mnId) {
                         cv::Mat prev_pose = pKF->GetPoseInverse(); // GetPose();
                         cv::Mat relative_pose = cv_toRef * prev_pose;
-                        cv::Mat cv_transformation_R = cv_transformation.rowRange(0,3).colRange(0,3);
-                        double s = cv::determinant(cv_transformation_R);
-                        relative_pose.rowRange(0,3).col(3) *= pow(s, 1.0/3.0); // multiply scale to translation
+                        relative_pose.rowRange(0,3).col(3) *= scale; // multiply scale to translation
                         cv::Mat after_pose = cv_invToRef * relative_pose;
                         pKF->SetPose(after_pose.inv());
+                        pKF->local_scale = scale;
                     }
                 }
 
@@ -591,9 +590,10 @@ void LocalMapping::RunOnce()
                 pcl::PointCloud<pcl::PointXYZ>::Ptr converted_points (new pcl::PointCloud<pcl::PointXYZ>);
                 *converted_points = *l_points;
                 Eigen::Matrix4d updateToGlobal = Converter::toMatrix4d(mpCurrentKeyFrame->GetPoseInverse());
-                icp_->transformCloudPublic(*converted_points, *converted_points, toRef);
-                icp_->transformCloudPublic(*converted_points, *converted_points, transformation);
-                icp_->transformCloudPublic(*converted_points, *converted_points, toRef.inverse()); //updateToGlobal);
+                // icp_->transformCloudPublic(*converted_points, *converted_points, toRef);
+                // icp_->transformCloudPublic(*converted_points, *converted_points, transformation);
+                // icp_->transformCloudPublic(*converted_points, *converted_points, toRef.inverse()); //updateToGlobal);
+                icp_->transformCloudPublic(*converted_points, *converted_points, toRef.inverse() * transformation * toRef);
 
                 // Update points
                 for(size_t i=0, iend=localMapPoints.size(); i<iend; ++i)
