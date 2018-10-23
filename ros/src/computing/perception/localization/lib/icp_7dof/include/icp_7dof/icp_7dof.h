@@ -9,6 +9,7 @@
 #include "icp_7dof_transform.h"
 #include "icp_7dof_transform_lm.h"
 #include "icp_7dof_correspondence_estimation.h"
+#include "voxel_grid.h"
 //#include <pcl/registration/correspondence_estimation.h>
 #include <pcl/registration/default_convergence_criteria.h>
 
@@ -351,6 +352,12 @@ namespace pcl
       }
 
       inline void setDistThreshold(double thres) { corr_dist_threshold_ = thres; }
+
+
+      inline void setVoxelGrid(icp_7dof::VoxelGrid *voxel_grid)
+      {
+          correspondence_estimation_->setVoxelGrid(voxel_grid);
+      }
 
       /** \brief Provide a pointer to the input target
         * (e.g., the point cloud that we want to align to the target)

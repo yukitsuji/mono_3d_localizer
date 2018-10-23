@@ -69,6 +69,9 @@ public:
 
 	void update(pcl::PointCloud<pcl::PointXYZ>::Ptr new_cloud);
 
+  void searchFittedVoxel(pcl::PointXYZ p)
+
+
 private:
 
 	typedef struct {

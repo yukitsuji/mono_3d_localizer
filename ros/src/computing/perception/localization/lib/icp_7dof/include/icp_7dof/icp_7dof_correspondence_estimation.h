@@ -9,6 +9,7 @@
 #include <pcl/pcl_macros.h>
 
 #include <pcl/registration/correspondence_types.h>
+#include "voxel_grid.h"
 
 namespace pcl
 {
@@ -61,12 +62,22 @@ namespace pcl
           , source_cloud_updated_ (true)
           , force_no_recompute_ (false)
           , force_no_recompute_reciprocal_ (false)
+          , use_voxel_filter_ (false)
         {
         }
 
         /** \brief Empty destructor */
         virtual ~ICPCorrespondenceEstimationBase () {}
 
+        inline void setVoxelGrid(icp_7dof::VoxelGrid &voxel_grid)
+        {
+            voxel_grid_ = voxel_grid;
+            use_voxel_filter_ = true;
+        }
+
+        bool use_voxel_filter_;
+        icp_7dof::VoxelGrid voxel_grid_;
+        
         /** \brief Provide a pointer to the input source
           * (e.g., the point cloud that we want to align to the target)
           *

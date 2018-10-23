@@ -90,8 +90,14 @@ pcl::registration::ICPCorrespondenceEstimation::determineCorrespondences (
     // Iterate over the input set of source indices
     for (std::vector<int>::const_iterator idx = indices_->begin (); idx != indices_->end (); ++idx)
     {
-        // if (-input_->points[*idx].y > 2.5 || pow(pow(input_->points[*idx].x, 2) * pow(input_->points[*idx].z, 2), 0.5) > 30)
-        //     continue;
+        if (use_voxel_filter_)
+        {
+            if (voxel_grid_.searchFittedVoxel(input_->points[*idx])) {
+                std::cout << "There are fitted voxel\n";
+            }
+            std::cout << "Use voxel grid filtering: \n";
+        }
+
         tree_->nearestKSearch (input_->points[*idx], 1, index, distance);
         // std::cout << "distance: " << distance[0] << ", max_dist_sqr: " << max_dist_sqr << ", max_distance: " << max_distance << "\n";
         if (distance[0] > max_dist_sqr)

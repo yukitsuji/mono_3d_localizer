@@ -767,4 +767,52 @@ void VoxelGrid::updateVoxelContent(pcl::PointCloud<pcl::PointXYZ>::Ptr new_cloud
 	}
 }
 
+void VoxelGrid::searchFittedVoxel(pcl::PointXYZ p)
+{
+    float t_x = p.x;
+    float t_y = p.y;
+    float t_z = p.z;
+
+    int max_id_x = static_cast<int>(floor((t_x + voxel_y_) / voxel_x_));
+    int max_id_y = static_cast<int>(floor((t_y + voxel_y_) / voxel_y_));
+    int max_id_z = static_cast<int>(floor((t_z + voxel_y_) / voxel_z_));
+
+    int min_id_x = static_cast<int>(floor((t_x - voxel_y_) / voxel_x_));
+    int min_id_y = static_cast<int>(floor((t_y - voxel_y_) / voxel_y_));
+    int min_id_z = static_cast<int>(floor((t_z - voxel_y_) / voxel_z_));
+
+    /* Find intersection of the cube containing
+     * the NN sphere of the point and the voxel grid
+     */
+    max_id_x = (max_id_x > real_max_bx_) ? real_max_bx_ : max_id_x;
+    max_id_y = (max_id_y > real_max_by_) ? real_max_by_ : max_id_y;
+    max_id_z = (max_id_z > real_max_bz_) ? real_max_bz_ : max_id_z;
+
+    min_id_x = (min_id_x < real_min_bx_) ? real_min_bx_ : min_id_x;
+    min_id_y = (min_id_y < real_min_by_) ? real_min_by_ : min_id_y;
+    min_id_z = (min_id_z < real_min_bz_) ? real_min_bz_ : min_id_z;
+
+    for (int idx = min_id_x; idx <= max_id_x; ++idx) {
+        for (int idy = min_id_y; idy <= max_id_y; ++idy) {
+            for (int idz = min_id_z; idz <= max_id_z; ++idz) {
+                int vid = voxelId(idx, idy, idz,
+                                  min_b_x_, min_b_y_, min_b_z_,
+                                  vgrid_x_, vgrid_y_, vgrid_z_);
+
+                if ((*points_per_voxel_)[vid] >= min_points_per_voxel_) {
+                    double cx = (*centroid_)[vid](0) - static_cast<double>(t_x);
+                    double cy = (*centroid_)[vid](1) - static_cast<double>(t_y);
+                    double cz = (*centroid_)[vid](2) - static_cast<double>(t_z);
+
+                    double distance = sqrt(cx * cx + cy * cy + cz * cz);
+                    std::cout << "Distance\n";
+                    // if (distance < radius) {
+                    //     voxel_ids.push_back(vid);
+                    // }
+                }
+            }
+        }
+    }
+}
+
 }
