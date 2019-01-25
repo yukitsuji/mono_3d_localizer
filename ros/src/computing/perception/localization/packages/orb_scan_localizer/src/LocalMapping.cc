@@ -29,10 +29,13 @@
 namespace ORB_SLAM2
 {
 
-LocalMapping::LocalMapping(Map *pMap, const float bMonocular):
+LocalMapping::LocalMapping(Map *pMap, const string &strSettingPath, const float bMonocular):
     mbResetRequested(false), mbFinishRequested(false), mbFinished(true), mpMap(pMap),
     mbAbortBA(false), mbStopped(false), mbStopRequested(false), mbNotStop(false), mbAcceptKeyFrames(true)
 {
+  cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
+  dist_coeff_ = fSettings["ORBextractor.dist_coeff"];
+  use_icp2_ = fSettings["ORBextractor.use_icp2"];
 }
 
 void LocalMapping::SetTracker(Tracking *pTracker)
@@ -79,216 +82,224 @@ void LocalMapping::Run()
             {
                 // Local BA
                 if(mpMap->KeyFramesInMap() > 2)
-                    Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, &mbAbortBA, mpMap);
+                    Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, &mbAbortBA, mpMap,
+                                                     icp_, dist_coeff_, use_icp_, use_icp2_);
 
                 // Check redundant local Keyframes
                 KeyFrameCulling();
 
-                KeyFrameCullingByNumber(60);
+                // KeyFrameCullingByNumber(60);
 
-                if (mpMap->KeyFramesInMap() > 2)
+                if (false)
                 {
-
-                if (use_icp_)
-                {
-                    // Collect local map point and KeyFrames
-                    // Use GetBestCovisibilityKeyFrames or 10 keyframes
-                    // TODO: Calculate number of map points
-                    vector<KeyFrame*> mvpLocalKeyFrames; // = mpCurrentKeyFrame->GetVectorCovisibleKeyFrames();
-                    std::vector<MapPoint*> localMapPoints;
-                    localMapPoints.clear();
-
-                    vector<MapPoint*> mvpMapPoints = mpCurrentKeyFrame->GetMapPointMatches();
-
-                    map<KeyFrame*,int> keyframeCounter;
-                    for(int i=0; i<mpCurrentKeyFrame->N; i++)
-                    {
-                        if(mvpMapPoints[i])
-                        {
-                            MapPoint* pMP = mvpMapPoints[i];
-                            if(!pMP->isBad())
-                            {
-                                const map<KeyFrame*,size_t> observations = pMP->GetObservations();
-                                for(map<KeyFrame*,size_t>::const_iterator it=observations.begin(), itend=observations.end(); it!=itend; it++)
-                                    keyframeCounter[it->first]++;
-                            }
-                            else
-                            {
-                                mvpMapPoints[i] = NULL;
-                            }
-                        }
-                    }
-
-                    if(keyframeCounter.empty())
-                        return;
-
-                    mvpLocalKeyFrames.clear();
-                    mvpLocalKeyFrames.reserve(keyframeCounter.size());
-
-                    // All keyframes that observe a map point are included in the local map. Also check which keyframe shares most points
-                    for(map<KeyFrame*,int>::const_iterator it=keyframeCounter.begin(), itEnd=keyframeCounter.end(); it!=itEnd; it++)
-                    {
-                        KeyFrame* pKF = it->first;
-                        if(pKF==NULL || pKF->isBad())
-                            continue;
-                        mvpLocalKeyFrames.push_back(it->first);
-                    }
-
-
-                    // 各Map PointにLocalMappingのKeyFrameのIDを格納する変数を作成
-                    for (const auto& pKF : mvpLocalKeyFrames)
-                    {
-                        // std::cout << "KeyFrame id: " << pKF->mnId << "\n";
-                        const vector<MapPoint*> vpMPs = pKF->GetMapPointMatches();
-
-                        for (const auto& pMP : vpMPs)
-                        {
-                            if(!pMP)
-                                continue;
-                            if(pMP->mnLocalMappingForFrame == mpCurrentKeyFrame->mnId)
-                                continue;
-                            if(!pMP->isBad())
-                            {
-                                localMapPoints.push_back(pMP);
-                                pMP->mnLocalMappingForFrame = mpCurrentKeyFrame->mnId;
-                            }
-                        }
-                    }
-
-                    Eigen::Matrix4d toRef = Converter::toMatrix4d(mpCurrentKeyFrame->GetPose());
-
-                    // icp matching using map point
-                    pcl::PointCloud<pcl::PointXYZ>::Ptr l_points (new pcl::PointCloud<pcl::PointXYZ>);
-                    for (auto&& p : localMapPoints)
-                    {
-                        cv::Mat pos = p->GetWorldPos();
-                        pcl::PointXYZ point;
-                        point.x = pos.at<float>(0);
-                        point.y = pos.at<float>(1);
-                        point.z = pos.at<float>(2);
-                        l_points->push_back(point);
-                    }
-
-                    pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_points (new pcl::PointCloud<pcl::PointXYZ>);
-                    *filtered_points = *l_points;
-
-                    icp_->transformCloudPublic(*filtered_points, *filtered_points, toRef);
-
-                    pcl::PassThrough<pcl::PointXYZ> pass;
-                    pass.setInputCloud (filtered_points);
-                    pass.setFilterFieldName ("x");
-                    pass.setFilterLimits (-40.0, 40.0);
-                    pass.filter (*filtered_points);
-                    pass.setInputCloud (filtered_points);
-                    pass.setFilterFieldName ("z");
-                    pass.setFilterLimits (-40.0, 40.0);
-                    pass.filter (*filtered_points);
-                    pass.setInputCloud (filtered_points);
-                    pass.setFilterFieldName ("y");
-                    pass.setFilterLimits (-1, 4);
-                    pass.filter (*filtered_points);
-
-                    // double filter_res = 0.2f;
-                    // pcl::VoxelGrid<pcl::PointXYZ> voxel_grid_filter;
-                    // voxel_grid_filter.setLeafSize(filter_res, filter_res, filter_res);
-                    // voxel_grid_filter.setInputCloud(filtered_points);
-                    // voxel_grid_filter.filter(*filtered_points);
-
-                    icp_->transformCloudPublic(*filtered_points, *filtered_points, toRef.inverse());
-
-                    // pcl::console::setVerbosityLevel(pcl::console::L_DEBUG);
-                    icp_->setInputSource(filtered_points);
-                    icp_->setMaximumIterations(10);
-                    icp_->setDistThreshold(0.3);
-                    pcl::PointCloud<pcl::PointXYZ> output;
-                    Eigen::Matrix4d transformation;
-
-                    icp_->align(output, Eigen::Matrix4d::Identity(), toRef);
-
-                    transformation = icp_->getFinalTransformation();
-
-                    // Update map point and keyframes
-                    cv::Mat cv_transformation = Converter::toCvMat(transformation);
-                    cv::Mat cv_toRef = Converter::toCvMat(toRef);
-                    cv::Mat cv_invToRef = cv_toRef.inv();
-
-                    // Get Map Mutex
-                    {
-                    unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
-
-                    for (auto&& pKF : mvpLocalKeyFrames)
-                    {
-                        if (pKF->mnId == mpCurrentKeyFrame->mnId)
-                        {
-                            cv::Mat local_transform;
-                            cv_transformation.copyTo(local_transform);
-                            cv::Mat local_R = local_transform.rowRange(0,3).colRange(0,3);
-                            cv::Mat local_T = local_transform.rowRange(0,3).col(3);
-
-                            double s = cv::determinant(local_R);
-                            local_R /= pow(s, 1.0/3.0);
-
-                            cv::Mat prev_R, prev_T, prev_pose, after_R, after_T, after_pose;
-
-                            // OK
-                            prev_pose = pKF->GetPoseInverse();
-                            prev_pose.rowRange(0, 3).colRange(0, 3).copyTo(prev_R);
-                            after_R = prev_R * local_R;
-
-                            // Not OK
-                            prev_pose.rowRange(0,3).col(3).copyTo(prev_T);
-                            after_T = prev_T + prev_R * local_T;
-                            // after_T = prev_T + local_T;
-
-                            prev_pose.copyTo(after_pose);
-                            after_R.copyTo(after_pose.rowRange(0, 3).colRange(0, 3));
-                            after_T.copyTo(after_pose.rowRange(0, 3).col(3));
-                            pKF->SetPose(after_pose.inv());
-                        }
-                    }
-
-                    cv_invToRef = mpCurrentKeyFrame->GetPoseInverse();
-
-                    // Update KeyFrames
-                    for (auto&& pKF : mvpLocalKeyFrames)
-                    {
-                        if (pKF->mnId != mpCurrentKeyFrame->mnId) {
-                            cv::Mat prev_pose = pKF->GetPoseInverse(); // GetPose();
-                            cv::Mat relative_pose = cv_toRef * prev_pose;
-                            cv::Mat cv_transformation_R = cv_transformation.rowRange(0,3).colRange(0,3);
-                            double s = cv::determinant(cv_transformation_R);
-                            relative_pose.rowRange(0,3).col(3) *= pow(s, 1.0/3.0); // multiply scale to translation
-                            cv::Mat after_pose = cv_invToRef * relative_pose;
-                            pKF->SetPose(after_pose.inv());
-                            // std::cout << "Scale: " << s << "\n";
-                        }
-                    }
-
-                    // Update points using PCL
-                    pcl::PointCloud<pcl::PointXYZ>::Ptr converted_points (new pcl::PointCloud<pcl::PointXYZ>);
-                    *converted_points = *l_points;
-                    Eigen::Matrix4d updateToGlobal = Converter::toMatrix4d(mpCurrentKeyFrame->GetPoseInverse());
-                    icp_->transformCloudPublic(*converted_points, *converted_points, toRef);
-                    icp_->transformCloudPublic(*converted_points, *converted_points, transformation);
-                    icp_->transformCloudPublic(*converted_points, *converted_points, toRef.inverse()); //updateToGlobal);
-
-                    // Update points
-                    for(size_t i=0, iend=localMapPoints.size(); i<iend; ++i)
-                    {
-                        MapPoint* pMP = localMapPoints[i];
-                        if(pMP)
-                        {
-                            if(!pMP->isBad())
-                            {
-                                pcl::PointXYZ p = converted_points->points[i];
-                                cv::Mat pose = (cv::Mat_<float>(3,1) << p.x, p.y, p.z);
-                                pMP->SetWorldPos(pose);
-                                pMP->UpdateNormalAndDepth();
-                            }
-                        }
-                    }
-                    }
-                }
+                  // if (mpMap->KeyFramesInMap() > 2)
+                  // {
+                  //   if (use_icp_ && use_icp2_)
+                  //   {
+                  //       std::cout << "ICP Matching\n";
+                  //       // Collect local map point and KeyFrames
+                  //       // Use GetBestCovisibilityKeyFrames or 10 keyframes
+                  //       // TODO: Calculate number of map points
+                  //       vector<KeyFrame*> mvpLocalKeyFrames; // = mpCurrentKeyFrame->GetVectorCovisibleKeyFrames();
+                  //       std::vector<MapPoint*> localMapPoints;
+                  //       localMapPoints.clear();
+                  //
+                  //       vector<MapPoint*> mvpMapPoints = mpCurrentKeyFrame->GetMapPointMatches();
+                  //
+                  //       map<KeyFrame*,int> keyframeCounter;
+                  //       for(int i=0; i<mpCurrentKeyFrame->N; i++)
+                  //       {
+                  //           if(mvpMapPoints[i])
+                  //           {
+                  //               MapPoint* pMP = mvpMapPoints[i];
+                  //               if(!pMP->isBad())
+                  //               {
+                  //                   const map<KeyFrame*,size_t> observations = pMP->GetObservations();
+                  //                   for(map<KeyFrame*,size_t>::const_iterator it=observations.begin(), itend=observations.end(); it!=itend; it++)
+                  //                       keyframeCounter[it->first]++;
+                  //               }
+                  //               else
+                  //               {
+                  //                   mvpMapPoints[i] = NULL;
+                  //               }
+                  //           }
+                  //       }
+                  //
+                  //       if(keyframeCounter.empty())
+                  //           return;
+                  //
+                  //       mvpLocalKeyFrames.clear();
+                  //       mvpLocalKeyFrames.reserve(keyframeCounter.size());
+                  //
+                  //       // All keyframes that observe a map point are included in the local map. Also check which keyframe shares most points
+                  //       for(map<KeyFrame*,int>::const_iterator it=keyframeCounter.begin(), itEnd=keyframeCounter.end(); it!=itEnd; it++)
+                  //       {
+                  //           KeyFrame* pKF = it->first;
+                  //           if(pKF==NULL || pKF->isBad())
+                  //               continue;
+                  //           mvpLocalKeyFrames.push_back(it->first);
+                  //       }
+                  //
+                  //
+                  //       // 各Map PointにLocalMappingのKeyFrameのIDを格納する変数を作成
+                  //       for (const auto& pKF : mvpLocalKeyFrames)
+                  //       {
+                  //           // std::cout << "KeyFrame id: " << pKF->mnId << "\n";
+                  //           const vector<MapPoint*> vpMPs = pKF->GetMapPointMatches();
+                  //
+                  //           for (const auto& pMP : vpMPs)
+                  //           {
+                  //               if(!pMP)
+                  //                   continue;
+                  //               if(pMP->mnLocalMappingForFrame == mpCurrentKeyFrame->mnId)
+                  //                   continue;
+                  //               if(!pMP->isBad())
+                  //               {
+                  //                   localMapPoints.push_back(pMP);
+                  //                   pMP->mnLocalMappingForFrame = mpCurrentKeyFrame->mnId;
+                  //               }
+                  //           }
+                  //       }
+                  //
+                  //       Eigen::Matrix4d toRef = Converter::toMatrix4d(mpCurrentKeyFrame->GetPose());
+                  //
+                  //       // icp matching using map point
+                  //       pcl::PointCloud<pcl::PointXYZ>::Ptr l_points (new pcl::PointCloud<pcl::PointXYZ>);
+                  //       for (auto&& p : localMapPoints)
+                  //       {
+                  //           cv::Mat pos = p->GetWorldPos();
+                  //           pcl::PointXYZ point;
+                  //           point.x = pos.at<float>(0);
+                  //           point.y = pos.at<float>(1);
+                  //           point.z = pos.at<float>(2);
+                  //           l_points->push_back(point);
+                  //       }
+                  //
+                  //       pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_points (new pcl::PointCloud<pcl::PointXYZ>);
+                  //       *filtered_points = *l_points;
+                  //
+                  //       icp_->transformCloudPublic(*filtered_points, *filtered_points, toRef);
+                  //
+                  //       pcl::PassThrough<pcl::PointXYZ> pass;
+                  //       // pass.setInputCloud (filtered_points);
+                  //       // pass.setFilterFieldName ("x");
+                  //       // pass.setFilterLimits (-10.0, 10.0);
+                  //       // pass.filter (*filtered_points);
+                  //       pass.setInputCloud (filtered_points);
+                  //       pass.setFilterFieldName ("z");
+                  //       pass.setFilterLimits (-500, 30.0);
+                  //       pass.filter (*filtered_points);
+                  //       pass.setInputCloud (filtered_points);
+                  //       pass.setFilterFieldName ("y");
+                  //       pass.setFilterLimits (-3, 2);
+                  //       pass.filter (*filtered_points);
+                  //
+                  //       // double filter_res = 0.2f;
+                  //       // pcl::VoxelGrid<pcl::PointXYZ> voxel_grid_filter;
+                  //       // voxel_grid_filter.setLeafSize(filter_res, filter_res, filter_res);
+                  //       // voxel_grid_filter.setInputCloud(filtered_points);
+                  //       // voxel_grid_filter.filter(*filtered_points);
+                  //
+                  //       icp_->transformCloudPublic(*filtered_points, *filtered_points, toRef.inverse());
+                  //
+                  //       // pcl::console::setVerbosityLevel(pcl::console::L_DEBUG);
+                  //       icp_->setInputSource(filtered_points);
+                  //       icp_->setMaximumIterations(1);
+                  //       icp_->setDistThreshold(dist_coeff_);
+                  //       pcl::PointCloud<pcl::PointXYZ> output;
+                  //       Eigen::Matrix4d transformation;
+                  //
+                  //       icp_->align(output, Eigen::Matrix4d::Identity(), toRef);
+                  //
+                  //       transformation = icp_->getFinalTransformation();
+                  //
+                  //       // Update map point and keyframes
+                  //       cv::Mat cv_transformation = Converter::toCvMat(transformation);
+                  //       cv::Mat cv_toRef = Converter::toCvMat(toRef);
+                  //       cv::Mat cv_invToRef = cv_toRef.inv();
+                  //
+                  //       // Get Map Mutex
+                  //       {
+                  //         unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
+                  //
+                  //         double scale = pow(cv::determinant(cv_transformation), 1.0/3.0);
+                  //
+                  //         for (auto&& pKF : mvpLocalKeyFrames)
+                  //         {
+                  //             if (pKF->mnId == mpCurrentKeyFrame->mnId)
+                  //             {
+                  //                 cv::Mat local_transform;
+                  //                 cv_transformation.copyTo(local_transform);
+                  //                 cv::Mat local_R = local_transform.rowRange(0,3).colRange(0,3);
+                  //                 cv::Mat local_T = local_transform.rowRange(0,3).col(3);
+                  //
+                  //                 local_R /= scale;
+                  //
+                  //                 cv::Mat prev_R, prev_T, prev_pose, after_R, after_T, after_pose;
+                  //
+                  //                 // OK
+                  //                 prev_pose = pKF->GetPoseInverse();
+                  //                 prev_pose.rowRange(0, 3).colRange(0, 3).copyTo(prev_R);
+                  //                 after_R = prev_R * local_R;
+                  //
+                  //                 // Not OK
+                  //                 prev_pose.rowRange(0,3).col(3).copyTo(prev_T);
+                  //                 after_T = prev_T + prev_R * local_T;
+                  //                 // after_T = prev_T + local_T;
+                  //
+                  //                 prev_pose.copyTo(after_pose);
+                  //                 after_R.copyTo(after_pose.rowRange(0, 3).colRange(0, 3));
+                  //                 after_T.copyTo(after_pose.rowRange(0, 3).col(3));
+                  //                 pKF->SetPose(after_pose.inv());
+                  //             }
+                  //         }
+                  //
+                  //         cv_invToRef = mpCurrentKeyFrame->GetPoseInverse();
+                  //
+                  //         // Update KeyFrames
+                  //         for (auto&& pKF : mvpLocalKeyFrames)
+                  //         {
+                  //             if (pKF->mnId != mpCurrentKeyFrame->mnId) {
+                  //                 cv::Mat prev_pose = pKF->GetPoseInverse(); // GetPose();
+                  //                 cv::Mat relative_pose = cv_toRef * prev_pose;
+                  //                 relative_pose.rowRange(0,3).col(3) *= scale; // multiply scale to translation
+                  //                 cv::Mat after_pose = cv_invToRef * relative_pose;
+                  //                 pKF->SetPose(after_pose.inv());
+                  //             }
+                  //         }
+                  //
+                  //         // Update points using PCL
+                  //         pcl::PointCloud<pcl::PointXYZ>::Ptr converted_points (new pcl::PointCloud<pcl::PointXYZ>);
+                  //         *converted_points = *l_points;
+                  //         Eigen::Matrix4d updateToGlobal = Converter::toMatrix4d(mpCurrentKeyFrame->GetPoseInverse());
+                  //         icp_->transformCloudPublic(*converted_points, *converted_points, toRef);
+                  //         icp_->transformCloudPublic(*converted_points, *converted_points, transformation);
+                  //         icp_->transformCloudPublic(*converted_points, *converted_points, toRef.inverse()); //updateToGlobal);
+                  //
+                  //         vector<MapPoint*> hoge;
+                  //         hoge.clear();
+                  //
+                  //         // Update points
+                  //         for(size_t i=0, iend=localMapPoints.size(); i<iend; ++i)
+                  //         {
+                  //             MapPoint* pMP = localMapPoints[i];
+                  //             if(pMP)
+                  //             {
+                  //                 if(!pMP->isBad())
+                  //                 {
+                  //                     pcl::PointXYZ p = converted_points->points[i];
+                  //                     cv::Mat pose = (cv::Mat_<float>(3,1) << p.x, p.y, p.z);
+                  //                     pMP->SetWorldPos(pose);
+                  //                     pMP->UpdateNormalAndDepth();
+                  //                     hoge.push_back(pMP);
+                  //                 }
+                  //             }
+                  //         }
+                  //
+                  //         // mpMap->SetLocalMappingPoint(hoge);
+                  //       }
+                  //   }
+                  // }
                 }
             }
         }
@@ -371,7 +382,8 @@ void LocalMapping::RunOnce()
             t1 = std::chrono::steady_clock::now();
       	    // Local BA
             if(mpMap->KeyFramesInMap() > 2)
-                Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, false, mpMap);
+                Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, &mbAbortBA, mpMap,
+                                                 icp_, dist_coeff_, use_icp_, use_icp2_);
             t2 = std::chrono::steady_clock::now();
             ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
             std::cout << "LocalBundleAdjustment " << ttrack << "\n";
@@ -384,237 +396,253 @@ void LocalMapping::RunOnce()
             ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
             std::cout << "KeyFrameCulling " << ttrack << "\n";
 
-            t1 = std::chrono::steady_clock::now();
-            KeyFrameCullingByNumber(60);
-            t2 = std::chrono::steady_clock::now();
-            ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-            std::cout << "KeyFrameCullingByNumber " << ttrack << "\n";
+            if (false){
+              // t1 = std::chrono::steady_clock::now();
+              // KeyFrameCullingByNumber(60);
+              // t2 = std::chrono::steady_clock::now();
+              // ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+              // std::cout << "KeyFrameCullingByNumber " << ttrack << "\n";
 
-            if (mpMap->KeyFramesInMap() > 2)
-            {
-
-            if (use_icp_)
-            {
-                // Collect local map point and KeyFrames
-                // Use GetBestCovisibilityKeyFrames or 10 keyframes
-                // TODO: Calculate number of map points
-                vector<KeyFrame*> mvpLocalKeyFrames; // = mpCurrentKeyFrame->GetVectorCovisibleKeyFrames();
-                std::vector<MapPoint*> localMapPoints;
-                localMapPoints.clear();
-
-                vector<MapPoint*> mvpMapPoints = mpCurrentKeyFrame->GetMapPointMatches();
-
-                map<KeyFrame*,int> keyframeCounter;
-                for(int i=0; i<mpCurrentKeyFrame->N; i++)
-                {
-                    if(mvpMapPoints[i])
-                    {
-                        MapPoint* pMP = mvpMapPoints[i];
-                        if(!pMP->isBad())
-                        {
-                            const map<KeyFrame*,size_t> observations = pMP->GetObservations();
-                            for(map<KeyFrame*,size_t>::const_iterator it=observations.begin(), itend=observations.end(); it!=itend; it++)
-                                keyframeCounter[it->first]++;
-                        }
-                        else
-                        {
-                            mvpMapPoints[i] = NULL;
-                        }
-                    }
-                }
-
-                if(keyframeCounter.empty())
-                    return;
-
-                mvpLocalKeyFrames.clear();
-                mvpLocalKeyFrames.reserve(keyframeCounter.size());
-
-                // All keyframes that observe a map point are included in the local map. Also check which keyframe shares most points
-                for(map<KeyFrame*,int>::const_iterator it=keyframeCounter.begin(), itEnd=keyframeCounter.end(); it!=itEnd; it++)
-                {
-                    KeyFrame* pKF = it->first;
-                    if(pKF==NULL || pKF->isBad())
-                        continue;
-                    mvpLocalKeyFrames.push_back(it->first);
-                }
-
-
-                // 各Map PointにLocalMappingのKeyFrameのIDを格納する変数を作成
-                for (const auto& pKF : mvpLocalKeyFrames)
-                {
-                    // std::cout << "KeyFrame id: " << pKF->mnId << "\n";
-                    const vector<MapPoint*> vpMPs = pKF->GetMapPointMatches();
-
-                    for (const auto& pMP : vpMPs)
-                    {
-                        if(!pMP)
-                            continue;
-                        if(pMP->mnLocalMappingForFrame == mpCurrentKeyFrame->mnId)
-                            continue;
-                        if(!pMP->isBad())
-                        {
-                            localMapPoints.push_back(pMP);
-                            pMP->mnLocalMappingForFrame = mpCurrentKeyFrame->mnId;
-                        }
-                    }
-                }
-
-                t1 = std::chrono::steady_clock::now();
-
-                Eigen::Matrix4d toRef = Converter::toMatrix4d(mpCurrentKeyFrame->GetPose());
-
-                // icp matching using map point
-                pcl::PointCloud<pcl::PointXYZ>::Ptr l_points (new pcl::PointCloud<pcl::PointXYZ>);
-                for (auto&& p : localMapPoints)
-                {
-                    cv::Mat pos = p->GetWorldPos();
-                    pcl::PointXYZ point;
-                    point.x = pos.at<float>(0);
-                    point.y = pos.at<float>(1);
-                    point.z = pos.at<float>(2);
-                    l_points->push_back(point);
-                }
-
-                pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_points (new pcl::PointCloud<pcl::PointXYZ>);
-                *filtered_points = *l_points;
-
-                icp_->transformCloudPublic(*filtered_points, *filtered_points, toRef);
-
-                pcl::PassThrough<pcl::PointXYZ> pass;
-                pass.setInputCloud (filtered_points);
-                pass.setFilterFieldName ("x");
-                pass.setFilterLimits (-40.0, 40.0);
-                pass.filter (*filtered_points);
-                pass.setInputCloud (filtered_points);
-                pass.setFilterFieldName ("z");
-                pass.setFilterLimits (-40.0, 40.0);
-                pass.filter (*filtered_points);
-                pass.setInputCloud (filtered_points);
-                pass.setFilterFieldName ("y");
-                pass.setFilterLimits (-1, 5);
-                pass.filter (*filtered_points);
-
-                // double filter_res = 0.2f;
-                // pcl::VoxelGrid<pcl::PointXYZ> voxel_grid_filter;
-                // voxel_grid_filter.setLeafSize(filter_res, filter_res, filter_res);
-                // voxel_grid_filter.setInputCloud(filtered_points);
-                // voxel_grid_filter.filter(*filtered_points);
-
-                icp_->transformCloudPublic(*filtered_points, *filtered_points, toRef.inverse());
-
-                // pcl::console::setVerbosityLevel(pcl::console::L_DEBUG);
-                icp_->setInputSource(filtered_points);
-                icp_->setMaximumIterations(10);
-                icp_->setDistThreshold(0.2);
-                pcl::PointCloud<pcl::PointXYZ> output;
-                Eigen::Matrix4d transformation;
-
-                t2 = std::chrono::steady_clock::now();
-                ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-                std::cout << "Prepare icp " << ttrack << "\n";
-
-                t1 = std::chrono::steady_clock::now();
-
-                icp_->align(output, Eigen::Matrix4d::Identity(), toRef);
-
-                t2 = std::chrono::steady_clock::now();
-                ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-                std::cout << "ICP " << ttrack << "\n";
-
-                transformation = icp_->getFinalTransformation();
-
-                // Update map point and keyframes
-                cv::Mat cv_transformation = Converter::toCvMat(transformation);
-                cv::Mat cv_toRef = Converter::toCvMat(toRef);
-                cv::Mat cv_invToRef = cv_toRef.inv();
-
-                // Get Map Mutex
-                {
-                unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
-
-                t1 = std::chrono::steady_clock::now();
-
-                double scale = pow(cv::determinant(cv_transformation), 1.0/3.0);
-
-                for (auto&& pKF : mvpLocalKeyFrames)
-                {
-                    if (pKF->mnId == mpCurrentKeyFrame->mnId)
-                    {
-                        cv::Mat local_transform;
-                        cv_transformation.copyTo(local_transform);
-                        cv::Mat local_R = local_transform.rowRange(0,3).colRange(0,3);
-                        cv::Mat local_T = local_transform.rowRange(0,3).col(3);
-
-                        local_R /= scale;
-
-                        cv::Mat prev_R, prev_T, prev_pose, after_R, after_T, after_pose;
-
-                        prev_pose = pKF->GetPoseInverse();
-                        prev_pose.rowRange(0, 3).colRange(0, 3).copyTo(prev_R);
-                        after_R = prev_R * local_R;
-
-                        prev_pose.rowRange(0,3).col(3).copyTo(prev_T);
-                        after_T = prev_T + prev_R * local_T;
-
-                        prev_pose.copyTo(after_pose);
-                        after_R.copyTo(after_pose.rowRange(0, 3).colRange(0, 3));
-                        after_T.copyTo(after_pose.rowRange(0, 3).col(3));
-                        pKF->SetPose(after_pose.inv());
-                        pKF->local_scale = scale;
-                        break;
-                    }
-                }
-
-                cv_invToRef = mpCurrentKeyFrame->GetPoseInverse();
-
-                // Update KeyFrames
-                for (auto&& pKF : mvpLocalKeyFrames)
-                {
-                    if (pKF->mnId != mpCurrentKeyFrame->mnId) {
-                        cv::Mat prev_pose = pKF->GetPoseInverse(); // GetPose();
-                        cv::Mat relative_pose = cv_toRef * prev_pose;
-                        relative_pose.rowRange(0,3).col(3) *= scale; // multiply scale to translation
-                        cv::Mat after_pose = cv_invToRef * relative_pose;
-                        pKF->SetPose(after_pose.inv());
-                        pKF->local_scale = scale;
-                    }
-                }
-
-                t2 = std::chrono::steady_clock::now();
-                ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-                std::cout << "Update keyframe " << ttrack << "\n";
-
-                t1 = std::chrono::steady_clock::now();
-
-                // Update points using PCL
-                pcl::PointCloud<pcl::PointXYZ>::Ptr converted_points (new pcl::PointCloud<pcl::PointXYZ>);
-                *converted_points = *l_points;
-                Eigen::Matrix4d updateToGlobal = Converter::toMatrix4d(mpCurrentKeyFrame->GetPoseInverse());
-                // icp_->transformCloudPublic(*converted_points, *converted_points, toRef);
-                // icp_->transformCloudPublic(*converted_points, *converted_points, transformation);
-                // icp_->transformCloudPublic(*converted_points, *converted_points, toRef.inverse()); //updateToGlobal);
-                icp_->transformCloudPublic(*converted_points, *converted_points, toRef.inverse() * transformation * toRef);
-
-                // Update points
-                for(size_t i=0, iend=localMapPoints.size(); i<iend; ++i)
-                {
-                    MapPoint* pMP = localMapPoints[i];
-                    if(pMP)
-                    {
-                        if(!pMP->isBad())
-                        {
-                            pcl::PointXYZ p = converted_points->points[i];
-                            cv::Mat pose = (cv::Mat_<float>(3,1) << p.x, p.y, p.z);
-                            pMP->SetWorldPos(pose);
-                            pMP->UpdateNormalAndDepth();
-                        }
-                    }
-                }
-                t2 = std::chrono::steady_clock::now();
-                ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-                std::cout << "Update Mappoint " << ttrack << "\n";
-                }
-            }
+              // if (mpMap->KeyFramesInMap() > 2)
+              // {
+              //
+              // if (use_icp_ && use_icp2_)
+              // {
+              //     // Collect local map point and KeyFrames
+              //     // Use GetBestCovisibilityKeyFrames or 10 keyframes
+              //     // TODO: Calculate number of map points
+              //     vector<KeyFrame*> mvpLocalKeyFrames; // = mpCurrentKeyFrame->GetVectorCovisibleKeyFrames();
+              //     std::vector<MapPoint*> localMapPoints;
+              //     localMapPoints.clear();
+              //
+              //     vector<MapPoint*> mvpMapPoints = mpCurrentKeyFrame->GetMapPointMatches();
+              //
+              //     map<KeyFrame*,int> keyframeCounter;
+              //     for(int i=0; i<mpCurrentKeyFrame->N; i++)
+              //     {
+              //         if(mvpMapPoints[i])
+              //         {
+              //             MapPoint* pMP = mvpMapPoints[i];
+              //             if(!pMP->isBad())
+              //             {
+              //                 const map<KeyFrame*,size_t> observations = pMP->GetObservations();
+              //                 for(map<KeyFrame*,size_t>::const_iterator it=observations.begin(), itend=observations.end(); it!=itend; it++)
+              //                     keyframeCounter[it->first]++;
+              //             }
+              //             else
+              //             {
+              //                 mvpMapPoints[i] = NULL;
+              //             }
+              //         }
+              //     }
+              //
+              //     if(keyframeCounter.empty())
+              //         return;
+              //
+              //     mvpLocalKeyFrames.clear();
+              //     mvpLocalKeyFrames.reserve(keyframeCounter.size());
+              //
+              //     // All keyframes that observe a map point are included in the local map. Also check which keyframe shares most points
+              //     for(map<KeyFrame*,int>::const_iterator it=keyframeCounter.begin(), itEnd=keyframeCounter.end(); it!=itEnd; it++)
+              //     {
+              //         KeyFrame* pKF = it->first;
+              //         if(pKF==NULL || pKF->isBad())
+              //             continue;
+              //         mvpLocalKeyFrames.push_back(it->first);
+              //     }
+              //
+              //     std::cout << "############## KeyFrame ICP: " << mvpLocalKeyFrames.size() << " ############\n";
+              //     std::cout << "############## KeyFrame ICP: " << mpCurrentKeyFrame->GetVectorCovisibleKeyFrames().size() << " ############\n";
+              //
+              //     // 各Map PointにLocalMappingのKeyFrameのIDを格納する変数を作成
+              //     for (const auto& pKF : mvpLocalKeyFrames)
+              //     {
+              //         // std::cout << "KeyFrame id: " << pKF->mnId << "\n";
+              //         const vector<MapPoint*> vpMPs = pKF->GetMapPointMatches();
+              //
+              //         for (const auto& pMP : vpMPs)
+              //         {
+              //             if(!pMP)
+              //                 continue;
+              //             if(pMP->mnLocalMappingForFrame == mpCurrentKeyFrame->mnId)
+              //                 continue;
+              //             if(!pMP->isBad())
+              //             {
+              //                 localMapPoints.push_back(pMP);
+              //                 pMP->mnLocalMappingForFrame = mpCurrentKeyFrame->mnId;
+              //             }
+              //         }
+              //     }
+              //
+              //     t1 = std::chrono::steady_clock::now();
+              //
+              //     Eigen::Matrix4d toRef = Converter::toMatrix4d(mpCurrentKeyFrame->GetPose());
+              //
+              //     // icp matching using map point
+              //     pcl::PointCloud<pcl::PointXYZ>::Ptr l_points (new pcl::PointCloud<pcl::PointXYZ>);
+              //     for (auto&& p : localMapPoints)
+              //     {
+              //         cv::Mat pos = p->GetWorldPos();
+              //         pcl::PointXYZ point;
+              //         point.x = pos.at<float>(0);
+              //         point.y = pos.at<float>(1);
+              //         point.z = pos.at<float>(2);
+              //         l_points->push_back(point);
+              //     }
+              //
+              //     pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_points (new pcl::PointCloud<pcl::PointXYZ>);
+              //     *filtered_points = *l_points;
+              //
+              //     icp_->transformCloudPublic(*filtered_points, *filtered_points, toRef);
+              //
+              //     pcl::PassThrough<pcl::PointXYZ> pass;
+              //     // pass.setInputCloud (filtered_points);
+              //     // pass.setFilterFieldName ("x");
+              //     // pass.setFilterLimits (-40.0, 40.0);
+              //     // pass.filter (*filtered_points);
+              //     // pass.setInputCloud (filtered_points);
+              //     // pass.setFilterFieldName ("z");
+              //     // pass.setFilterLimits (-40.0, 40.0);
+              //     // pass.filter (*filtered_points);
+              //     pass.setInputCloud (filtered_points);
+              //     pass.setFilterFieldName ("y");
+              //     pass.setFilterLimits (-2, 5);
+              //     pass.filter (*filtered_points);
+              //
+              //     // double filter_res = 0.2f;
+              //     // pcl::VoxelGrid<pcl::PointXYZ> voxel_grid_filter;
+              //     // voxel_grid_filter.setLeafSize(filter_res, filter_res, filter_res);
+              //     // voxel_grid_filter.setInputCloud(filtered_points);
+              //     // voxel_grid_filter.filter(*filtered_points);
+              //
+              //     icp_->transformCloudPublic(*filtered_points, *filtered_points, toRef.inverse());
+              //
+              //     // pcl::console::setVerbosityLevel(pcl::console::L_DEBUG);
+              //     icp_->setInputSource(filtered_points);
+              //     icp_->setMaximumIterations(1);
+              //     icp_->setDistThreshold(dist_coeff_);
+              //     pcl::PointCloud<pcl::PointXYZ> output;
+              //     Eigen::Matrix4d transformation;
+              //
+              //     t2 = std::chrono::steady_clock::now();
+              //     ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+              //     std::cout << "Prepare icp " << ttrack << "\n";
+              //
+              //     t1 = std::chrono::steady_clock::now();
+              //
+              //     icp_->align(output, Eigen::Matrix4d::Identity(), toRef);
+              //
+              //     t2 = std::chrono::steady_clock::now();
+              //     ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+              //     std::cout << "ICP " << ttrack << "\n";
+              //
+              //     transformation = icp_->getFinalTransformation();
+              //
+              //     // Update map point and keyframes
+              //     cv::Mat cv_transformation = Converter::toCvMat(transformation);
+              //     cv::Mat cv_toRef = Converter::toCvMat(toRef);
+              //     cv::Mat cv_invToRef = cv_toRef.inv();
+              //
+              //     // Get Map Mutex
+              //     {
+              //     unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
+              //
+              //     t1 = std::chrono::steady_clock::now();
+              //
+              //     double scale = pow(cv::determinant(cv_transformation), 1.0/3.0);
+              //
+              //     for (auto&& pKF : mvpLocalKeyFrames)
+              //     {
+              //         if (pKF->mnId == mpCurrentKeyFrame->mnId)
+              //         {
+              //             cv::Mat local_transform;
+              //             cv_transformation.copyTo(local_transform);
+              //             cv::Mat local_R = local_transform.rowRange(0,3).colRange(0,3);
+              //             cv::Mat local_T = local_transform.rowRange(0,3).col(3);
+              //
+              //             local_R /= scale;
+              //
+              //             cv::Mat prev_R, prev_T, prev_pose, after_R, after_T, after_pose;
+              //
+              //             prev_pose = pKF->GetPoseInverse();
+              //             prev_pose.rowRange(0, 3).colRange(0, 3).copyTo(prev_R);
+              //             after_R = prev_R * local_R;
+              //
+              //             prev_pose.rowRange(0,3).col(3).copyTo(prev_T);
+              //             after_T = prev_T + prev_R * local_T;
+              //
+              //
+              //             prev_pose.copyTo(after_pose);
+              //             after_R.copyTo(after_pose.rowRange(0, 3).colRange(0, 3));
+              //             after_T.copyTo(after_pose.rowRange(0, 3).col(3));
+              //             pKF->SetPose(after_pose.inv());
+              //             pKF->local_scale = scale;
+              //             std::cout << "local_transform:\n " << local_transform << "\n";
+              //             std::cout << "prev_pose:\n " << prev_pose << "\n";
+              //             std::cout << "after_pose:\n " << after_pose << "\n";
+              //             break;
+              //         }
+              //     }
+              //
+              //     cv_invToRef = mpCurrentKeyFrame->GetPoseInverse();
+              //
+              //     // Update KeyFrames
+              //     for (auto&& pKF : mvpLocalKeyFrames)
+              //     {
+              //         if (pKF->mnId != mpCurrentKeyFrame->mnId) {
+              //             cv::Mat prev_pose = pKF->GetPoseInverse(); // GetPose();
+              //             cv::Mat relative_pose = cv_toRef * prev_pose;
+              //             std::cout << "Relative pose: " << pKF->mnId << "\n" << relative_pose << "\n";
+              //             relative_pose.rowRange(0,3).col(3) *= scale; // multiply scale to translation
+              //             cv::Mat after_pose = cv_invToRef * relative_pose;
+              //             pKF->SetPose(after_pose.inv());
+              //             pKF->local_scale = scale;
+              //         }
+              //     }
+              //
+              //     t2 = std::chrono::steady_clock::now();
+              //     ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+              //     std::cout << "Update keyframe " << ttrack << "\n";
+              //
+              //     t1 = std::chrono::steady_clock::now();
+              //
+              //     // Update points using PCL
+              //     pcl::PointCloud<pcl::PointXYZ>::Ptr converted_points (new pcl::PointCloud<pcl::PointXYZ>);
+              //     *converted_points = *l_points;
+              //     Eigen::Matrix4d updateToGlobal = Converter::toMatrix4d(mpCurrentKeyFrame->GetPoseInverse());
+              //     // icp_->transformCloudPublic(*converted_points, *converted_points, toRef);
+              //     // icp_->transformCloudPublic(*converted_points, *converted_points, transformation);
+              //     // icp_->transformCloudPublic(*converted_points, *converted_points, toRef.inverse()); //updateToGlobal);
+              //     icp_->transformCloudPublic(*converted_points, *converted_points, toRef.inverse() * transformation * toRef);
+              //
+              //     vector<MapPoint*> hoge;
+              //     hoge.clear();
+              //
+              //     // Update points
+              //     for(size_t i=0, iend=localMapPoints.size(); i<iend; ++i)
+              //     {
+              //         MapPoint* pMP = localMapPoints[i];
+              //         if(pMP)
+              //         {
+              //             if(!pMP->isBad())
+              //             {
+              //                 pcl::PointXYZ p = converted_points->points[i];
+              //                 cv::Mat pose = (cv::Mat_<float>(3,1) << p.x, p.y, p.z);
+              //                 pMP->SetWorldPos(pose);
+              //                 pMP->UpdateNormalAndDepth();
+              //                 hoge.push_back(pMP);
+              //             }
+              //         }
+              //     }
+              //
+              //     mpMap->SetLocalMappingPoint(hoge);
+              //
+              //     t2 = std::chrono::steady_clock::now();
+              //     ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+              //     std::cout << "Update Mappoint " << ttrack << "\n";
+              //     }
+              // }
+              // }
             }
         }
     }

@@ -93,6 +93,9 @@ public:
     /* Returns normalized frame's direction vector (really axis of quaternion) */
     void getDirectionVector (float &dirX, float &dirY, float &dirZ);
 
+    // the image itself. only useful for monocular
+    cv::Mat image;
+
 public:
     // Vocabulary used for relocalization.
     ORBVocabulary* mpORBvocabulary;
@@ -182,8 +185,8 @@ public:
 
     static bool mbInitialComputations;
 
-    // the image itself. only useful for monocular
-    cv::Mat image;
+    // // the image itself. only useful for monocular
+    // cv::Mat image;
 
     void debug (const string &dirname="debug");
 

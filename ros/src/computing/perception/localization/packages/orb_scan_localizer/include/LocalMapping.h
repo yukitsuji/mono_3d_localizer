@@ -42,7 +42,7 @@ class Map;
 class LocalMapping
 {
 public:
-    LocalMapping(Map* pMap, const float bMonocular);
+    LocalMapping(Map* pMap, const string &strSettingPath, const float bMonocular);
 
     void SetTracker(Tracking* pTracker);
     void SetTracker(MapTracking* pTracker);
@@ -84,6 +84,9 @@ public:
     }
 
     pcl::IterativeClosestPoint7dof *icp_;
+
+    double dist_coeff_;
+    int use_icp2_;
 
 protected:
 

@@ -108,6 +108,8 @@ MapTracking::MapTracking (System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrame
     int nLevels = fSettings["ORBextractor.nLevels"];
     int fIniThFAST = fSettings["ORBextractor.iniThFAST"];
     int fMinThFAST = fSettings["ORBextractor.minThFAST"];
+		initial_scale_ = fSettings["ORBextractor.initial_scale"];
+		// std::cout << "ORBextractor.initial_scale: " << fSettings["ORBextractor.initial_scale"] << "\n";
 
     mpORBextractorLeft = new ORBextractor(nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
     mpIniORBextractor = new ORBextractor(2*nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST); // For initializer
@@ -209,7 +211,7 @@ cv::Mat MapTracking::GrabImageMonocular(const cv::Mat &im, const double &timesta
 		std::cout << "Sum of basic module time: " << sum_time << "\n";
 
 		t1 = std::chrono::steady_clock::now();
-		//mpLocalMapper->RunOnce();
+		mpLocalMapper->RunOnce();
 		t2 = std::chrono::steady_clock::now();
     ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
     std::cout << "local mapping " << ttrack << "\n";
@@ -289,15 +291,15 @@ void MapTracking::Track()
 				std::cout << "TrackLocalMap " << ttrack << "\n";
 
         // mCurrentFrame.mTcwを使って位置調整？
-        if (use_icp_) {
-            t1 = std::chrono::steady_clock::now();
-            ScanWithNDT(mCurrentFrame.mTcw);
-            // ScanWithNDT(mCurrentFrame.mpReferenceKF->GetPoseInverse());
-            // mCurrentFrame.mpReferenceKF->GetPoseInverse().t();
-            t2 = std::chrono::steady_clock::now();
-            ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-            std::cout << "ScanWithNDT " << ttrack << "\n";
-        }
+        // if (use_icp_) {
+        //     t1 = std::chrono::steady_clock::now();
+        //     ScanWithNDT(mCurrentFrame.mTcw);
+        //     // ScanWithNDT(mCurrentFrame.mpReferenceKF->GetPoseInverse());
+        //     // mCurrentFrame.mpReferenceKF->GetPoseInverse().t();
+        //     t2 = std::chrono::steady_clock::now();
+        //     ttrack = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+        //     std::cout << "ScanWithNDT " << ttrack << "\n";
+        // }
 
         if(bOK){
             mState = OK;
@@ -718,7 +720,7 @@ void MapTracking::MonocularInitialization()
 void MapTracking::CreateInitialMapMonocular()
 {
     // Create KeyFrames
-    KeyFrame* pKFini = new KeyFrame(mInitialFrame, mpMap, mpKeyFrameDB);
+		KeyFrame* pKFini = new KeyFrame(mInitialFrame, mpMap, mpKeyFrameDB);
     KeyFrame* pKFcur = new KeyFrame(mCurrentFrame, mpMap, mpKeyFrameDB);
 
     pKFini->ComputeBoW();
@@ -784,11 +786,13 @@ void MapTracking::CreateInitialMapMonocular()
 
 		std::cout << "Tc2w\n" << Tc2w << "\n";
 		// TODO: Scale alignment
-		invMedianDepth = 0.71;
+		// invMedianDepth = 0.73; // 00
+		invMedianDepth = initial_scale_;
+		// invMedianDepth = 1.6;
 		// invMedianDepth = -0.8586941 / Tc2w.at<float>(2, 3);
 		std::cout << "invMedianDepth: " << invMedianDepth << "\n";
 
-		Tc2w.col(3).rowRange(0,3) = Tc2w.col(3).rowRange(0,3)*invMedianDepth;
+		Tc2w.col(3).rowRange(0,3) = Tc2w.col(3).rowRange(0,3) * invMedianDepth;
 		pKFcur->SetPose(Tc2w);
 
 		std::cout << "Initial Tc2w\n";
@@ -804,6 +808,59 @@ void MapTracking::CreateInitialMapMonocular()
 						pMP->SetWorldPos(pMP->GetWorldPos()*invMedianDepth);
 				}
 		}
+
+		// Extract middle fifth of the lower third of the image
+		// G = R + 1/h * tn(T)
+		// Calculate SAD (Sum of Absolute Difference)
+		// cv::Mat preImage = mInitialFrame.image;
+		// cv::Mat afterImage = mLastFrame.image;
+		// int img_width = preImage.cols;
+		// int img_height = preImage.rows;
+		// int img_lower_third_height = static_cast<int>(static_cast<double>(2 * img_height) / 3.0);
+		// int img_middle_left = static_cast<int>(img_width) / 4;
+		// int img_middle_right = static_cast<int>(3 * img_width) / 4;
+		// float h = 1.0;
+		// cv::Mat n = cv::Mat::zeros(1, 3, CV_32FC1);
+	  // n.at<double>(0, 1) = 1;
+		// cv::Mat R = Tc2w.colRange(0, 3).rowRange(0, 3);
+		// cv::Mat T = Tc2w.col(3).rowRange(0, 3);
+		// cv::Mat T_convert = T.t() * n.t();
+		// T_convert /= h;
+		// T_convert.convertTo(T_convert, CV_64FC1);
+		// cv::Mat G = R + T_convert;
+		// std::cout << G.size() << "\n";
+		//
+		// int pixel_coords_height = img_height - img_lower_third_height;
+		// int pixel_coords_width = (img_middle_right - img_middle_left + 1);
+		//
+		// std::cout << pixel_coords_height << " " << pixel_coords_width << "\n";
+		//
+		// cv::Mat pixel_coords = cv::Mat::zeros(
+		// 	(pixel_coords_height) * pixel_coords_width, 3, CV_32FC1);
+		//
+		// std::cout << "pixel_coords: " << pixel_coords.size() << "\n";
+		//
+    // int counter = 0;
+		// for (int i=img_lower_third_height; i<img_height; ++i)
+		// {
+		// 	  for (int j=img_middle_left; j<=img_middle_right; ++j)
+		// 		{
+		// 			  cv::Mat tmp_row = (cv::Mat_<float>(1, 3) << j, i, 1);
+		// 				tmp_row.copyTo(pixel_coords.row(counter));
+		// 				counter++;
+		// 		}
+		// }
+		//
+		// pixel_coords = pixel_coords.t();
+		//
+		// cv::Mat cam_coords = mK.inv() * pixel_coords;
+		// std::cout << cam_coords.size() << "\n";
+		//
+		// std::cout << "Width: " << mInitialFrame.image.cols << "\n";
+		// std::cout << "Height: " << mInitialFrame.image.rows << "\n";
+
+
+		// exit(0);
 
 		// if (false) {
     // Scale points
@@ -830,9 +887,6 @@ void MapTracking::CreateInitialMapMonocular()
     //     Reset();
     //     return;
     // }
-		//
-		// // Scale initial baseline
-		// std::cout <<
 		//
 		// cv::Mat Tc2w = pKFcur->GetPose();
 		// std::cout << "orig\n" << Tc2w << "\n";
@@ -961,11 +1015,11 @@ void MapTracking::UpdateLastFrame()
     KeyFrame* pRef = mLastFrame.mpReferenceKF;
     cv::Mat Tlr = mlRelativeFramePoses.back();
 
-		if (pRef->local_scale != 1 && prev_local_scale != pRef->local_scale) {
-				Tlr.rowRange(0,3).col(3) *= pRef->local_scale;
-				mVelocity.rowRange(0,3).col(3) *= pRef->local_scale;
-		    prev_local_scale = pRef->local_scale;
-		}
+		// if (pRef->local_scale != 1 && prev_local_scale != pRef->local_scale) {
+		// 		Tlr.rowRange(0,3).col(3) *= pRef->local_scale;
+		// 		mVelocity.rowRange(0,3).col(3) *= pRef->local_scale;
+		//     prev_local_scale = pRef->local_scale;
+		// }
     mLastFrame.SetPose(Tlr * pRef->GetPose());
 }
 

@@ -41,11 +41,8 @@ ORBextractor.nLevels: 8
 ORBextractor.iniThFAST: 20
 ORBextractor.minThFAST: 7
 
-ORBextractor.initial_scale: 0.72 #1.46 # 0.72
-ORBextractor.dist_coeff: 1.0
-ORBextractor.use_icp2: 1
-ORBextractor.iteration: 0
-ORBextractor.resolution: 0
+ORBextractor.initial_scale: 0.73
+ORBextractor.dist_coeff: 0.5
 
 #--------------------------------------------------------------------------------------------
 # Viewer Parameters
@@ -54,10 +51,10 @@ Viewer.KeyFrameSize: 0.1
 Viewer.KeyFrameLineWidth: 1
 Viewer.GraphLineWidth: 1
 Viewer.PointSize: 2
-Viewer.PointSize2: 0.002
+Viewer.PointSize2: 0.01
 Viewer.CameraSize: 0.15
 Viewer.CameraLineWidth: 2
 Viewer.ViewpointX: 0
 Viewer.ViewpointY: -10
-Viewer.ViewpointZ: -30 #-0.1
+Viewer.ViewpointZ: -25 #-0.1
 Viewer.ViewpointF: 2000

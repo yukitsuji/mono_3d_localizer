@@ -52,6 +52,11 @@ public:
 
 	void setLeafSize(float voxel_x, float voxel_y, float voxel_z);
 
+  inline double getLeafSize()
+  {
+      return resolution_x_;
+  }
+
 	/* Searching for the nearest point of each input query point.
 	 * Return the distance between the query point and its nearest neighbor.
 	 * If the distance is larger than max_range, then return DBL_MAX. */
@@ -69,8 +74,7 @@ public:
 
 	void update(pcl::PointCloud<pcl::PointXYZ>::Ptr new_cloud);
 
-  void searchFittedVoxel(pcl::PointXYZ p)
-
+  bool searchFittedVoxel(pcl::PointXYZ p);
 
 private:
 
@@ -127,7 +131,7 @@ private:
 	int voxel_num_;						// Number of voxels
 	float max_x_, max_y_, max_z_;		// Upper bounds of the grid (maximum coordinate)
 	float min_x_, min_y_, min_z_;		// Lower bounds of the grid (minimum coordinate)
-	float voxel_x_, voxel_y_, voxel_z_;	// Leaf size, a.k.a, size of each voxel
+	float resolution_x_, resolution_y_, resolution_z_;	// Leaf size, a.k.a, size of each voxel
 
 	int max_b_x_, max_b_y_, max_b_z_;	// Upper bounds of the grid, measured in number of voxels
 	int min_b_x_, min_b_y_, min_b_z_;	// Lower bounds of the grid, measured in number of voxels
@@ -139,8 +143,10 @@ private:
 	boost::shared_ptr<std::vector<Eigen::Vector3d> > centroid_; // 3x1 Centroid vectors of voxels
 	boost::shared_ptr<std::vector<Eigen::Matrix3d> > icovariance_; // Inverse covariance matrixes of voxel
 	boost::shared_ptr<std::vector<std::vector<int> > > points_id_; // Indexes of points belong to each voxel
-	boost::shared_ptr<std::vector<int> > points_per_voxel_; // Number of points belong to each voxel
-        boost::shared_ptr<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr > > points_raw_per_voxel_; // (may differ from size of each vector in points_id_
+  boost::shared_ptr<std::vector<int> > points_per_voxel_; // Number of points belong to each voxel
+  boost::shared_ptr<std::vector<Eigen::Matrix<double,3,1>>> ievals_; // Number of points belong to each voxel
+  boost::shared_ptr<std::vector<Eigen::Matrix3d >> ievecs_inv_; // Number of points belong to each voxel
+  boost::shared_ptr<std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr > > points_raw_per_voxel_; // (may differ from size of each vector in points_id_
         // because of changes made during computing covariances
 	boost::shared_ptr<std::vector<Eigen::Vector3d> > tmp_centroid_;
 	boost::shared_ptr<std::vector<Eigen::Matrix3d> > tmp_cov_;

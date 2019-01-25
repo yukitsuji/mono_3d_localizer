@@ -96,6 +96,18 @@ void Map::SetReferenceMapPoints(const vector<MapPoint *> &vpMPs)
     mvpReferenceMapPoints = vpMPs;
 }
 
+void Map::SetLocalMappingPoint(const vector<MapPoint *> &vpMPs)
+{
+    unique_lock<mutex> lock(mMutexMap);
+    mvpLocalMappingPoints = vpMPs;
+}
+
+void Map::SetUsedMatchingPoint(const vector<cv::Mat> &vpMPs)
+{
+    unique_lock<mutex> lock(mMutexMap);
+    mvpUsedMatchingPoints = vpMPs;
+}
+
 vector<KeyFrame*> Map::GetAllKeyFrames()
 {
     unique_lock<mutex> lock(mMutexMap);
@@ -125,6 +137,19 @@ vector<MapPoint*> Map::GetReferenceMapPoints()
     unique_lock<mutex> lock(mMutexMap);
     return mvpReferenceMapPoints;
 }
+
+vector<MapPoint*> Map::GetLocalMappingPoint()
+{
+    unique_lock<mutex> lock(mMutexMap);
+    return mvpLocalMappingPoints;
+}
+
+vector<cv::Mat> Map::GetUsedMatchingPoint()
+{
+    unique_lock<mutex> lock(mMutexMap);
+    return mvpUsedMatchingPoints;
+}
+
 
 long unsigned int Map::GetMaxKFid()
 {

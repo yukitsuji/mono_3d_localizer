@@ -68,11 +68,15 @@ public:
     void AddMapPoint(MapPoint* pMP);
     void EraseMapPoint(MapPoint* pMP);
     void EraseKeyFrame(KeyFrame* pKF);
-    void SetReferenceMapPoints(const std::vector<MapPoint*> &vpMPs);
+		void SetReferenceMapPoints(const std::vector<MapPoint*> &vpMPs);
+		void SetLocalMappingPoint(const std::vector<MapPoint*> &vpMPs);
+		void SetUsedMatchingPoint(const std::vector<cv::Mat> &vpMPs);
 
     std::vector<KeyFrame*> GetAllKeyFrames();
     std::vector<MapPoint*> GetAllMapPoints();
-    std::vector<MapPoint*> GetReferenceMapPoints();
+		std::vector<MapPoint*> GetReferenceMapPoints();
+		std::vector<MapPoint*> GetLocalMappingPoint();
+		std::vector<cv::Mat> GetUsedMatchingPoint();
 
     long unsigned int MapPointsInMap();
     long unsigned  KeyFramesInMap();
@@ -128,7 +132,9 @@ protected:
     std::set<MapPoint*> mspMapPoints;
     std::set<KeyFrame*> mspKeyFrames;
 
-    std::vector<MapPoint*> mvpReferenceMapPoints;
+		std::vector<MapPoint*> mvpReferenceMapPoints;
+		std::vector<MapPoint*> mvpLocalMappingPoints;
+		std::vector<cv::Mat> mvpUsedMatchingPoints;
 
     long unsigned int mnMaxKFid;
 

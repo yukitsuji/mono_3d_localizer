@@ -10,6 +10,7 @@
 #include "icp_7dof_transform_lm.h"
 #include "icp_7dof_correspondence_estimation.h"
 #include "voxel_grid.h"
+#include "normal_distributions_transform.h"
 //#include <pcl/registration/correspondence_estimation.h>
 #include <pcl/registration/default_convergence_criteria.h>
 
@@ -101,6 +102,8 @@ namespace pcl
 
       typename pcl::registration::DefaultConvergenceCriteria<double>::Ptr convergence_criteria_;
       typedef typename Registration<pcl::PointXYZ, pcl::PointXYZ, double>::Matrix4 Matrix4;
+
+      icp_7dof::NormalDistributionsTransform ndt_;
 
       /** \brief Empty constructor. */
       IterativeClosestPoint7dof ()
@@ -215,7 +218,8 @@ namespace pcl
       }
 
       //////////////////////////////////////////////////////////////////////////////////////////////
-      inline void align (PointCloudSource &output, const Matrix4& guess, const Matrix4& global_to_local)
+      inline void align (PointCloudSource &output, const Matrix4& guess,
+                         Matrix4& global_to_local, Eigen::Matrix4d &output_pos, double &scale)
       {
         if (!CustomInitCompute ())
           return;
@@ -255,7 +259,7 @@ namespace pcl
         for (size_t i = 0; i < indices_->size (); ++i)
           output.points[i].data[3] = 1.0;
 
-        computeTransformation (output, guess, global_to_local);
+        computeTransformation (output, guess, global_to_local, output_pos, scale);
 
         deinitCompute ();
       }
@@ -356,7 +360,19 @@ namespace pcl
 
       inline void setVoxelGrid(icp_7dof::VoxelGrid *voxel_grid)
       {
-          correspondence_estimation_->setVoxelGrid(voxel_grid);
+          correspondence_estimation_->setVoxelGrid(*voxel_grid);
+          ndt_.setVoxelGrid(*voxel_grid);
+      }
+
+      inline void setNDT(icp_7dof::VoxelGrid *voxel_grid,
+                         double step_size,
+                         double trans_eps)
+      {
+          ndt_.setTransformationEpsilon(trans_eps);
+          ndt_.setStepSize(step_size);
+          ndt_.setResolution(voxel_grid->getLeafSize());
+          // ndt_.setMaximumIterations(max_iter);
+          // ndt_.setInputSource(filtered_scan_ptr);
       }
 
       /** \brief Provide a pointer to the input target
@@ -426,7 +442,7 @@ namespace pcl
 
       virtual void
       computeTransformation (PointCloudSource &output, const Matrix4 &guess,
-                             const Matrix4 &global_to_local);
+                             Matrix4 &global_to_local, Eigen::Matrix4d &output_pos, double &scale);
 
       /** \brief Looks at the Estimators and Rejectors and determines whether their blob-setter methods need to be called */
       virtual void

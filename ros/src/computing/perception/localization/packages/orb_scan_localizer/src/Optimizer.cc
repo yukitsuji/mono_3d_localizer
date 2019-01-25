@@ -333,18 +333,8 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         if(pMP->isBad())
             continue;
         g2o::VertexSBAPointXYZ* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(pMP->mnId+maxKFid+1));
-
-        if(nLoopKF==0)
-        {
-            pMP->SetWorldPos(Converter::toCvMat(vPoint->estimate()));
-            pMP->UpdateNormalAndDepth();
-        }
-        else
-        {
-            pMP->mPosGBA.create(3,1,CV_32F);
-            Converter::toCvMat(vPoint->estimate()).copyTo(pMP->mPosGBA);
-            pMP->mnBAGlobalForKF = nLoopKF;
-        }
+        pMP->SetWorldPos(Converter::toCvMat(vPoint->estimate()));
+        pMP->UpdateNormalAndDepth();
     }
 }
 
@@ -493,7 +483,9 @@ int Optimizer::PoseOptimization(Frame *pFrame)
 }
 
 
-void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap)
+void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap,
+                                      pcl::IterativeClosestPoint7dof *icp_,
+                                      double dist_coeff, bool use_icp, int use_icp2)
 {
     // Local KeyFrames: First Breath Search from Current Keyframe
     list<KeyFrame*> lLocalKeyFrames;
@@ -546,15 +538,33 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         }
     }
 
+    std::cout << "############## KeyFrame Bundle: " << lLocalKeyFrames.size() << " ############\n";
+    std::cout << "############## Fixed KeyFrame: " << lFixedCameras.size() << " ############\n";
+
+    list<MapPoint*> lFixedMapPoints;
+    lFixedMapPoints.clear();
+    // for (auto&&  kf: lFixedCameras)
+    // {
+    //     vector<MapPoint*> vpMPs = kf->GetMapPointMatches();
+    //     for (auto&& p : vpMPs)
+    //     {
+    //         if (p)
+    //         {
+    //             if (!p->isBad())
+    //             {
+    //               if (p->mnBALocalForKF != kf->mnId)
+    //               {
+    //                   lFixedMapPoints.push_back(p);
+    //                   p->mnBALocalForKF = p->mnId;
+    //               }
+    //             }
+    //         }
+    //     }
+    // }
+
     // Setup optimizer
     g2o::SparseOptimizer optimizer;
 
-    // std::unique_ptr<g2o::BlockSolver_6_3::LinearSolverType> linearSolver;
-
-    // linearSolver = g2o::make_unique<g2o::LinearSolverCholmod<g2o::BlockSolver_6_3::PoseMatrixType>>();
-
-    // g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(
-    //                                                       g2o::make_unique<g2o::BlockSolver_6_3>(std::move(linearSolver)));
     g2o::BlockSolver_6_3::LinearSolverType * linearSolver;
 
     linearSolver = new g2o::LinearSolverEigen<g2o::BlockSolver_6_3::PoseMatrixType>();
@@ -715,38 +725,252 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         }
     }
 
-    // Get Map Mutex
-    unique_lock<mutex> lock(pMap->mMutexMapUpdate);
-
-    // Remove outliers
-    if(!vToErase.empty())
+    // icp matching using map point
+    pcl::PointCloud<pcl::PointXYZ>::Ptr l_points (new pcl::PointCloud<pcl::PointXYZ>);
+    for (auto&& p : lLocalMapPoints)
     {
-        for(size_t i=0; i<vToErase.size(); ++i)
-        {
-            KeyFrame* pKFi = vToErase[i].first;
-            MapPoint* pMPi = vToErase[i].second;
-            pKFi->EraseMapPointMatch(pMPi);
-            pMPi->EraseObservation(pKFi);
-        }
+        g2o::VertexSBAPointXYZ* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(p->mnId+maxKFid+1));
+        cv::Mat pos = Converter::toCvMat(vPoint->estimate());
+        pcl::PointXYZ point;
+        point.x = pos.at<float>(0);
+        point.y = pos.at<float>(1);
+        point.z = pos.at<float>(2);
+        l_points->push_back(point);
     }
 
-    // Update Keyframes
+    for (auto&& p : lFixedMapPoints)
+    {
+        // cv::Mat pos = Converter::toCvMat(p->estimate());
+        cv::Mat pos = p->GetWorldPos();
+        pcl::PointXYZ point;
+        point.x = pos.at<float>(0);
+        point.y = pos.at<float>(1);
+        point.z = pos.at<float>(2);
+        l_points->push_back(point);
+    }
+
+    Eigen::Matrix4d toRef; // = Converter::toMatrix4d(mpCurrentKeyFrame->GetPose());
+
     for(list<KeyFrame*>::iterator lit=lLocalKeyFrames.begin(), lend=lLocalKeyFrames.end(); lit!=lend; ++lit)
     {
         KeyFrame* pKF = *lit;
         g2o::VertexSE3Expmap* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(pKF->mnId));
         g2o::SE3Quat SE3quat = vSE3->estimate();
-        pKF->SetPose(Converter::toCvMat(SE3quat));
+        toRef = Converter::toMatrix4d(Converter::toCvMat(SE3quat));
+        break;
     }
 
-    // Update Points
-    for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; ++lit)
+    std::cout << "Bofore:\n" << toRef.inverse() << "\n";
+
+    static int iteration_count = 0;
+    iteration_count += 1;
+
+    if (use_icp && use_icp2 && iteration_count % 1 == 0 & iteration_count > 10)
     {
-        MapPoint* pMP = *lit;
-        g2o::VertexSBAPointXYZ* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(pMP->mnId+maxKFid+1));
-        pMP->SetWorldPos(Converter::toCvMat(vPoint->estimate()));
-        pMP->UpdateNormalAndDepth();
+        std::cout << "######## Use ICP or NDT method ########\n";
+        pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_points (new pcl::PointCloud<pcl::PointXYZ>);
+        *filtered_points = *l_points;
+
+        icp_->transformCloudPublic(*filtered_points, *filtered_points, toRef);
+
+        pcl::PassThrough<pcl::PointXYZ> pass;
+        // pass.setInputCloud (filtered_points);
+        // pass.setFilterFieldName ("x");
+        // pass.setFilterLimits (-12.0, 12.0);
+        // pass.filter (*filtered_points);
+        // pass.setInputCloud (filtered_points);
+        // pass.setFilterFieldName ("z");
+        // pass.setFilterLimits (-80, 50.0);
+        // pass.filter (*filtered_points);
+        pass.setInputCloud (filtered_points);
+        pass.setFilterFieldName ("y");
+        pass.setFilterLimits (-3, 3);
+        pass.filter (*filtered_points);
+
+        // double filter_res = 0.1f;
+        // pcl::VoxelGrid<pcl::PointXYZ> voxel_grid_filter;
+        // voxel_grid_filter.setLeafSize(filter_res, filter_res, filter_res);
+        // voxel_grid_filter.setInputCloud(filtered_points);
+        // voxel_grid_filter.filter(*filtered_points);
+
+        icp_->transformCloudPublic(*filtered_points, *filtered_points, toRef.inverse());
+
+        // pcl::console::setVerbosityLevel(pcl::console::L_DEBUG);
+        icp_->setInputSource(filtered_points);
+        icp_->setMaximumIterations(10);
+        icp_->setDistThreshold(dist_coeff);
+        pcl::PointCloud<pcl::PointXYZ> output;
+        Eigen::Matrix4d transformation;
+        Eigen::Matrix4d output_pos;
+        double out_scale;
+
+        cv::Mat cv_invToRef; // = cv_toRef.inv();
+        cv::Mat cv_toRef = Converter::toCvMat(toRef);
+
+        icp_->align(output, Eigen::Matrix4d::Identity(), toRef, output_pos, out_scale);
+
+        transformation = icp_->getFinalTransformation();
+
+        // double scale = pow(cv::determinant(cv_transformation), 1.0/3.0);
+        double scale = out_scale;
+
+        // cv::Mat cv_transformation = Converter::toCvMat(transformation);
+
+        // Update map point and keyframes
+
+        // Update points using PCL
+        pcl::PointCloud<pcl::PointXYZ>::Ptr converted_points (new pcl::PointCloud<pcl::PointXYZ>);
+        *converted_points = *l_points;
+
+        icp_->transformCloudPublic(*converted_points, *converted_points, toRef);
+        icp_->transformCloudPublic(*converted_points, *converted_points, transformation);
+        icp_->transformCloudPublic(*converted_points, *converted_points, toRef.inverse()); //updateToGlobal);
+        // Eigen::Matrix4d output_pos_inv = output_pos.inverse();
+        // output_pos_inv.block(0, 0, 3, 3) *= scale;
+        // icp_->transformCloudPublic(*converted_points, *converted_points, toRef);
+        // icp_->transformCloudPublic(*converted_points, *converted_points, output_pos_inv);
+
+        // icp_->transformCloudPublic(*filtered_points, *filtered_points, toRef);
+        // icp_->transformCloudPublic(*filtered_points, *filtered_points, output_pos_inv);
+
+        // Get Map Mutex
+        unique_lock<mutex> lock(pMap->mMutexMapUpdate);
+
+        // Remove outliers
+        if(!vToErase.empty())
+        {
+            for(size_t i=0; i<vToErase.size(); ++i)
+            {
+                KeyFrame* pKFi = vToErase[i].first;
+                MapPoint* pMPi = vToErase[i].second;
+                pKFi->EraseMapPointMatch(pMPi);
+                pMPi->EraseObservation(pKFi);
+            }
+        }
+
+        std::cout << "#### Scale: #### : " << scale << "\n";
+
+        for(list<KeyFrame*>::iterator lit=lLocalKeyFrames.begin(), lend=lLocalKeyFrames.end(); lit!=lend; ++lit)
+        {
+            KeyFrame* pKF = *lit;
+            pKF->SetPose(Converter::toCvMat(output_pos));
+            cv_invToRef = pKF->GetPoseInverse();
+            break;
+        }
+
+        // Update Keyframes
+        for(list<KeyFrame*>::iterator lit=lLocalKeyFrames.begin(), lend=lLocalKeyFrames.end(); lit!=lend; ++lit)
+        {
+            KeyFrame* pKF = *lit;
+            g2o::VertexSE3Expmap* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(pKF->mnId));
+            g2o::SE3Quat SE3quat = vSE3->estimate();
+            pKF->SetPose(Converter::toCvMat(SE3quat));
+            cv::Mat prev_pose = pKF->GetPoseInverse(); // GetPose();
+            cv::Mat relative_pose = cv_toRef * prev_pose;
+            relative_pose.rowRange(0,3).col(3) *= scale; // multiply scale to translation
+            cv::Mat after_pose = cv_invToRef * relative_pose;
+            pKF->SetPose(after_pose.inv());
+        }
+
+        // // Update Keyframes
+        // for(list<KeyFrame*>::iterator lit=lFixedCameras.begin(), lend=lFixedCameras.end(); lit!=lend; ++lit)
+        // {
+        //     KeyFrame* pKF = *lit;
+        //     // g2o::VertexSE3Expmap* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(pKF->mnId));
+        //     // g2o::SE3Quat SE3quat = vSE3->estimate();
+        //     // pKF->SetPose(Converter::toCvMat(SE3quat));
+        //     cv::Mat prev_pose = pKF->GetPoseInverse(); // GetPose();
+        //     cv::Mat relative_pose = cv_toRef * prev_pose;
+        //     relative_pose.rowRange(0,3).col(3) *= scale; // multiply scale to translation
+        //     cv::Mat after_pose = cv_invToRef * relative_pose;
+        //     pKF->SetPose(after_pose.inv());
+        // }
+
+        vector<MapPoint*> hoge;
+        hoge.clear();
+
+        // Update points
+        int i = 0;
+        for (auto&& pMP: lLocalMapPoints)
+        {
+            if(pMP)
+            {
+                if(!pMP->isBad())
+                {
+                    pcl::PointXYZ p = converted_points->points[i];
+                    cv::Mat pose = (cv::Mat_<float>(3,1) << p.x, p.y, p.z);
+                    pMP->SetWorldPos(pose);
+                    pMP->UpdateNormalAndDepth();
+                    hoge.push_back(pMP);
+                }
+            }
+            i++;
+        }
+
+        for (auto&& pMP: lFixedMapPoints)
+        {
+            if(pMP)
+            {
+                if(!pMP->isBad())
+                {
+                    pcl::PointXYZ p = converted_points->points[i];
+                    cv::Mat pose = (cv::Mat_<float>(3,1) << p.x, p.y, p.z);
+                    pMP->SetWorldPos(pose);
+                    pMP->UpdateNormalAndDepth();
+                    hoge.push_back(pMP);
+                }
+            }
+            i++;
+        }
+
+        std::vector<cv::Mat> hoge2;
+        for (auto&& p: filtered_points->points)
+        {
+            cv::Mat pose = (cv::Mat_<float>(3,1) << p.x, p.y, p.z);
+            hoge2.push_back(pose);
+        }
+
+        pMap->SetLocalMappingPoint(hoge);
+        pMap->SetUsedMatchingPoint(hoge2);
+
+    } else
+    {
+        std::cout << "Not use ICP or NDT matching\n";
+        if(!vToErase.empty())
+        {
+            for(size_t i=0;i<vToErase.size();i++)
+            {
+                KeyFrame* pKFi = vToErase[i].first;
+                MapPoint* pMPi = vToErase[i].second;
+                pKFi->EraseMapPointMatch(pMPi);
+                pMPi->EraseObservation(pKFi);
+            }
+        }
+
+        //Keyframes
+        for(list<KeyFrame*>::iterator lit=lLocalKeyFrames.begin(), lend=lLocalKeyFrames.end(); lit!=lend; lit++)
+        {
+            KeyFrame* pKF = *lit;
+            g2o::VertexSE3Expmap* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(pKF->mnId));
+            g2o::SE3Quat SE3quat = vSE3->estimate();
+            pKF->SetPose(Converter::toCvMat(SE3quat));
+        }
+
+        //Points
+        vector<MapPoint*> hoge;
+        hoge.clear();
+
+        for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
+        {
+            MapPoint* pMP = *lit;
+            g2o::VertexSBAPointXYZ* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(pMP->mnId+maxKFid+1));
+            pMP->SetWorldPos(Converter::toCvMat(vPoint->estimate()));
+            pMP->UpdateNormalAndDepth();
+            hoge.push_back(pMP);
+        }
+        pMap->SetLocalMappingPoint(hoge);
     }
+
 }
 
 

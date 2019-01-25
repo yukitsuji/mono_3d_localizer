@@ -112,11 +112,6 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
       VectorXD::MapType xx(x, _sparseMatrix.cols());
       VectorXD::ConstMapType bb(b, _sparseMatrix.cols());
       xx = _cholesky.solve(bb);
-      G2OBatchStatistics* globalStats = G2OBatchStatistics::globalStats();
-      if (globalStats) {
-        globalStats->timeNumericDecomposition = get_monotonic_time() - t;
-        globalStats->choleskyNNZ = _cholesky.matrixL().nestedExpression().nonZeros() + _sparseMatrix.cols(); // the elements of D
-      }
 
       return true;
     }

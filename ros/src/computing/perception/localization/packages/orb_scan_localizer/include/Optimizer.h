@@ -27,6 +27,10 @@
 #include "Frame.h"
 
 #include "g2o/types/sim3/types_seven_dof_expmap.h"
+#include <icp_7dof/icp_7dof.h>
+#include <mutex>
+#include <pcl/console/print.h>
+#include <pcl/filters/passthrough.h>
 
 namespace ORB_SLAM2
 {
@@ -43,7 +47,9 @@ public:
                                  const bool bRobust = true);
     void static GlobalBundleAdjustemnt(Map* pMap, int nIterations=5, bool *pbStopFlag=NULL,
                                        const unsigned long nLoopKF=0, const bool bRobust = true);
-    void static LocalBundleAdjustment(KeyFrame* pKF, bool *pbStopFlag, Map *pMap);
+    void static LocalBundleAdjustment(KeyFrame* pKF, bool *pbStopFlag, Map *pMap,
+                                      pcl::IterativeClosestPoint7dof *icp_,
+                                      double dist_coeff, bool use_icp, int use_icp2);
     int static PoseOptimization(Frame* pFrame);
 
     // if bFixScale is true, optimize SE3 (stereo,rgbd), Sim3 otherwise (mono)

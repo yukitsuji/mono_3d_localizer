@@ -101,7 +101,9 @@ void MapDrawer::PublishMapPoints(ros::Publisher &global_pub,
 void MapDrawer::DrawMapPoints()
 {
     const vector<MapPoint*> &vpMPs = mpMap->GetAllMapPoints();
-    const vector<MapPoint*> &vpRefMPs = mpMap->GetReferenceMapPoints();
+    const vector<MapPoint*> &vpRefMPs = mpMap->GetLocalMappingPoint();
+    const vector<cv::Mat> &cvVpRefMPs = mpMap->GetUsedMatchingPoint();
+    // const vector<MapPoint*> &vpRefMPs = mpMap->GetReferenceMapPoints();
 
     set<MapPoint*> spRefMPs(vpRefMPs.begin(), vpRefMPs.end());
 
@@ -110,7 +112,7 @@ void MapDrawer::DrawMapPoints()
 
     // glPointSize(mPointSize);
     // glBegin(GL_POINTS);
-    // glColor3f(0.0,0.0,0.0);
+    // glColor3f(0.0,0.0,1.0);
     //
     // for(size_t i=0, iend=vpMPs.size(); i<iend;i++)
     // {
@@ -123,15 +125,26 @@ void MapDrawer::DrawMapPoints()
 
     glPointSize(mPointSize);
     glBegin(GL_POINTS);
-    glColor3f(1.0,0.0,0.0);
+    glColor3f(0.0,1.0,0.0);
 
-    for(set<MapPoint*>::iterator sit=spRefMPs.begin(), send=spRefMPs.end(); sit!=send; sit++)
+    for(auto&& p: cvVpRefMPs)
     {
-        if((*sit)==NULL || (*sit)->isBad())
-            continue;
-        cv::Mat pos = (*sit)->GetWorldPos();
-        glVertex3f(pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
+        glVertex3f(p.at<float>(0),p.at<float>(1),p.at<float>(2));
     }
+
+    glEnd();
+
+    // glPointSize(mPointSize);
+    // glBegin(GL_POINTS);
+    // glColor3f(1.0,0.0,0.0);
+    //
+    // for(set<MapPoint*>::iterator sit=spRefMPs.begin(), send=spRefMPs.end(); sit!=send; sit++)
+    // {
+    //     if((*sit)==NULL || (*sit)->isBad())
+    //         continue;
+    //     cv::Mat pos = (*sit)->GetWorldPos();
+    //     glVertex3f(pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
+    // }
 
     glEnd();
 

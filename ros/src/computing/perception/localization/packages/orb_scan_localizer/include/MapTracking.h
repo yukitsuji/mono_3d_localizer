@@ -197,6 +197,7 @@ public:
 
     pcl::IterativeClosestPoint7dof *icp_;
     double prev_local_scale;
+    double initial_scale_;
 
 protected:
 

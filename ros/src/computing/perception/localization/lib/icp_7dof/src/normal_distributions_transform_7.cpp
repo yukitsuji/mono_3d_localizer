@@ -1,15 +1,13 @@
-#include "ndt_cpu/NormalDistributionsTransform.h"
-#include "ndt_cpu/debug.h"
+#include "icp_7dof/normal_distributions_transform.h"
 #include <cmath>
 #include <iostream>
 #include <pcl/common/transforms.h>
 
 #define V2_ 1
 
-namespace cpu {
+namespace icp_7dof {
 
-template <typename PointSourceType, typename PointTargetType>
-NormalDistributionsTransform<PointSourceType, PointTargetType>::NormalDistributionsTransform()
+NormalDistributionsTransform::NormalDistributionsTransform()
 {
 	gauss_d1_ = gauss_d2_ = 0;
 	outlier_ratio_ = 0.55;
@@ -19,7 +17,7 @@ NormalDistributionsTransform<PointSourceType, PointTargetType>::NormalDistributi
 
 	double gauss_c1, gauss_c2, gauss_d3;
 
-	// Initializes the guassian fitting parameters (eq. 6.8) [Magnusson 2009]
+	// Initializes the guassian fitting parameters (eq. 7.8) [Magnusson 2009]
 	gauss_c1 = 10.0 * (1 - outlier_ratio_);
 	gauss_c2 = outlier_ratio_ / pow (resolution_, 3);
 	gauss_d3 = -log (gauss_c2);
@@ -31,70 +29,64 @@ NormalDistributionsTransform<PointSourceType, PointTargetType>::NormalDistributi
 	real_iterations_ = 0;
 }
 
-template <typename PointSourceType, typename PointTargetType>
-void NormalDistributionsTransform<PointSourceType, PointTargetType>::setStepSize(double step_size)
+void NormalDistributionsTransform::setStepSize(double step_size)
 {
 	step_size_ = step_size;
 }
 
-template <typename PointSourceType, typename PointTargetType>
-void NormalDistributionsTransform<PointSourceType, PointTargetType>::setResolution(float resolution)
+void NormalDistributionsTransform::setResolution(float resolution)
 {
 	resolution_ = resolution;
 }
 
-template <typename PointSourceType, typename PointTargetType>
-void NormalDistributionsTransform<PointSourceType, PointTargetType>::setOutlierRatio(double olr)
+void NormalDistributionsTransform::setVoxelGrid(icp_7dof::VoxelGrid &voxel_grid)
+{
+	voxel_grid_ = voxel_grid;
+}
+
+void NormalDistributionsTransform::setOutlierRatio(double olr)
 {
 	outlier_ratio_ = olr;
 }
 
-template <typename PointSourceType, typename PointTargetType>
-double NormalDistributionsTransform<PointSourceType, PointTargetType>::getStepSize() const
+double NormalDistributionsTransform::getStepSize() const
 {
 	return step_size_;
 }
 
-template <typename PointSourceType, typename PointTargetType>
-float NormalDistributionsTransform<PointSourceType, PointTargetType>::getResolution() const
+float NormalDistributionsTransform::getResolution() const
 {
 	return resolution_;
 }
 
-template <typename PointSourceType, typename PointTargetType>
-double NormalDistributionsTransform<PointSourceType, PointTargetType>::getOutlierRatio() const
+double NormalDistributionsTransform::getOutlierRatio() const
 {
 	return outlier_ratio_;
 }
 
-template <typename PointSourceType, typename PointTargetType>
-double NormalDistributionsTransform<PointSourceType, PointTargetType>::getTransformationProbability() const
+double NormalDistributionsTransform::getTransformationProbability() const
 {
 	return trans_probability_;
 }
 
-template <typename PointSourceType, typename PointTargetType>
-int NormalDistributionsTransform<PointSourceType, PointTargetType>::getRealIterations()
+int NormalDistributionsTransform::getRealIterations()
 {
 	 return real_iterations_;
 }
 
-template <typename PointSourceType, typename PointTargetType>
-double NormalDistributionsTransform<PointSourceType, PointTargetType>::auxilaryFunction_PsiMT(double a, double f_a, double f_0, double g_0, double mu)
+double NormalDistributionsTransform::auxilaryFunction_PsiMT(double a, double f_a, double f_0, double g_0, double mu)
 {
   return (f_a - f_0 - mu * g_0 * a);
 }
 
-template <typename PointSourceType, typename PointTargetType>
-double NormalDistributionsTransform<PointSourceType, PointTargetType>::auxilaryFunction_dPsiMT(double g_a, double g_0, double mu)
+double NormalDistributionsTransform::auxilaryFunction_dPsiMT(double g_a, double g_0, double mu)
 {
   return (g_a - mu * g_0);
 }
 
-template <typename PointSourceType, typename PointTargetType>
-void NormalDistributionsTransform<PointSourceType, PointTargetType>::setInputTarget(typename pcl::PointCloud<PointTargetType>::Ptr input)
+void NormalDistributionsTransform::setInputTarget(typename pcl::PointCloud<pcl::PointXYZ>::Ptr input)
 {
-	Registration<PointSourceType, PointTargetType>::setInputTarget(input);
+	Registration::setInputTarget(input);
 
 	// Build the voxel grid
 	if (input->points.size() > 0) {
@@ -103,8 +95,7 @@ void NormalDistributionsTransform<PointSourceType, PointTargetType>::setInputTar
 	}
 }
 
-template <typename PointSourceType, typename PointTargetType>
-void NormalDistributionsTransform<PointSourceType, PointTargetType>::computeTransformation(const Eigen::Matrix<float, 4, 4> &guess)
+void NormalDistributionsTransform::computeTransformation(const Eigen::Matrix<float, 4, 4> &guess)
 {
 	nr_iterations_ = 0;
 	converged_ = false;
@@ -126,13 +117,13 @@ void NormalDistributionsTransform<PointSourceType, PointTargetType>::computeTran
 	Eigen::Transform<float, 3, Eigen::Affine, Eigen::ColMajor> eig_transformation;
 	eig_transformation.matrix() = final_transformation_;
 
-	Eigen::Matrix<double, 6, 1> p, delta_p, score_gradient;
+	Eigen::Matrix<double, 7, 1> p, delta_p, score_gradient;
 	Eigen::Vector3f init_translation = eig_transformation.translation();
 	Eigen::Vector3f init_rotation = eig_transformation.rotation().eulerAngles(0, 1, 2);
 
-	p << init_translation(0), init_translation(1), init_translation(2), init_rotation(0), init_rotation(1), init_rotation(2);
+	p << init_translation(0), init_translation(1), init_translation(2), init_rotation(0), init_rotation(1), init_rotation(2), 1;
 
-	Eigen::Matrix<double, 6, 6> hessian;
+	Eigen::Matrix<double, 7, 7> hessian;
 
 	double score = 0;
 	double delta_p_norm;
@@ -143,7 +134,8 @@ void NormalDistributionsTransform<PointSourceType, PointTargetType>::computeTran
 
 	while (!converged_) {
 		// Solve for decent direction using newton method, line 23 in Algorithm 2 [Magnusson 2009]
-		Eigen::JacobiSVD<Eigen::Matrix<double, 6, 6> > sv(hessian, Eigen::ComputeFullU | Eigen::ComputeFullV);
+		// Eigen::JacobiSVD<Eigen::Matrix<double, 7, 7> > sv(hessian, Eigen::ComputeFullU | Eigen::ComputeFullV);
+		Eigen::LDLT<Eigen::Matrix<double, 7, 7> > sv(hessian); //, Eigen::ComputeFullU | Eigen::ComputeFullV);
 		// Negative for maximization as opposed to minimization
 		delta_p = sv.solve(-score_gradient);
 
@@ -174,12 +166,11 @@ void NormalDistributionsTransform<PointSourceType, PointTargetType>::computeTran
 	}
 }
 
-template <typename PointSourceType, typename PointTargetType>
-double NormalDistributionsTransform<PointSourceType, PointTargetType>::computeDerivatives(Eigen::Matrix<double, 6, 1> &score_gradient, Eigen::Matrix<double, 6, 6> &hessian,
-																							typename pcl::PointCloud<PointSourceType> &trans_cloud,
-																							Eigen::Matrix<double, 6, 1> pose, bool compute_hessian)
+double NormalDistributionsTransform::computeDerivatives(Eigen::Matrix<double, 7, 1> &score_gradient, Eigen::Matrix<double, 7, 7> &hessian,
+																							typename pcl::PointCloud<pcl::PointXYZ> &trans_cloud,
+																							Eigen::Matrix<double, 7, 1> pose, bool compute_hessian)
 {
-	PointSourceType x_pt, x_trans_pt;
+	pcl::PointXYZ x_pt, x_trans_pt;
 	Eigen::Vector3d x, x_trans;
 	Eigen::Matrix3d c_inv;
 
@@ -190,8 +181,8 @@ double NormalDistributionsTransform<PointSourceType, PointTargetType>::computeDe
 	computeAngleDerivatives(pose);
 
 	std::vector<int> neighbor_ids;
-	Eigen::Matrix<double, 3, 6> point_gradient;
-	Eigen::Matrix<double, 18, 6> point_hessian;
+	Eigen::Matrix<double, 3, 7> point_gradient;
+	Eigen::Matrix<double, 21, 7> point_hessian;
 	double score = 0;
 
 	point_gradient.setZero();
@@ -224,8 +215,7 @@ double NormalDistributionsTransform<PointSourceType, PointTargetType>::computeDe
 	return score;
 }
 
-template <typename PointSourceType, typename PointTargetType>
-void NormalDistributionsTransform<PointSourceType, PointTargetType>::computePointDerivatives(Eigen::Vector3d &x, Eigen::Matrix<double, 3, 6> &point_gradient, Eigen::Matrix<double, 18, 6> &point_hessian, bool compute_hessian)
+void NormalDistributionsTransform::computePointDerivatives(Eigen::Vector3d &x, Eigen::Matrix<double, 3, 7> &point_gradient, Eigen::Matrix<double, 21, 7> &point_hessian, bool compute_hessian)
 {
 	point_gradient(1, 3) = x.dot(j_ang_a_);
 	point_gradient(2, 3) = x.dot(j_ang_b_);
@@ -258,9 +248,8 @@ void NormalDistributionsTransform<PointSourceType, PointTargetType>::computePoin
 	}
 }
 
-template <typename PointSourceType, typename PointTargetType>
-double NormalDistributionsTransform<PointSourceType, PointTargetType>::updateDerivatives(Eigen::Matrix<double, 6, 1> &score_gradient, Eigen::Matrix<double, 6, 6> &hessian,
-																							Eigen::Matrix<double, 3, 6> point_gradient, Eigen::Matrix<double, 18, 6> point_hessian,
+double NormalDistributionsTransform::updateDerivatives(Eigen::Matrix<double, 7, 1> &score_gradient, Eigen::Matrix<double, 7, 7> &hessian,
+																							Eigen::Matrix<double, 3, 7> point_gradient, Eigen::Matrix<double, 21, 7> point_hessian,
 																							Eigen::Vector3d &x_trans, Eigen::Matrix3d &c_inv, bool compute_hessian)
 {
 	Eigen::Vector3d cov_dxd_pi;
@@ -275,7 +264,7 @@ double NormalDistributionsTransform<PointSourceType, PointTargetType>::updateDer
 
 	e_x_cov_x *= gauss_d1_;
 
-	for (int i = 0; i < 6; i++) {
+	for (int i = 0; i < 7; i++) {
 		cov_dxd_pi = c_inv * point_gradient.col(i);
 
 		score_gradient(i) += x_trans.dot(cov_dxd_pi) * e_x_cov_x;
@@ -293,8 +282,7 @@ double NormalDistributionsTransform<PointSourceType, PointTargetType>::updateDer
 }
 
 
-template <typename PointSourceType, typename PointTargetType>
-void NormalDistributionsTransform<PointSourceType, PointTargetType>::computeAngleDerivatives(Eigen::Matrix<double, 6, 1> pose, bool compute_hessian)
+void NormalDistributionsTransform::computeAngleDerivatives(Eigen::Matrix<double, 7, 1> pose, bool compute_hessian)
 {
 	double cx, cy, cz, sx, sy, sz;
 
@@ -419,17 +407,16 @@ void NormalDistributionsTransform<PointSourceType, PointTargetType>::computeAngl
 }
 
 
-template <typename PointSourceType, typename PointTargetType>
-double NormalDistributionsTransform<PointSourceType, PointTargetType>::computeStepLengthMT(
-	                                            const Eigen::Matrix<double, 6, 1> &x, Eigen::Matrix<double, 6, 1> &step_dir,
+double NormalDistributionsTransform::computeStepLengthMT(
+	                                            const Eigen::Matrix<double, 7, 1> &x, Eigen::Matrix<double, 7, 1> &step_dir,
 																							double step_init, double step_max, double step_min, double &score,
-																							Eigen::Matrix<double, 6, 1> &score_gradient, Eigen::Matrix<double, 6, 6> &hessian,
-																							typename pcl::PointCloud<PointSourceType> &trans_cloud)
+																							Eigen::Matrix<double, 7, 1> &score_gradient, Eigen::Matrix<double, 7, 7> &hessian,
+																							typename pcl::PointCloud<pcl::PointXYZ> &trans_cloud)
 {
 	double phi_0 = -score;
 	double d_phi_0 = -(score_gradient.dot(step_dir));
 
-	Eigen::Matrix<double, 6, 1> x_t;
+	Eigen::Matrix<double, 7, 1> x_t;
 
 	if (d_phi_0 >= 0) {
 		if (d_phi_0 == 0) {
@@ -466,6 +453,8 @@ double NormalDistributionsTransform<PointSourceType, PointTargetType>::computeSt
 								Eigen::AngleAxis<float>(static_cast<float>(x_t(4)), Eigen::Vector3f::UnitY()) *
 								Eigen::AngleAxis<float>(static_cast<float>(x_t(5)), Eigen::Vector3f::UnitZ())).matrix();
 
+	// final_transformation_.block(0, 0, 3, 3) *= x_t(6);
+
 	transformPointCloud(*source_cloud_, trans_cloud, final_transformation_);
 
 	score = computeDerivatives(score_gradient, hessian, trans_cloud, x_t, true);
@@ -494,6 +483,8 @@ double NormalDistributionsTransform<PointSourceType, PointTargetType>::computeSt
 								 Eigen::AngleAxis<float>(static_cast<float>(x_t(3)), Eigen::Vector3f::UnitX()) *
 								 Eigen::AngleAxis<float>(static_cast<float>(x_t(4)), Eigen::Vector3f::UnitY()) *
 								 Eigen::AngleAxis<float>(static_cast<float>(x_t(5)), Eigen::Vector3f::UnitZ())).matrix();
+
+
 
 		transformPointCloud(*source_cloud_, trans_cloud, final_transformation_);
 
@@ -533,22 +524,21 @@ double NormalDistributionsTransform<PointSourceType, PointTargetType>::computeSt
 
 
 //Copied from ndt.hpp
-template <typename PointSourceType, typename PointTargetType>
-double NormalDistributionsTransform<PointSourceType, PointTargetType>::trialValueSelectionMT (double a_l, double f_l, double g_l,
+double NormalDistributionsTransform::trialValueSelectionMT (double a_l, double f_l, double g_l,
 																								double a_u, double f_u, double g_u,
 																								double a_t, double f_t, double g_t)
 {
 	// Case 1 in Trial Value Selection [More, Thuente 1994]
 	if (f_t > f_l) {
 		// Calculate the minimizer of the cubic that interpolates f_l, f_t, g_l and g_t
-		// Equation 2.4.52 [Sun, Yuan 2006]
+		// Equation 2.4.52 [Sun, Yuan 2007]
 		double z = 3 * (f_t - f_l) / (a_t - a_l) - g_t - g_l;
 		double w = std::sqrt (z * z - g_t * g_l);
-		// Equation 2.4.56 [Sun, Yuan 2006]
+		// Equation 2.4.57 [Sun, Yuan 2007]
 		double a_c = a_l + (a_t - a_l) * (w - g_l - z) / (g_t - g_l + 2 * w);
 
 		// Calculate the minimizer of the quadratic that interpolates f_l, f_t and g_l
-		// Equation 2.4.2 [Sun, Yuan 2006]
+		// Equation 2.4.2 [Sun, Yuan 2007]
 		double a_q = a_l - 0.5 * (a_l - a_t) * g_l / (g_l - (f_l - f_t) / (a_l - a_t));
 
 		if (std::fabs (a_c - a_l) < std::fabs (a_q - a_l)) {
@@ -560,7 +550,7 @@ double NormalDistributionsTransform<PointSourceType, PointTargetType>::trialValu
 	// Case 2 in Trial Value Selection [More, Thuente 1994]
 	else if (g_t * g_l < 0) {
 		// Calculate the minimizer of the cubic that interpolates f_l, f_t, g_l and g_t
-		// Equation 2.4.52 [Sun, Yuan 2006]
+		// Equation 2.4.52 [Sun, Yuan 2007]
 		double z = 3 * (f_t - f_l) / (a_t - a_l) - g_t - g_l;
 		double w = std::sqrt (z * z - g_t * g_l);
 		// Equation 2.4.56 [Sun, Yuan 2006]
@@ -614,8 +604,7 @@ double NormalDistributionsTransform<PointSourceType, PointTargetType>::trialValu
 }
 
 //Copied from ndt.hpp
-template <typename PointSourceType, typename PointTargetType>
-double NormalDistributionsTransform<PointSourceType, PointTargetType>::updateIntervalMT (double &a_l, double &f_l, double &g_l,
+double NormalDistributionsTransform::updateIntervalMT (double &a_l, double &f_l, double &g_l,
 																							double &a_u, double &f_u, double &g_u,
 																							double a_t, double f_t, double g_t)
 {
@@ -650,9 +639,8 @@ double NormalDistributionsTransform<PointSourceType, PointTargetType>::updateInt
 	}
 }
 
-template <typename PointSourceType, typename PointTargetType>
-void NormalDistributionsTransform<PointSourceType, PointTargetType>::updateHessian(Eigen::Matrix<double, 6, 6> &hessian,
-																					Eigen::Matrix<double, 3, 6> point_gradient, Eigen::Matrix<double, 18, 6> point_hessian,
+void NormalDistributionsTransform::updateHessian(Eigen::Matrix<double, 7, 7> &hessian,
+																					Eigen::Matrix<double, 3, 7> point_gradient, Eigen::Matrix<double, 21, 7> point_hessian,
 																					Eigen::Vector3d &x_trans, Eigen::Matrix3d &c_inv)
 {
 	Eigen::Vector3d cov_dxd_pi;
@@ -664,7 +652,7 @@ void NormalDistributionsTransform<PointSourceType, PointTargetType>::updateHessi
 
 	e_x_cov_x *= gauss_d1_;
 
-	for (int i = 0; i < 6; i++) {
+	for (int i = 0; i < 7; i++) {
 		cov_dxd_pi = c_inv * point_gradient.col(i);
 
 		for (int j = 0; j < hessian.cols(); j++) {
@@ -675,17 +663,16 @@ void NormalDistributionsTransform<PointSourceType, PointTargetType>::updateHessi
 	}
 }
 
-template <typename PointSourceType, typename PointTargetType>
-void NormalDistributionsTransform<PointSourceType, PointTargetType>::computeHessian(Eigen::Matrix<double, 6, 6> &hessian, typename pcl::PointCloud<PointSourceType> &trans_cloud, Eigen::Matrix<double, 6, 1> &p)
+void NormalDistributionsTransform::computeHessian(Eigen::Matrix<double, 7, 7> &hessian, typename pcl::PointCloud<pcl::PointXYZ> &trans_cloud, Eigen::Matrix<double, 7, 1> &p)
 {
-	PointSourceType x_pt, x_trans_pt;
+	pcl::PointXYZ x_pt, x_trans_pt;
 	Eigen::Vector3d x, x_trans;
 	Eigen::Matrix3d c_inv;
 
 	hessian.setZero();
 
-	Eigen::Matrix<double, 3, 6> point_gradient;
-	Eigen::Matrix<double, 18, 6> point_hessian;
+	Eigen::Matrix<double, 3, 7> point_gradient;
+	Eigen::Matrix<double, 21, 7> point_hessian;
 
 
 	for (int idx = 0; idx < source_cloud_->points.size(); idx++) {
@@ -713,12 +700,11 @@ void NormalDistributionsTransform<PointSourceType, PointTargetType>::computeHess
 
 }
 
-template <typename PointSourceType, typename PointTargetType>
-double NormalDistributionsTransform<PointSourceType, PointTargetType>::getFitnessScore(double max_range)
+double NormalDistributionsTransform::getFitnessScore(double max_range)
 {
 	double fitness_score = 0.0;
 
-	typename pcl::PointCloud<PointSourceType> trans_cloud;
+	typename pcl::PointCloud<pcl::PointXYZ> trans_cloud;
 
 	transformPointCloud(*source_cloud_, trans_cloud, final_transformation_);
 
@@ -726,7 +712,7 @@ double NormalDistributionsTransform<PointSourceType, PointTargetType>::getFitnes
 	int nr = 0;
 
 	for (int i = 0; i < trans_cloud.points.size(); i++) {
-		PointSourceType q = trans_cloud.points[i];
+		pcl::PointXYZ q = trans_cloud.points[i];
 
 		distance = voxel_grid_.nearestNeighborDistance(q, max_range);
 
@@ -744,14 +730,10 @@ double NormalDistributionsTransform<PointSourceType, PointTargetType>::getFitnes
 }
 
 
-template <typename PointSourceType, typename PointTargetType>
-void NormalDistributionsTransform<PointSourceType, PointTargetType>::updateVoxelGrid(typename pcl::PointCloud<PointTargetType>::Ptr new_cloud)
+void NormalDistributionsTransform::updateVoxelGrid(typename pcl::PointCloud<pcl::PointXYZ>::Ptr new_cloud)
 {
 	// Update voxel grid
 	voxel_grid_.update(new_cloud);
 }
-
-template class NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>;
-template class NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ>;
 
 }

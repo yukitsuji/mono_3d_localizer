@@ -96,9 +96,10 @@ System::System(const string &strVocFile, const string &strSettingsFile,
         std::cout << "Map File Name: " << mapFileName << "\n";
         if (!mapFileName.empty()) {
             mpMap->loadPCDFile(mapFileName);
+            std::cout << "Map File Loaded\n";
             double resolution_ = 1.0;
             voxel_grid_.setLeafSize(resolution_, resolution_, resolution_);
-            voxel_grid_.setMinimumPoints(10);
+            voxel_grid_.setMinimumPoints(5);
             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
             voxel_grid_.setInput(mpMap->GetPriorMapPoints());
             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
@@ -106,7 +107,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
             std::cout << "VoxelGrid: " << ttrack << "\n";
             std::cout << "Number of map points: " << mpMap->GetPriorMapPoints()->size() << "\n";
             t1 = std::chrono::steady_clock::now();
-            //mpMap->SetPriorMapPoints(voxel_grid_.setPointsRaw(mpMap->GetPriorMapPoints()));
+            mpMap->SetPriorMapPoints(voxel_grid_.setPointsRaw(mpMap->GetPriorMapPoints()));
             t2 = std::chrono::steady_clock::now();
             ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
             std::cout << "SetPointsRaw: " << ttrack << "\n";
@@ -131,15 +132,17 @@ System::System(const string &strVocFile, const string &strSettingsFile,
         SetSourceMap(mpMap->GetPriorMapPoints());
         std::cout << "Set finished\n";
         mpMapTracker->SetICP(icp_);
-        // mpMap->VoxelGridFilter(2.0);
+        // mpMap->VoxelGridFilter();
         std::cout << "VoxelGridFilter\n";
     }
 
     //Initialize the Local Mapping thread and launch
-    mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR);
+    mpLocalMapper = new LocalMapping(mpMap, strSettingsFile, mSensor==MONOCULAR);
 
+    icp_.setVoxelGrid(&voxel_grid_);
     mpLocalMapper->SetICP(icp_);
-    mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run, mpLocalMapper);
+    // When offline matching, comment out thread
+    // mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run, mpLocalMapper);
 
     std::cout << "Launched local map\n";
 
@@ -281,7 +284,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
 
     std::cout << "Launched tracker\n";
     //Initialize the Local Mapping thread and launch
-    mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR);
+    mpLocalMapper = new LocalMapping(mpMap, strSettingsFile, mSensor==MONOCULAR);
     mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run,mpLocalMapper);
     std::cout << "Launched local map\n";
 

@@ -57,6 +57,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    ros::shutdown();
+
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM2::System SLAM(argv[1], argv[2], ORB_SLAM2::System::MONOCULAR,
                            nodeHandler, false, false, true, true,
@@ -98,7 +100,7 @@ int main(int argc, char **argv)
         vTimesTrack[ni] = ttrack;
         std::cout << "time " << ttrack << "\n";
 
-        double sleep_time = 0.1 - ttrack;
+        double sleep_time = 0.3 - ttrack;
 
         if (sleep_time > 0)
             usleep(sleep_time * 1000000);

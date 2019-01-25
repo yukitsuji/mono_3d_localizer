@@ -120,7 +120,7 @@ pcl::registration::TransformationEstimation7dofLM::estimateNonRigidTransformatio
   int n_unknowns = warp_point_->getDimension ();  // get dimension of unknown space
   VectorX x (n_unknowns);
   x.setConstant (n_unknowns, 0);
-  x[6] = 1.0;
+  // x[6] = 1.0;
 
   // Set temporary pointers
   tmp_src_ = &cloud_src;
@@ -191,8 +191,10 @@ pcl::registration::TransformationEstimation7dofLM::OptimizationFunctor::operator
     Vector4 p_src_warped;
     estimator_->warp_point_->warpPoint (p_src, p_src_warped);
 
+    double dist_coeff = pow(pow(p_src.x, 2) + pow(p_src.y, 2) + pow(p_src.z, 2), 0.5);
+
     // Estimate the distance (cost function)
-    fvec[i] = estimator_->computeDistance (p_src_warped, p_tgt);
+    fvec[i] = estimator_->computeDistance (p_src_warped, p_tgt);  // / dist_coeff;
   }
   return (0);
 }

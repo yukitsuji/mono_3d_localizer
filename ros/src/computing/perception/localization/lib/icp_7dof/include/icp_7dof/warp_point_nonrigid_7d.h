@@ -52,8 +52,9 @@ namespace pcl
           Eigen::Quaternion<double> q (0, p[3], p[4], p[5]);
           q.w () = static_cast<double> (sqrt (1 - q.dot (q)));
           q.normalize ();
+          // double scale = 1;
           double scale = p[6] ? p[6] : 1;
-          transform_matrix_.topLeftCorner (3, 3) = q.toRotationMatrix () * p[6];
+          transform_matrix_.topLeftCorner (3, 3) = q.toRotationMatrix () * scale;
         }
     };
   }

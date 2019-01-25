@@ -147,27 +147,20 @@ pcl::IterativeClosestPoint7dof::transformCloud (
 ///////////////////////////////////////////////////////////////////////////////////////////
 void
 pcl::IterativeClosestPoint7dof::computeTransformation (
-    PointCloudSource &output, const Matrix4 &guess, const Matrix4 &global_to_local)
+    PointCloudSource &output, const Matrix4 &guess, Matrix4 &global_to_local,
+    Eigen::Matrix4d &output_pos, double &scale)
 {
   // Point cloud containing the correspondences of each point in <input, indices>
   PointCloudSourcePtr input_transformed (new PointCloudSource);
 
   nr_iterations_ = 0;
   converged_ = false;
+  scale = 1;
 
   const bool debug = false;
 
   // Initialise final transformation to the guessed one
   final_transformation_ = guess;
-
-  // If the guessed transformation is non identity
-  //if (guess != Matrix4::Identity ())
-  //{
-  //  input_transformed->resize (input_->size ());
-  //   // Apply guessed transformation prior to search for neighbours
-  //  transformCloud (*input_, *input_transformed, guess);
-  //}
-  //else
 
   *input_transformed = *input_;
 
@@ -191,118 +184,184 @@ pcl::IterativeClosestPoint7dof::computeTransformation (
 
   Eigen::Matrix4d local_to_global = global_to_local.inverse();
 
-  // Repeat until convergence
-  do
+  float iteration = 1;
+
+  if (true)
   {
-      previous_transformation_ = transformation_;
-
-      // Set the source each iteration, to ensure the dirty flag is updated
-      t1 = std::chrono::steady_clock::now();
-      correspondence_estimation_->setInputSource (input_transformed);
-      t2 = std::chrono::steady_clock::now();
-      ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-      if (debug)
-          std::cout << "setInputSource: " << ttrack << "\n";
-
-      t1 = std::chrono::steady_clock::now();
-      // Estimate correspondences
-      correspondence_estimation_->determineCorrespondences (*correspondences_, corr_dist_threshold_);
-
-      t2 = std::chrono::steady_clock::now();
-      ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-      if (debug)
+      std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
+      // Repeat until convergence
+      do
       {
-          std::cout << "determineCorrespondences: " << ttrack << "\n";
+          previous_transformation_ = transformation_;
+
+          // Set the source each iteration, to ensure the dirty flag is updated
+          t1 = std::chrono::steady_clock::now();
+          correspondence_estimation_->setInputSource (input_transformed);
+          t2 = std::chrono::steady_clock::now();
+          ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+          if (debug)
+              std::cout << "setInputSource: " << ttrack << "\n";
+
+          t1 = std::chrono::steady_clock::now();
+          double dist_threshold = corr_dist_threshold_ - (corr_dist_threshold_ / 2) * iteration / 10;
+          iteration++;
+
+          // Estimate correspondences
+          correspondence_estimation_->determineCorrespondences (*correspondences_, corr_dist_threshold_);
+
+          t2 = std::chrono::steady_clock::now();
+          ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+          if (debug)
+          {
+              std::cout << "determineCorrespondences: " << ttrack << "\n";
+              std::cout << "correspondence size: from " << input_transformed->size() << " to " << correspondences_->size() << "\n";
+          }
           std::cout << "correspondence size: from " << input_transformed->size() << " to " << correspondences_->size() << "\n";
+
+          int cnt = static_cast<int>(correspondences_->size());
+          // Check whether we have enough correspondences
+          if (cnt < min_number_correspondences_)
+          {
+              PCL_ERROR ("[pcl::%s::computeTransformation] Not enough correspondences found. Relax your threshold parameters. %lf from %u to %u \n",
+                         getClassName ().c_str (), corr_dist_threshold_, input_transformed->size(), cnt);
+              convergence_criteria_->setConvergenceState(pcl::registration::DefaultConvergenceCriteria<double>::CONVERGENCE_CRITERIA_NO_CORRESPONDENCES);
+              converged_ = false;
+              break;
+          }
+
+
+          t1 = std::chrono::steady_clock::now();
+          // customize input and its correspondence
+          // computational cost would be explosive if the transformation from global to local is done in estimateNonRigidTransformation
+          // that should be done before estimateNonRigidTransformation.
+          PointCloudSourcePtr local_input (new PointCloudSource);
+          PointCloudSourcePtr local_selected_input (new PointCloudSource);
+          PointCloudSourcePtr local_target (new PointCloudSource);
+
+          *local_input = *input_transformed;
+          transformCloudPublic(*local_input, *local_input, global_to_local);
+
+          local_selected_input->resize(cnt);
+          local_target->resize(cnt);
+          for (int i=0; i<cnt; ++i)
+          {
+              local_selected_input->points[i] = local_input->points[(*correspondences_)[i].index_query];
+              local_target->points[i] = target_->points[(*correspondences_)[i].index_match];
+          }
+
+          transformCloudPublic(*local_target, *local_target, global_to_local);
+
+          t2 = std::chrono::steady_clock::now();
+          ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+          if (debug)
+              std::cout << "global to local: " << ttrack << "\n";
+
+          t1 = std::chrono::steady_clock::now();
+          // Estimate the transform
+          // transformation_estimation_->estimateNonRigidTransformation (*input_transformed, *target_, *correspondences_, transformation_);
+          transformation_estimation_->estimateNonRigidTransformation (*local_selected_input, *local_target, transformation_);
+          t2 = std::chrono::steady_clock::now();
+          ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+          if (debug)
+              std::cout << "estimateNonRigidTransformation: " << ttrack << "\n";
+
+          // Transform the data
+          t1 = std::chrono::steady_clock::now();
+
+          transformCloud (*local_input, *local_input, transformation_);
+          transformCloud (*local_input, *local_input, local_to_global);
+          *input_transformed = *local_input;
+
+          Eigen::Matrix4d hoge = transformation_;
+          Eigen::Matrix3d rotate_ltg = transformation_.block(0, 0, 3, 3);
+          double s = pow(rotate_ltg.determinant(), 1.0/3.0);
+          rotate_ltg /= s;
+          hoge.block(0, 0, 3, 3) = rotate_ltg;
+          scale *= s;
+
+          local_to_global = local_to_global * hoge;
+          global_to_local = local_to_global.inverse();
+
+          t2 = std::chrono::steady_clock::now();
+          ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
+          if (debug)
+              std::cout << "transformCloud: " << ttrack << "\n";
+
+          // Obtain the final transformation
+          final_transformation_ = transformation_ * final_transformation_;
+
+          if (debug)
+              std::cout << "transformation_\n" << final_transformation_ << "\n";
+
+          ++nr_iterations_;
+
+          converged_ = static_cast<bool> ((*convergence_criteria_));
       }
-      std::cout << "correspondence size: from " << input_transformed->size() << " to " << correspondences_->size() << "\n";
+      while (!converged_);
 
-      int cnt = static_cast<int>(correspondences_->size());
-      // Check whether we have enough correspondences
-      if (cnt < min_number_correspondences_)
-      {
-          PCL_ERROR ("[pcl::%s::computeTransformation] Not enough correspondences found. Relax your threshold parameters. %lf from %u to %u \n",
-                     getClassName ().c_str (), corr_dist_threshold_, input_transformed->size(), cnt);
-          convergence_criteria_->setConvergenceState(pcl::registration::DefaultConvergenceCriteria<double>::CONVERGENCE_CRITERIA_NO_CORRESPONDENCES);
-          converged_ = false;
-          break;
-      }
+      std::cout << "transformation_\n";
+      std::cout << final_transformation_ << "\n";
 
+      // Transform the input cloud using the final transformation
+      PCL_DEBUG ("Transformation is:\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n",
+          final_transformation_ (0, 0), final_transformation_ (0, 1), final_transformation_ (0, 2), final_transformation_ (0, 3),
+          final_transformation_ (1, 0), final_transformation_ (1, 1), final_transformation_ (1, 2), final_transformation_ (1, 3),
+          final_transformation_ (2, 0), final_transformation_ (2, 1), final_transformation_ (2, 2), final_transformation_ (2, 3),
+          final_transformation_ (3, 0), final_transformation_ (3, 1), final_transformation_ (3, 2), final_transformation_ (3, 3));
 
+      // Copy all the values
+      // output = *input_;
+      Eigen::Matrix4d transformation = local_to_global * final_transformation_ * global_to_local;
+      // transformCloudPublic(output, output, transformation);
+      output = *input_transformed;
+      output_pos = global_to_local;
+
+      std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
+      ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t_end - t_start).count();
+      std::cout << "########## ICP Matching: ##########" << ttrack << "\n";
+  } else
+  {
       t1 = std::chrono::steady_clock::now();
-      // customize input and its correspondence
-      // computational cost would be explosive if the transformation from global to local is done in estimateNonRigidTransformation
-      // that should be done before estimateNonRigidTransformation.
+      ndt_.setTransformationEpsilon(0.02); // trans_eps
+      ndt_.setStepSize(0.01); // step_size
+      ndt_.setResolution(ndt_.voxel_grid_.getLeafSize());
+      ndt_.setMaximumIterations(max_iterations_);
+
       PointCloudSourcePtr local_input (new PointCloudSource);
       PointCloudSourcePtr local_selected_input (new PointCloudSource);
       PointCloudSourcePtr local_target (new PointCloudSource);
+      PointCloudSourcePtr output_cloud (new PointCloudSource);
 
       *local_input = *input_transformed;
       transformCloudPublic(*local_input, *local_input, global_to_local);
 
-      local_selected_input->resize(cnt);
-      local_target->resize(cnt);
-      for (int i=0; i<cnt; ++i)
-      {
-          local_selected_input->points[i] = local_input->points[(*correspondences_)[i].index_query];
-          local_target->points[i] = target_->points[(*correspondences_)[i].index_match];
-      }
+      ndt_.setInputSource(local_input);
 
-      transformCloudPublic(*local_target, *local_target, global_to_local);
+      Eigen::Matrix4f init_guess = local_to_global.cast <float> ();
 
+      ndt_.align(*output_cloud, init_guess);
+      double fitness_score = ndt_.getFitnessScore();
+      Eigen::Matrix4f t_localizer = ndt_.getFinalTransformation();
+      bool has_converged = ndt_.hasConverged();
+      int final_num_iteration = ndt_.getFinalNumIteration();
+      std::cout << "Fitness Score: " << fitness_score << "\n";
+      std::cout << "t_localizer \n" << t_localizer << "\n";
+      std::cout << "has converged: " << has_converged << "\n";
+      std::cout << "Final num iteration: " << final_num_iteration << "\n";
+
+      Eigen::Matrix3f rotate_ltg = t_localizer.block(0, 0, 3, 3);
+      double s = pow(rotate_ltg.determinant(), 1.0/3.0);
+      rotate_ltg /= s;
+      t_localizer.block(0, 0, 3, 3) = rotate_ltg;
+      scale *= s;
+
+      output = *output_cloud;
+      // output = *input_transformed;
+      output_pos = t_localizer.inverse().cast<double>();
       t2 = std::chrono::steady_clock::now();
       ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-      if (debug)
-          std::cout << "global to local: " << ttrack << "\n";
-
-      t1 = std::chrono::steady_clock::now();
-      // Estimate the transform
-      // transformation_estimation_->estimateNonRigidTransformation (*input_transformed, *target_, *correspondences_, transformation_);
-      transformation_estimation_->estimateNonRigidTransformation (*local_selected_input, *local_target, transformation_);
-      t2 = std::chrono::steady_clock::now();
-      ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-      if (debug)
-          std::cout << "estimateNonRigidTransformation: " << ttrack << "\n";
-
-      // Transform the data
-      t1 = std::chrono::steady_clock::now();
-      // transformCloud (*input_transformed, *input_transformed, transformation_);
-
-      transformCloud (*local_input, *local_input, transformation_);
-      *input_transformed = *local_input;
-      transformCloud (*input_transformed, *input_transformed, local_to_global);
-
-      t2 = std::chrono::steady_clock::now();
-      ttrack= std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count();
-      if (debug)
-          std::cout << "transformCloud: " << ttrack << "\n";
-
-      // Obtain the final transformation
-      final_transformation_ = transformation_ * final_transformation_;
-
-      if (debug)
-          std::cout << "transformation_\n" << final_transformation_ << "\n";
-
-      ++nr_iterations_;
-
-      converged_ = static_cast<bool> ((*convergence_criteria_));
+      std::cout << "########## NDT Matching: ##########  " << ttrack << "\n";
   }
-  while (!converged_);
-
-  std::cout << "transformation_\n";
-  std::cout << final_transformation_ << "\n";
-
-  // Transform the input cloud using the final transformation
-  PCL_DEBUG ("Transformation is:\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n\t%5f\t%5f\t%5f\t%5f\n",
-      final_transformation_ (0, 0), final_transformation_ (0, 1), final_transformation_ (0, 2), final_transformation_ (0, 3),
-      final_transformation_ (1, 0), final_transformation_ (1, 1), final_transformation_ (1, 2), final_transformation_ (1, 3),
-      final_transformation_ (2, 0), final_transformation_ (2, 1), final_transformation_ (2, 2), final_transformation_ (2, 3),
-      final_transformation_ (3, 0), final_transformation_ (3, 1), final_transformation_ (3, 2), final_transformation_ (3, 3));
-
-  // Copy all the values
-  output = *input_;
-  Eigen::Matrix4d transformation = local_to_global * final_transformation_ * global_to_local;
-  transformCloudPublic(output, output, transformation);
 }
 
 
